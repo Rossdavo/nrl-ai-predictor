@@ -1,12 +1,6 @@
 import math
 import random
 import re
-# ----------------------------
-# RUN MODE
-# "TRIALS" = use hardcoded fixtures
-# "AUTO"   = pull upcoming fixtures automatically
-# ----------------------------
-MODE = "TRIALS"
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Tuple
@@ -14,63 +8,77 @@ from typing import List, Dict, Tuple
 import pandas as pd
 import requests
 from zoneinfo import ZoneInfo
-# ----------------------------
-# Trial-friendly starter model + NAMED try scorers (starters only 1–13)
-# Team lists are scraped from the official NRL Round 2 trials team list page.
-# If scraping fails, it falls back to "role profiles".
-# ----------------------------
 
+# ----------------------------
+# RUN MODE
+# "TRIALS" = use hardcoded fixtures
+# "AUTO"   = pull upcoming fixtures automatically
+# ----------------------------
+MODE = "TRIALS"
+
+# ----------------------------
+# Team lists (trials page)
+# ----------------------------
 TEAMLIST_URL = "https://www.nrl.com/news/2026/02/10/witzer-pre-season-challenge-team-lists-round-2/"
 
 @dataclass
 class Match:
     date: str  # YYYY-MM-DD
-    kickoff_local: str  # HH:MM
+    kickoff_local: str  # HH:MM (Sydney/local)
     home: str
     away: str
     venue: str
 
-# --- AUTO FIXTURE PULL (next 7 days) ---
-FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
+# ----------------------------
+# TRIAL FIXTURES (hardcoded)
+# ----------------------------
+FIXTURES: List[Match] = [
+    Match("2026-02-12", "19:00", "Dolphins", "Titans", "Kayo Stadium"),
+    Match("2026-02-13", "18:00", "Raiders", "Storm", "Seiffert Oval"),
+    Match("2026-02-13", "20:00", "Cowboys", "Panthers", "Queensland Country Bank Stadium"),
+    Match("2026-02-14", "15:00", "Warriors", "Sea Eagles", "Go Media Stadium"),
+    Match("2026-02-14", "17:30", "Wests Tigers", "Roosters", "Leichhardt Oval"),
+    Match("2026-02-14", "19:30", "Knights", "Bulldogs", "McDonald Jones Stadium"),
+    Match("2026-02-14", "20:00", "Dragons", "Rabbitohs", "Netstrata Jubilee Stadium"),
+    Match("2026-02-15", "16:00", "Sharks", "Eels", "PointsBet Stadium"),
+]
 
+# ----------------------------
+# AUTO FIXTURE PULL (optional)
+# ----------------------------
+FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 
-if MODE == "AUTO":
-    fixtures = fetch_upcoming_fixtures(days_ahead=7)
-else:
-    fixtures = FIXTURES
+def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
     """
-    Pulls the next `days_ahead` days of fixtures from FixtureDownload JSON.
+    Pulls the next `days_ahead` days of fixtures from FixtureDownload JSON feed.
     """
     now = datetime.now(SYDNEY_TZ)
-    end = now.replace(hour=23, minute=59, second=59)  # end of today
-    end = end.replace()  # no-op, keeps it clear
     end = now + pd.Timedelta(days=days_ahead)
 
-    r = requests.get(FIXTURE_FEED_URL, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    r = requests.get(
+        FIXTURE_FEED_URL,
+        timeout=30,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
     r.raise_for_status()
     data = r.json()
 
     matches: List[Match] = []
 
-    # Expected schema: list of fixtures with date/time + home/away fields.
-    # We'll handle a couple common key variants to be safe.
     for item in data:
-        # Date handling
         dt_str = item.get("date") or item.get("Date") or item.get("startDate") or item.get("StartDate")
         if not dt_str:
             continue
 
-        # Many feeds are ISO8601. Parse with pandas (handles lots of formats).
         try:
             dt = pd.to_datetime(dt_str, utc=True)
         except Exception:
             continue
 
-        # Convert to Sydney time
         dt = dt.tz_convert(SYDNEY_TZ)
 
-        if dt.to_pydatetime() < now or dt.to_pydatetime() > (now + pd.Timedelta(days=days_ahead)).to_pydatetime():
+        if dt.to_pydatetime() < now or dt.to_pydatetime() > end.to_pydatetime():
             continue
 
         home = item.get("home") or item.get("Home") or item.get("homeTeam") or item.get("HomeTeam")
@@ -86,16 +94,16 @@ else:
                 kickoff_local=dt.strftime("%H:%M"),
                 home=str(home).strip(),
                 away=str(away).strip(),
-                venue=str(venue).strip()
+                venue=str(venue).strip(),
             )
         )
 
-    # Sort by time
     matches.sort(key=lambda m: (m.date, m.kickoff_local))
     return matches
 
-
+# ----------------------------
 # Simple priors (small because trials are volatile)
+# ----------------------------
 TEAM_RATING: Dict[str, float] = {
     "Storm": 0.35,
     "Panthers": 0.35,
@@ -119,11 +127,10 @@ HOME_ADV = 0.10
 TRIAL_NOISE_SD = 0.55
 BASE_POINTS = 20.0
 
-
-# ---------- TEAM LIST SCRAPE (starters only) ----------
-
+# ----------------------------
+# TEAM LIST SCRAPE (starters only 1–13)
+# ----------------------------
 def _strip_html_to_text(html: str) -> str:
-    # crude but effective: remove tags, keep separators
     html = re.sub(r"<(script|style)[\s\S]*?</\1>", " ", html, flags=re.IGNORECASE)
     text = re.sub(r"<[^>]+>", " ", html)
     text = re.sub(r"&nbsp;|&#160;", " ", text)
@@ -132,18 +139,14 @@ def _strip_html_to_text(html: str) -> str:
 
 def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
     """
-    Scrapes NRL team list article text and extracts mappings like:
-      "Fullback for Dolphins is number 1 Jake Averillo"
-    Returns: { "Dolphins": {1:"Jake Averillo", 2:"Jamayne Isaako", ...}, ... }
-    Only includes starters 1–13.
+    Extracts: { "Dolphins": {1:"Jake Averillo", 2:"Jamayne Isaako", ...}, ... }
+    Starters only (1–13).
     """
     try:
-        r = requests.get(url, timeout=30)
+        r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
         text = _strip_html_to_text(r.text)
 
-        # Pattern: "... for TEAM is number N NAME"
-        # We grab TEAM, N, NAME (NAME ends before " Winger for" etc, so keep conservative)
         pat = re.compile(r"for ([A-Za-z \-']+?) is number (\d{1,2}) ([A-Za-z \-'.]+)")
         starters: Dict[str, Dict[int, str]] = {}
 
@@ -152,36 +155,36 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
             num = int(num_s)
             name = name.strip()
 
-            # Only starters
             if not (1 <= num <= 13):
                 continue
 
-            # Clean possible trailing words that sometimes leak in
-            # e.g. "Brian Pouniu Centre" (rare)
-            name = re.sub(r"\b(Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|2nd Row|Lock)\b.*$", "", name).strip()
+            name = re.sub(
+                r"\b(Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|2nd Row|Lock)\b.*$",
+                "",
+                name
+            ).strip()
+
             if not name:
                 continue
 
             starters.setdefault(team, {})
-            # Keep first seen; team list pages sometimes repeat
             starters[team].setdefault(num, name)
 
         return starters
-
     except Exception:
         return {}
 
-
-# ---------- MODEL ----------
-
+# ----------------------------
+# MODEL
+# ----------------------------
 def simulate_match(home: str, away: str, n: int = 20000, seed: int = 7) -> Tuple[float, float, float, float]:
     random.seed(seed)
     hr = TEAM_RATING.get(home, 0.0) + HOME_ADV
     ar = TEAM_RATING.get(away, 0.0)
 
     home_wins = 0
-    margins = []
-    totals = []
+    margins: List[int] = []
+    totals: List[int] = []
 
     for _ in range(n):
         h_eff = hr + random.gauss(0, TRIAL_NOISE_SD)
@@ -208,19 +211,12 @@ def simulate_match(home: str, away: str, n: int = 20000, seed: int = 7) -> Tuple
 
     return win_prob, exp_margin, exp_total, conf
 
-
-# ---------- TRY SCORERS ----------
-
+# ----------------------------
+# TRY SCORERS
+# ----------------------------
 def _try_probs_named(starters: Dict[int, str], team_exp_points: float) -> List[Tuple[str, float]]:
-    """
-    Named try scorers based on starters only.
-    Uses a simple positional weighting (wings highest, then FB, centres, edges).
-    Outputs top 3.
-    """
     exp_tries = max(1.5, team_exp_points / 4.2)
 
-    # weights by jersey number
-    # (2,5 wings) > (1 FB) > (3,4 centres) > (11,12 edges) > others
     weights_by_num = {
         2: 0.24, 5: 0.24,
         1: 0.14,
@@ -228,13 +224,11 @@ def _try_probs_named(starters: Dict[int, str], team_exp_points: float) -> List[T
         11: 0.08, 12: 0.08,
     }
 
-    # If we don't have enough mapped names, return empty and let fallback handle it.
     if not starters or len(starters) < 7:
         return []
 
-    out = []
+    out: List[Tuple[str, float]] = []
     remaining_share = 1.0 - sum(weights_by_num.values())
-    # distribute remaining share across the rest of starters evenly
     other_nums = [n for n in range(1, 14) if n not in weights_by_num]
     per_other = max(0.0, remaining_share / len(other_nums))
 
@@ -244,7 +238,7 @@ def _try_probs_named(starters: Dict[int, str], team_exp_points: float) -> List[T
             continue
         share = weights_by_num.get(num, per_other)
         lam = exp_tries * share
-        p = 1 - math.exp(-lam)  # P(at least 1 try)
+        p = 1 - math.exp(-lam)
         out.append((name, p))
 
     out.sort(key=lambda x: x[1], reverse=True)
@@ -259,7 +253,7 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
         ("Edge", 0.10),
         ("Other", 0.06),
     ]
-    out = []
+    out: List[Tuple[str, float]] = []
     for name, share in buckets:
         lam = exp_tries * share
         p = 1 - math.exp(-lam)
@@ -267,17 +261,16 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
     out.sort(key=lambda x: x[1], reverse=True)
     return out[:3]
 
-
-def build_predictions():
-
-    # Choose fixtures based on MODE
+# ----------------------------
+# BUILD OUTPUT
+# ----------------------------
+def build_predictions() -> pd.DataFrame:
     if MODE == "AUTO":
         fixtures = fetch_upcoming_fixtures(days_ahead=7)
     else:
         fixtures = FIXTURES
 
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
-
     rows = []
 
     for m in fixtures:
@@ -291,11 +284,11 @@ def build_predictions():
 
         if not home_named:
             home_named = _try_profiles_fallback(exp_home_pts)
-
         if not away_named:
             away_named = _try_profiles_fallback(exp_away_pts)
 
         rows.append({
+            "mode": MODE,
             "date": m.date,
             "kickoff_local": m.kickoff_local,
             "venue": m.venue,
@@ -313,32 +306,6 @@ def build_predictions():
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
-
-       
-        if not home_named:
-            home_named = _try_profiles_fallback(exp_home_pts)
-        if not away_named:
-            away_named = _try_profiles_fallback(exp_away_pts)
-
-        rows.append({
-            "date": m.date,
-            "kickoff_local": m.kickoff_local,
-            "venue": m.venue,
-            "home": m.home,
-            "away": m.away,
-            "home_win_prob": round(win_prob, 3),
-            "exp_margin_home": round(exp_margin, 1),
-            "exp_total": round(exp_total, 1),
-            "confidence": round(conf, 2),
-            "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
-            "away_top_try": " | ".join([f"{n} {p:.0%}" for n, p in away_named]),
-            "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
-            "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
-        })
-
-    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
-    return df
-
 
 if __name__ == "__main__":
     df = build_predictions()
