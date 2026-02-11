@@ -3,8 +3,9 @@ import random
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
+import numpy as np
 import pandas as pd
 import requests
 from zoneinfo import ZoneInfo
@@ -17,9 +18,14 @@ from zoneinfo import ZoneInfo
 MODE = "TRIALS"
 
 # ----------------------------
-# Team lists (trials page)
+# Team lists (trials page) – optional
 # ----------------------------
 TEAMLIST_URL = "https://www.nrl.com/news/2026/02/10/witzer-pre-season-challenge-team-lists-round-2/"
+
+# ----------------------------
+# Results source for ratings (Attack/Defence)
+# ----------------------------
+RESULTS_URL = "https://fixturedownload.com/results/nrl-2026"
 
 @dataclass
 class Match:
@@ -50,33 +56,26 @@ FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 
 def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
-    """
-    Pulls the next `days_ahead` days of fixtures from FixtureDownload JSON feed.
-    """
     now = datetime.now(SYDNEY_TZ)
     end = now + pd.Timedelta(days=days_ahead)
 
     r = requests.get(
         FIXTURE_FEED_URL,
         timeout=30,
-        headers={"User-Agent": "Mozilla/5.0"}
+        headers={"User-Agent": "Mozilla/5.0"},
     )
     r.raise_for_status()
     data = r.json()
 
     matches: List[Match] = []
-
     for item in data:
         dt_str = item.get("date") or item.get("Date") or item.get("startDate") or item.get("StartDate")
         if not dt_str:
             continue
-
         try:
-            dt = pd.to_datetime(dt_str, utc=True)
+            dt = pd.to_datetime(dt_str, utc=True).tz_convert(SYDNEY_TZ)
         except Exception:
             continue
-
-        dt = dt.tz_convert(SYDNEY_TZ)
 
         if dt.to_pydatetime() < now or dt.to_pydatetime() > end.to_pydatetime():
             continue
@@ -102,33 +101,7 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
     return matches
 
 # ----------------------------
-# Simple priors (small because trials are volatile)
-# ----------------------------
-TEAM_RATING: Dict[str, float] = {
-    "Storm": 0.35,
-    "Panthers": 0.35,
-    "Roosters": 0.25,
-    "Sharks": 0.20,
-    "Bulldogs": 0.15,
-    "Sea Eagles": 0.10,
-    "Raiders": 0.05,
-    "Cowboys": 0.05,
-    "Warriors": 0.05,
-    "Dolphins": 0.05,
-    "Rabbitohs": 0.05,
-    "Titans": 0.00,
-    "Eels": 0.00,
-    "Dragons": -0.05,
-    "Knights": -0.05,
-    "Wests Tigers": -0.10,
-}
-
-HOME_ADV = 0.10
-TRIAL_NOISE_SD = 0.55
-BASE_POINTS = 20.0
-
-# ----------------------------
-# TEAM LIST SCRAPE (starters only 1–13)
+# TEAM LIST SCRAPE (optional; may fallback)
 # ----------------------------
 def _strip_html_to_text(html: str) -> str:
     html = re.sub(r"<(script|style)[\s\S]*?</\1>", " ", html, flags=re.IGNORECASE)
@@ -138,10 +111,6 @@ def _strip_html_to_text(html: str) -> str:
     return text
 
 def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
-    """
-    Extracts: { "Dolphins": {1:"Jake Averillo", 2:"Jamayne Isaako", ...}, ... }
-    Starters only (1–13).
-    """
     try:
         r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
@@ -154,19 +123,15 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
             team = team.strip()
             num = int(num_s)
             name = name.strip()
-
             if not (1 <= num <= 13):
                 continue
-
             name = re.sub(
                 r"\b(Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|2nd Row|Lock)\b.*$",
                 "",
-                name
+                name,
             ).strip()
-
             if not name:
                 continue
-
             starters.setdefault(team, {})
             starters[team].setdefault(num, name)
 
@@ -175,63 +140,168 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         return {}
 
 # ----------------------------
-# MODEL
+# RESULTS INGEST (for Attack/Defence fitting)
 # ----------------------------
-def simulate_match(home: str, away: str, n: int = 20000, seed: int = 7) -> Tuple[float, float, float, float]:
-    random.seed(seed)
-    hr = TEAM_RATING.get(home, 0.0) + HOME_ADV
-    ar = TEAM_RATING.get(away, 0.0)
+def fetch_completed_results() -> pd.DataFrame:
+    """
+    Returns dataframe with columns: home, away, home_pts, away_pts
+    Uses FixtureDownload results table.
+    """
+    r = requests.get(RESULTS_URL, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    r.raise_for_status()
 
-    home_wins = 0
-    margins: List[int] = []
-    totals: List[int] = []
+    # First table on the page is the fixture/results table
+    tables = pd.read_html(r.text)
+    df = tables[0].copy()
+
+    # Expected columns (site may vary slightly): Home Team, Away Team, Result
+    # Normalise column names
+    df.columns = [str(c).strip() for c in df.columns]
+    home_col = next((c for c in df.columns if "Home" in c), None)
+    away_col = next((c for c in df.columns if "Away" in c), None)
+    res_col  = next((c for c in df.columns if "Result" in c), None)
+
+    if not home_col or not away_col or not res_col:
+        return pd.DataFrame(columns=["home", "away", "home_pts", "away_pts"])
+
+    out_rows = []
+    for _, row in df.iterrows():
+        home = str(row.get(home_col, "")).strip()
+        away = str(row.get(away_col, "")).strip()
+        res  = str(row.get(res_col, "")).strip()
+
+        # Completed matches look like "20 - 18" (future matches are "-" or empty)
+        m = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", res)
+        if not m:
+            continue
+
+        out_rows.append({
+            "home": home,
+            "away": away,
+            "home_pts": int(m.group(1)),
+            "away_pts": int(m.group(2)),
+        })
+
+    return pd.DataFrame(out_rows)
+
+def fit_attack_defence(results: pd.DataFrame, teams: List[str]) -> Optional[Dict[str, object]]:
+    """
+    Least squares fit:
+      HomePts = mu + home_adv + atk_home - def_away
+      AwayPts = mu          + atk_away - def_home
+
+    Returns dict with mu, home_adv, atk (dict), dfn (dict)
+    If insufficient results, returns None.
+    """
+    if results is None or results.empty or len(results) < 8:
+        return None
+
+    team_to_i = {t: i for i, t in enumerate(teams)}
+    n_teams = len(teams)
+
+    # Parameters: [mu, home_adv, atk_0..atk_{T-1}, def_0..def_{T-1}]
+    p = 2 + 2 * n_teams
+    X = []
+    y = []
+
+    for _, r in results.iterrows():
+        h = r["home"]; a = r["away"]
+        if h not in team_to_i or a not in team_to_i:
+            continue
+        hi = team_to_i[h]; ai = team_to_i[a]
+
+        # Home score row
+        row = np.zeros(p)
+        row[0] = 1.0                 # mu
+        row[1] = 1.0                 # home_adv
+        row[2 + hi] = 1.0            # atk_home
+        row[2 + n_teams + ai] = -1.0 # -def_away
+        X.append(row); y.append(float(r["home_pts"]))
+
+        # Away score row
+        row = np.zeros(p)
+        row[0] = 1.0                 # mu
+        row[1] = 0.0                 # no home_adv
+        row[2 + ai] = 1.0            # atk_away
+        row[2 + n_teams + hi] = -1.0 # -def_home
+        X.append(row); y.append(float(r["away_pts"]))
+
+    if len(y) < 16:
+        return None
+
+    X = np.vstack(X)
+    y = np.array(y)
+
+    # Ridge to stabilise early-season fits
+    ridge = 1.0
+    XtX = X.T @ X + ridge * np.eye(p)
+    Xty = X.T @ y
+    beta = np.linalg.solve(XtX, Xty)
+
+    mu = float(beta[0])
+    home_adv = float(beta[1])
+
+    atk = beta[2:2+n_teams].copy()
+    dfn = beta[2+n_teams:2+2*n_teams].copy()
+
+    # Centre them (identifiability)
+    atk -= atk.mean()
+    dfn -= dfn.mean()
+
+    atk_map = {t: float(atk[team_to_i[t]]) for t in teams}
+    dfn_map = {t: float(dfn[team_to_i[t]]) for t in teams}
+
+    return {"mu": mu, "home_adv": home_adv, "atk": atk_map, "dfn": dfn_map}
+
+def expected_points(model: Dict[str, object], home: str, away: str) -> Tuple[float, float]:
+    mu = model["mu"]
+    ha = model["home_adv"]
+    atk = model["atk"]
+    dfn = model["dfn"]
+    home_pts = mu + ha + atk.get(home, 0.0) - dfn.get(away, 0.0)
+    away_pts = mu +      atk.get(away, 0.0) - dfn.get(home, 0.0)
+    # clamp to sensible range
+    return (max(4.0, min(40.0, home_pts)), max(4.0, min(40.0, away_pts)))
+
+def simulate_match_ad(model: Dict[str, object], home: str, away: str, n: int = 20000, seed: int = 7) -> Tuple[float, float, float, float]:
+    random.seed(seed)
+    hw = 0
+    margins = []
+    totals = []
+
+    exp_home, exp_away = expected_points(model, home, away)
+
+    # score noise (keeps it realistic without needing a full Poisson conversion)
+    sd = 8.5
 
     for _ in range(n):
-        h_eff = hr + random.gauss(0, TRIAL_NOISE_SD)
-        a_eff = ar + random.gauss(0, TRIAL_NOISE_SD)
+        h = max(0, int(round(random.gauss(exp_home, sd) / 2.0) * 2))
+        a = max(0, int(round(random.gauss(exp_away, sd) / 2.0) * 2))
+        if h > a:
+            hw += 1
+        margins.append(h - a)
+        totals.append(h + a)
 
-        exp_home = BASE_POINTS + 6.0 * (h_eff - a_eff)
-        exp_away = BASE_POINTS + 6.0 * (a_eff - h_eff)
-
-        exp_home = max(6.0, min(36.0, exp_home))
-        exp_away = max(6.0, min(36.0, exp_away))
-
-        h_score = max(0, int(round(random.gauss(exp_home, 8.0) / 2.0) * 2))
-        a_score = max(0, int(round(random.gauss(exp_away, 8.0) / 2.0) * 2))
-
-        if h_score > a_score:
-            home_wins += 1
-        margins.append(h_score - a_score)
-        totals.append(h_score + a_score)
-
-    win_prob = home_wins / n
+    win_prob = hw / n
     exp_margin = sum(margins) / n
     exp_total = sum(totals) / n
-    conf = min(0.70, 0.45 + abs(win_prob - 0.5) * 0.9)
-
+    conf = min(0.80, 0.50 + abs(win_prob - 0.5) * 0.9)
     return win_prob, exp_margin, exp_total, conf
 
 # ----------------------------
-# TRY SCORERS
+# TRY SCORERS (still optional; will fallback if scrape fails)
 # ----------------------------
 def _try_probs_named(starters: Dict[int, str], team_exp_points: float) -> List[Tuple[str, float]]:
-    exp_tries = max(1.5, team_exp_points / 4.2)
-
-    weights_by_num = {
-        2: 0.24, 5: 0.24,
-        1: 0.14,
-        3: 0.12, 4: 0.12,
-        11: 0.08, 12: 0.08,
-    }
-
+    exp_tries = max(1.0, team_exp_points / 4.2)
+    weights_by_num = {2: 0.24, 5: 0.24, 1: 0.14, 3: 0.12, 4: 0.12, 11: 0.08, 12: 0.08}
     if not starters or len(starters) < 7:
         return []
 
-    out: List[Tuple[str, float]] = []
     remaining_share = 1.0 - sum(weights_by_num.values())
     other_nums = [n for n in range(1, 14) if n not in weights_by_num]
     per_other = max(0.0, remaining_share / len(other_nums))
 
+    out = []
     for num in range(1, 14):
         name = starters.get(num)
         if not name:
@@ -245,15 +315,9 @@ def _try_probs_named(starters: Dict[int, str], team_exp_points: float) -> List[T
     return out[:3]
 
 def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
-    exp_tries = max(1.5, team_exp_points / 4.2)
-    buckets = [
-        ("Winger", 0.44),
-        ("Centre", 0.28),
-        ("Fullback", 0.12),
-        ("Edge", 0.10),
-        ("Other", 0.06),
-    ]
-    out: List[Tuple[str, float]] = []
+    exp_tries = max(1.0, team_exp_points / 4.2)
+    buckets = [("Winger", 0.44), ("Centre", 0.28), ("Fullback", 0.12), ("Edge", 0.10), ("Other", 0.06)]
+    out = []
     for name, share in buckets:
         lam = exp_tries * share
         p = 1 - math.exp(-lam)
@@ -270,18 +334,29 @@ def build_predictions() -> pd.DataFrame:
     else:
         fixtures = FIXTURES
 
+    # Fit Attack/Defence model when there are enough completed results
+    teams = sorted(list({m.home for m in fixtures} | {m.away for m in fixtures}))
+    results = fetch_completed_results()
+    ad_model = fit_attack_defence(results, teams)
+
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     rows = []
 
     for m in fixtures:
-        win_prob, exp_margin, exp_total, conf = simulate_match(m.home, m.away)
-
-        exp_home_pts = (exp_total + exp_margin) / 2.0
-        exp_away_pts = (exp_total - exp_margin) / 2.0
+        if ad_model:
+            win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away)
+            exp_home_pts = (exp_total + exp_margin) / 2.0
+            exp_away_pts = (exp_total - exp_margin) / 2.0
+            rating_mode = "ATTACK_DEFENCE"
+        else:
+            # fallback early season/trials: simple priors
+            win_prob, exp_margin, exp_total, conf = 0.50, 0.0, 40.0, 0.45
+            exp_home_pts = exp_total / 2.0
+            exp_away_pts = exp_total / 2.0
+            rating_mode = "FALLBACK"
 
         home_named = _try_probs_named(starters_by_team.get(m.home, {}), exp_home_pts)
         away_named = _try_probs_named(starters_by_team.get(m.away, {}), exp_away_pts)
-
         if not home_named:
             home_named = _try_profiles_fallback(exp_home_pts)
         if not away_named:
@@ -289,6 +364,7 @@ def build_predictions() -> pd.DataFrame:
 
         rows.append({
             "mode": MODE,
+            "rating_mode": rating_mode,
             "date": m.date,
             "kickoff_local": m.kickoff_local,
             "venue": m.venue,
