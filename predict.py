@@ -1,6 +1,12 @@
 import math
 import random
 import re
+# ----------------------------
+# RUN MODE
+# "TRIALS" = use hardcoded fixtures
+# "AUTO"   = pull upcoming fixtures automatically
+# ----------------------------
+MODE = "TRIALS"
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Tuple
@@ -29,7 +35,10 @@ FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 
-def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
+if MODE == "AUTO":
+    fixtures = fetch_upcoming_fixtures(days_ahead=7)
+else:
+    fixtures = FIXTURES
     """
     Pulls the next `days_ahead` days of fixtures from FixtureDownload JSON.
     """
