@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
-
+from io import StringIO
 import numpy as np
 import pandas as pd
 import requests
@@ -151,7 +151,7 @@ def fetch_completed_results() -> pd.DataFrame:
     r.raise_for_status()
 
     # First table on the page is the fixture/results table
-    tables = pd.read_html(r.text)
+    tables = pd.read_html(StringIO(r.text))
     df = tables[0].copy()
 
     # Expected columns (site may vary slightly): Home Team, Away Team, Result
