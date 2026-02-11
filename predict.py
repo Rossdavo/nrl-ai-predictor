@@ -270,7 +270,7 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
 
 def build_predictions():
 
-    # Select fixture source
+    # Choose fixtures based on MODE
     if MODE == "AUTO":
         fixtures = fetch_upcoming_fixtures(days_ahead=7)
     else:
@@ -291,6 +291,7 @@ def build_predictions():
 
         if not home_named:
             home_named = _try_profiles_fallback(exp_home_pts)
+
         if not away_named:
             away_named = _try_profiles_fallback(exp_away_pts)
 
@@ -312,6 +313,8 @@ def build_predictions():
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
+
+       
         if not home_named:
             home_named = _try_profiles_fallback(exp_home_pts)
         if not away_named:
