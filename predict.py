@@ -7,7 +7,7 @@ from typing import List, Dict, Tuple
 
 import pandas as pd
 import requests
-
+from zoneinfo import ZoneInfo
 # ----------------------------
 # Trial-friendly starter model + NAMED try scorers (starters only 1–13)
 # Team lists are scraped from the official NRL Round 2 trials team list page.
@@ -24,17 +24,67 @@ class Match:
     away: str
     venue: str
 
-# This week's trial fixtures (Sydney dates)
-FIXTURES: List[Match] = [
-    Match("2026-02-12", "19:00", "Dolphins", "Titans", "Kayo Stadium"),
-    Match("2026-02-13", "18:00", "Raiders", "Storm", "Seiffert Oval"),
-    Match("2026-02-13", "20:00", "Cowboys", "Panthers", "Queensland Country Bank Stadium"),
-    Match("2026-02-14", "15:00", "Warriors", "Sea Eagles", "Go Media Stadium"),
-    Match("2026-02-14", "17:30", "Wests Tigers", "Roosters", "Leichhardt Oval"),
-    Match("2026-02-14", "19:30", "Knights", "Bulldogs", "McDonald Jones Stadium"),
-    Match("2026-02-14", "20:00", "Dragons", "Rabbitohs", "Netstrata Jubilee Stadium"),
-    Match("2026-02-15", "16:00", "Sharks", "Eels", "PointsBet Stadium"),
-]
+# --- AUTO FIXTURE PULL (next 7 days) ---
+FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
+
+SYDNEY_TZ = ZoneInfo("Australia/Sydney")
+
+def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
+    """
+    Pulls the next `days_ahead` days of fixtures from FixtureDownload JSON.
+    """
+    now = datetime.now(SYDNEY_TZ)
+    end = now.replace(hour=23, minute=59, second=59)  # end of today
+    end = end.replace()  # no-op, keeps it clear
+    end = now + pd.Timedelta(days=days_ahead)
+
+    r = requests.get(FIXTURE_FEED_URL, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    r.raise_for_status()
+    data = r.json()
+
+    matches: List[Match] = []
+
+    # Expected schema: list of fixtures with date/time + home/away fields.
+    # We'll handle a couple common key variants to be safe.
+    for item in data:
+        # Date handling
+        dt_str = item.get("date") or item.get("Date") or item.get("startDate") or item.get("StartDate")
+        if not dt_str:
+            continue
+
+        # Many feeds are ISO8601. Parse with pandas (handles lots of formats).
+        try:
+            dt = pd.to_datetime(dt_str, utc=True)
+        except Exception:
+            continue
+
+        # Convert to Sydney time
+        dt = dt.tz_convert(SYDNEY_TZ)
+
+        if dt.to_pydatetime() < now or dt.to_pydatetime() > (now + pd.Timedelta(days=days_ahead)).to_pydatetime():
+            continue
+
+        home = item.get("home") or item.get("Home") or item.get("homeTeam") or item.get("HomeTeam")
+        away = item.get("away") or item.get("Away") or item.get("awayTeam") or item.get("AwayTeam")
+        venue = item.get("location") or item.get("Location") or item.get("venue") or item.get("Venue") or ""
+
+        if not home or not away:
+            continue
+
+        matches.append(
+            Match(
+                date=dt.strftime("%Y-%m-%d"),
+                kickoff_local=dt.strftime("%H:%M"),
+                home=str(home).strip(),
+                away=str(away).strip(),
+                venue=str(venue).strip()
+            )
+        )
+
+    # Sort by time
+    matches.sort(key=lambda m: (m.date, m.kickoff_local))
+    return matches
+
 
 # Simple priors (small because trials are volatile)
 TEAM_RATING: Dict[str, float] = {
@@ -213,7 +263,8 @@ def build_predictions():
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
 
     rows = []
-    for m in FIXTURES:
+    fixtures = fetch_upcoming_fixtures(days_ahead=7)
+for m in fixtures:
         win_prob, exp_margin, exp_total, conf = simulate_match(m.home, m.away)
 
         exp_home_pts = (exp_total + exp_margin) / 2.0
