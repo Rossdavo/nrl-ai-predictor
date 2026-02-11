@@ -269,11 +269,18 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
 
 
 def build_predictions():
+
+    # Select fixture source
+    if MODE == "AUTO":
+        fixtures = fetch_upcoming_fixtures(days_ahead=7)
+    else:
+        fixtures = FIXTURES
+
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
 
     rows = []
-    fixtures = fetch_upcoming_fixtures(days_ahead=7)
-for m in fixtures:
+
+    for m in fixtures:
         win_prob, exp_margin, exp_total, conf = simulate_match(m.home, m.away)
 
         exp_home_pts = (exp_total + exp_margin) / 2.0
@@ -282,6 +289,29 @@ for m in fixtures:
         home_named = _try_probs_named(starters_by_team.get(m.home, {}), exp_home_pts)
         away_named = _try_probs_named(starters_by_team.get(m.away, {}), exp_away_pts)
 
+        if not home_named:
+            home_named = _try_profiles_fallback(exp_home_pts)
+        if not away_named:
+            away_named = _try_profiles_fallback(exp_away_pts)
+
+        rows.append({
+            "date": m.date,
+            "kickoff_local": m.kickoff_local,
+            "venue": m.venue,
+            "home": m.home,
+            "away": m.away,
+            "home_win_prob": round(win_prob, 3),
+            "exp_margin_home": round(exp_margin, 1),
+            "exp_total": round(exp_total, 1),
+            "confidence": round(conf, 2),
+            "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
+            "away_top_try": " | ".join([f"{n} {p:.0%}" for n, p in away_named]),
+            "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
+            "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+        })
+
+    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
+    return df
         if not home_named:
             home_named = _try_profiles_fallback(exp_home_pts)
         if not away_named:
