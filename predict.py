@@ -553,6 +553,7 @@ def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, fl
             "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
+
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
 
