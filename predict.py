@@ -265,21 +265,26 @@ def fit_attack_defence(
       HomePts = mu + home_adv + atk_home - def_away
       AwayPts = mu          + atk_away - def_home
 
-    Recency weighting: weight = 0.5 ** (age_days / half_life_days)
+    Recency weighting:
+      weight = 0.5 ** (age_days / half_life_days)
     """
-    if results is None or results.empty or len(results) < 8:
+    if results is None or results.empty:
         return None
 
-    # Drop rows without teams
     results = results.dropna(subset=["home", "away", "home_pts", "away_pts"]).copy()
     if results.empty:
         return None
 
-    # Compute weights (if date missing, weight = 1)
+    # Reduce threshold so model can start earlier
+    if len(results) < 4:
+        return None
+
     now = pd.Timestamp.now(tz=None).normalize()
+
+    # If date missing/unparseable, treat as age 0 (weight 1)
     if "date" in results.columns:
-        # date may be tz-naive; that’s fine for age
-        age_days = (now - pd.to_datetime(results["date"], errors="coerce")).dt.days
+        d = pd.to_datetime(results["date"], errors="coerce")
+        age_days = (now - d).dt.days
         age_days = age_days.fillna(0).clip(lower=0)
         weights = (0.5 ** (age_days / float(half_life_days))).astype(float).values
     else:
@@ -288,21 +293,23 @@ def fit_attack_defence(
     team_to_i = {t: i for i, t in enumerate(teams)}
     n_teams = len(teams)
 
-    # Params: [mu, home_adv, atk_0..atk_{T-1}, def_0..def_{T-1}]
-    p = 2 + 2 * n_teams
+    p = 2 + 2 * n_teams  # [mu, home_adv, atk..., def...]
+
     X_rows = []
     y_vals = []
     w_vals = []
 
     for idx, rrow in results.iterrows():
-        h = rrow["home"]; a = rrow["away"]
+        h = rrow["home"]
+        a = rrow["away"]
         if h not in team_to_i or a not in team_to_i:
             continue
 
         w = float(weights[list(results.index).index(idx)]) if len(weights) == len(results) else 1.0
-        hi = team_to_i[h]; ai = team_to_i[a]
+        hi = team_to_i[h]
+        ai = team_to_i[a]
 
-        # Home score row
+        # Home points equation
         row = np.zeros(p)
         row[0] = 1.0
         row[1] = 1.0
@@ -310,7 +317,7 @@ def fit_attack_defence(
         row[2 + n_teams + ai] = -1.0
         X_rows.append(row); y_vals.append(float(rrow["home_pts"])); w_vals.append(w)
 
-        # Away score row
+        # Away points equation
         row = np.zeros(p)
         row[0] = 1.0
         row[1] = 0.0
@@ -318,19 +325,17 @@ def fit_attack_defence(
         row[2 + n_teams + hi] = -1.0
         X_rows.append(row); y_vals.append(float(rrow["away_pts"])); w_vals.append(w)
 
-    if len(y_vals) < 16:
+    if len(y_vals) < 8:
         return None
 
     X = np.vstack(X_rows)
     y = np.array(y_vals)
     w = np.array(w_vals)
 
-    # Apply weights: solve (sqrt(w)X)b = (sqrt(w)y)
     sw = np.sqrt(w)
     Xw = X * sw[:, None]
     yw = y * sw
 
-    # Ridge
     ridge = 1.0
     XtX = Xw.T @ Xw + ridge * np.eye(p)
     Xty = Xw.T @ yw
@@ -339,8 +344,8 @@ def fit_attack_defence(
     mu = float(beta[0])
     home_adv = float(beta[1])
 
-    atk = beta[2:2+n_teams].copy()
-    dfn = beta[2+n_teams:2+2*n_teams].copy()
+    atk = beta[2:2 + n_teams].copy()
+    dfn = beta[2 + n_teams:2 + 2 * n_teams].copy()
 
     # Centre (identifiability)
     atk -= atk.mean()
