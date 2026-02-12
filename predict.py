@@ -78,6 +78,8 @@ TEAM_REGION = {
     "Panthers": "NSW",
 }
 
+ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
+
 def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, float]:
     """
     Returns (home_points_delta, away_points_delta).
@@ -492,9 +494,9 @@ def build_predictions() -> pd.DataFrame:
     else:
         fixtures = FIXTURES
 
-    teams = sorted(list({m.home for m in fixtures} | {m.away for m in fixtures}))
-    results = fetch_completed_results()
-    ad_model = fit_attack_defence(results, teams)
+    teams = ALL_TEAMS
+results = fetch_completed_results()
+ad_model = fit_attack_defence(results, teams)
 
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
