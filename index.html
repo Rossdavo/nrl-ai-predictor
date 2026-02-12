@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>NRL Trials – AI Predictions</title>
+  <title>NRL AI Predictions</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 28px; }
     h1 { margin-bottom: 6px; }
@@ -14,137 +14,146 @@
   </style>
 </head>
 <body>
-  <h1>NRL Trials – AI Predictions</h1>
-  <p class="note">These are trial-game estimates (higher uncertainty due to rotations). Use as a guide for tipping/betting/performance analysis.</p>
+  <h1>NRL AI Predictions</h1>
+  <p class="note">Automated predictions with model probabilities, odds comparison, and value detection.</p>
   <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
-      <th>Date</th>
-      <th>Kickoff</th>
-      <th>Venue</th>
-      <th>Home</th>
-      <th>Away</th>
-      <th>Home Win %</th>
-      <th>Exp Margin (Home)</th>
-      <th>Exp Total</th>
-      <th>Confidence</th>
-      <th>Home Try Profiles (Top 3)</th>
-      <th>Away Try Profiles (Top 3)</th>
-      <th>Generated</th>
+      <th>date</th>
+      <th>kickoff_local</th>
+      <th>home</th>
+      <th>away</th>
+      <th>home_win_prob</th>
+      <th>exp_margin_home</th>
+      <th>exp_total</th>
+      <th>confidence</th>
+      <th>home_odds</th>
+      <th>away_odds</th>
+      <th>value_flag</th>
+      <th>home_top_try</th>
+      <th>away_top_try</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>2026-02-12</td>
       <td>19:00</td>
-      <td>Kayo Stadium</td>
       <td>Dolphins</td>
       <td>Titans</td>
-      <td>51.9%</td>
-      <td>1.7</td>
-      <td>40.3</td>
-      <td>0.47</td>
-      <td>Winger 1 67% | Winger 2 67% | Centre 1 50%</td>
-      <td>Winger 1 64% | Winger 2 64% | Centre 1 47%</td>
-      <td>2026-02-11 21:21 UTC</td>
+      <td>0.5</td>
+      <td>0.0</td>
+      <td>40.0</td>
+      <td>0.45</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td></td>
+      <td>Winger 88% | Centre 74% | Fullback 44%</td>
+      <td>Sialetili Faeamani 68% | Jensen Taumoepeau 68% | Jaylan De Groot 49%</td>
     </tr>
     <tr>
       <td>2026-02-13</td>
       <td>18:00</td>
-      <td>GIO Stadium</td>
       <td>Raiders</td>
       <td>Storm</td>
-      <td>40.6%</td>
-      <td>-2.4</td>
-      <td>40.3</td>
-      <td>0.53</td>
-      <td>Winger 1 63% | Winger 2 63% | Centre 1 47%</td>
-      <td>Winger 1 67% | Winger 2 67% | Centre 1 51%</td>
-      <td>2026-02-11 21:21 UTC</td>
+      <td>0.5</td>
+      <td>0.0</td>
+      <td>40.0</td>
+      <td>0.45</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td></td>
+      <td>Winger 88% | Centre 74% | Fullback 44%</td>
+      <td>Luke Cesari 68% | Siulagi Tuimalatu-Brown 68% | Hugo Peel 49%</td>
     </tr>
     <tr>
       <td>2026-02-13</td>
       <td>20:00</td>
-      <td>Queensland Country Bank Stadium</td>
       <td>Cowboys</td>
       <td>Panthers</td>
-      <td>40.6%</td>
-      <td>-2.4</td>
-      <td>40.3</td>
-      <td>0.53</td>
-      <td>Winger 1 63% | Winger 2 63% | Centre 1 47%</td>
-      <td>Winger 1 67% | Winger 2 67% | Centre 1 51%</td>
-      <td>2026-02-11 21:21 UTC</td>
+      <td>0.5</td>
+      <td>0.0</td>
+      <td>40.0</td>
+      <td>0.45</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td></td>
+      <td>Winger 88% | Centre 74% | Fullback 44%</td>
+      <td>Jesse McLean 68% | Nick Murphy 68% | Jaxen Edgar 49%</td>
     </tr>
     <tr>
       <td>2026-02-14</td>
       <td>15:00</td>
-      <td>Go Media Stadium</td>
       <td>Warriors</td>
       <td>Sea Eagles</td>
-      <td>48.6%</td>
       <td>0.5</td>
-      <td>40.3</td>
-      <td>0.46</td>
-      <td>Winger 1 66% | Winger 2 66% | Centre 1 49%</td>
-      <td>Winger 1 65% | Winger 2 65% | Centre 1 48%</td>
-      <td>2026-02-11 21:21 UTC</td>
+      <td>0.0</td>
+      <td>40.0</td>
+      <td>0.45</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td></td>
+      <td>Winger 88% | Centre 74% | Fullback 44%</td>
+      <td>Blake Wilson 68% | Navren Willett 68% | Blake Metcalfe 49%</td>
     </tr>
     <tr>
       <td>2026-02-14</td>
       <td>17:30</td>
-      <td>Leichhardt Oval</td>
       <td>Wests Tigers</td>
       <td>Roosters</td>
-      <td>38.9%</td>
-      <td>-3.0</td>
-      <td>40.3</td>
-      <td>0.55</td>
-      <td>Winger 1 62% | Winger 2 62% | Centre 1 46%</td>
-      <td>Winger 1 68% | Winger 2 68% | Centre 1 51%</td>
-      <td>2026-02-11 21:21 UTC</td>
+      <td>0.5</td>
+      <td>0.0</td>
+      <td>40.0</td>
+      <td>0.45</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td></td>
+      <td>Winger 88% | Centre 74% | Fullback 44%</td>
+      <td>Junior Tupou 68% | Tom Rodwell 68% | Rex Bassingthwaighte 49%</td>
     </tr>
     <tr>
       <td>2026-02-14</td>
       <td>19:30</td>
-      <td>McDonald Jones Stadium</td>
       <td>Knights</td>
       <td>Bulldogs</td>
-      <td>43.8%</td>
-      <td>-1.2</td>
-      <td>40.3</td>
-      <td>0.51</td>
-      <td>Winger 1 64% | Winger 2 64% | Centre 1 48%</td>
-      <td>Winger 1 66% | Winger 2 66% | Centre 1 50%</td>
-      <td>2026-02-11 21:21 UTC</td>
+      <td>0.5</td>
+      <td>0.0</td>
+      <td>40.0</td>
+      <td>0.45</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td></td>
+      <td>Winger 88% | Centre 74% | Fullback 44%</td>
+      <td>Jonathan Sua 68% | Enari Tuala 68% | Connor Tracey 49%</td>
     </tr>
     <tr>
       <td>2026-02-14</td>
       <td>20:00</td>
-      <td>Netstrata Jubilee Stadium</td>
       <td>Dragons</td>
       <td>Rabbitohs</td>
-      <td>47.0%</td>
-      <td>-0.1</td>
-      <td>40.3</td>
-      <td>0.48</td>
-      <td>Winger 1 65% | Winger 2 65% | Centre 1 49%</td>
-      <td>Winger 1 65% | Winger 2 65% | Centre 1 49%</td>
-      <td>2026-02-11 21:21 UTC</td>
+      <td>0.5</td>
+      <td>0.0</td>
+      <td>40.0</td>
+      <td>0.45</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td></td>
+      <td>Winger 88% | Centre 74% | Fullback 44%</td>
+      <td>Bayleigh Bentley-Hape 68% | Jordi Mazzone 68% | Matthew Dufty 49%</td>
     </tr>
     <tr>
       <td>2026-02-15</td>
       <td>16:00</td>
-      <td>PointsBet Stadium</td>
       <td>Sharks</td>
       <td>Eels</td>
-      <td>56.9%</td>
-      <td>3.5</td>
-      <td>40.3</td>
-      <td>0.51</td>
-      <td>Winger 1 68% | Winger 2 68% | Centre 1 52%</td>
-      <td>Winger 1 62% | Winger 2 62% | Centre 1 46%</td>
-      <td>2026-02-11 21:21 UTC</td>
+      <td>0.5</td>
+      <td>0.0</td>
+      <td>40.0</td>
+      <td>0.45</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td></td>
+      <td>Winger 88% | Centre 74% | Fullback 44%</td>
+      <td>Jake Tago 68% | Bailey Simonsson 68% | Isaiah Iongi 49%</td>
     </tr>
   </tbody>
 </table>
