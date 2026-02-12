@@ -473,7 +473,26 @@ def build_predictions() -> pd.DataFrame:
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
     odds = load_odds()
-
+def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
+    """
+    Returns odds keyed by (date, home, away)
+    """
+    try:
+        df = pd.read_csv(path)
+        out = {}
+        for _, r in df.iterrows():
+            date = str(r.get("date", "")).strip()
+            home = str(r.get("home", "")).strip()
+            away = str(r.get("away", "")).strip()
+            if not date or not home or not away:
+                continue
+            out[(date, home, away)] = {
+                "home_odds": float(r.get("home_odds")),
+                "away_odds": float(r.get("away_odds")),
+            }
+        return out
+    except Exception:
+        return {}
     rows = []
 
     for m in fixtures:
