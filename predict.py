@@ -464,7 +464,8 @@ def build_predictions() -> pd.DataFrame:
         fixtures = fetch_upcoming_fixtures(days_ahead=7)
     else:
         fixtures = FIXTURES
-
+def value_edge(model_prob: float, decimal_odds: float) -> float:
+    return model_prob - (1.0 / decimal_odds) if decimal_odds > 1.0 else float("nan")
     # Fit Attack/Defence model when there are enough completed results
     teams = sorted(list({m.home for m in fixtures} | {m.away for m in fixtures}))
     results = fetch_completed_results()
