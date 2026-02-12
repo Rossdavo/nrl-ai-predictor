@@ -54,7 +54,69 @@ FIXTURES: List[Match] = [
 # ----------------------------
 FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
+TEAM_REGION = {
+    "Broncos": "QLD",
+    "Cowboys": "QLD",
+    "Dolphins": "QLD",
+    "Titans": "QLD",
 
+    "Storm": "VIC",
+
+    "Raiders": "ACT",
+
+    "Warriors": "NZ",
+
+    "Roosters": "NSW",
+    "Rabbitohs": "NSW",
+    "Sea Eagles": "NSW",
+    "Sharks": "NSW",
+    "Dragons": "NSW",
+    "Wests Tigers": "NSW",
+    "Bulldogs": "NSW",
+    "Eels": "NSW",
+    "Knights": "NSW",
+    "Panthers": "NSW",
+}
+
+def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, float]:
+    """
+    Returns (home_points_delta, away_points_delta).
+
+    Conservative rule-set:
+    - NZ travel is the biggest impact.
+    - Cross-region Australia travel is small.
+    - Same-region games: no adjustment.
+    """
+    h_reg = TEAM_REGION.get(home, "UNK")
+    a_reg = TEAM_REGION.get(away, "UNK")
+
+    home_delta = 0.0
+    away_delta = 0.0
+
+    # NZ travel (biggest)
+    # Warriors playing away in Australia
+    if a_reg == "NZ" and h_reg != "NZ":
+        away_delta -= 1.6
+        home_delta += 0.2
+
+    # Australian team travelling to NZ (Warriors home)
+    if h_reg == "NZ" and a_reg != "NZ":
+        away_delta -= 1.2
+        home_delta += 0.2
+
+    # Cross-region within Australia (small)
+    # ACT treated similar to NSW for travel purposes
+    def norm(reg: str) -> str:
+        return "NSW" if reg == "ACT" else reg
+
+    h_norm = norm(h_reg)
+    a_norm = norm(a_reg)
+
+    if h_norm in {"NSW", "QLD", "VIC"} and a_norm in {"NSW", "QLD", "VIC"} and h_norm != a_norm:
+        away_delta -= 0.6  # small fatigue/tempo penalty
+        home_delta += 0.1
+
+    return home_delta, away_delta
 def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
     now = datetime.now(SYDNEY_TZ)
     end = now + pd.Timedelta(days=days_ahead)
@@ -287,24 +349,30 @@ def fit_attack_defence(
 
     return {"mu": mu, "home_adv": home_adv, "atk": atk_map, "dfn": dfn_map}
 
-def expected_points(model: Dict[str, object], home: str, away: str) -> Tuple[float, float]:
+def expected_points(model: Dict[str, object], home: str, away: str, venue: str) -> Tuple[float, float]:
     mu = model["mu"]
     ha = model["home_adv"]
     atk = model["atk"]
     dfn = model["dfn"]
+
     home_pts = mu + ha + atk.get(home, 0.0) - dfn.get(away, 0.0)
     away_pts = mu +      atk.get(away, 0.0) - dfn.get(home, 0.0)
-    # clamp to sensible range
+
+    # Apply venue/travel adjustment
+    h_adj, a_adj = travel_points_adjustment(home, away, venue)
+    home_pts += h_adj
+    away_pts += a_adj
+
+    # Clamp to sensible range
     return (max(4.0, min(40.0, home_pts)), max(4.0, min(40.0, away_pts)))
 
-def simulate_match_ad(model: Dict[str, object], home: str, away: str, n: int = 20000, seed: int = 7) -> Tuple[float, float, float, float]:
+def simulate_match_ad(model: Dict[str, object], home: str, away: str, venue: str, n: int = 20000, seed: int = 7) -> Tuple[float, float, float, float]:
     random.seed(seed)
     hw = 0
     margins = []
     totals = []
 
-    exp_home, exp_away = expected_points(model, home, away)
-
+    exp_home, exp_away = expected_points(model, home, away, venue)
     # score noise (keeps it realistic without needing a full Poisson conversion)
     sd = 8.5
 
@@ -378,7 +446,7 @@ def build_predictions() -> pd.DataFrame:
 
     for m in fixtures:
         if ad_model:
-            win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away)
+            win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue)
             exp_home_pts = (exp_total + exp_margin) / 2.0
             exp_away_pts = (exp_total - exp_margin) / 2.0
             rating_mode = "ATTACK_DEFENCE"
