@@ -371,26 +371,29 @@ def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float
     except Exception:
         return {}
 def expected_points(model: Dict[str, object], home: str, away: str, venue: str, adj: Dict[str, Dict[str, float]]) -> Tuple[float, float]:
+
     mu = model["mu"]
     ha = model["home_adv"]
     atk = model["atk"]
     dfn = model["dfn"]
 
     home_pts = mu + ha + atk.get(home, 0.0) - dfn.get(away, 0.0)
-    away_pts = mu +      atk.get(away, 0.0) - dfn.get(home, 0.0)
-# Player availability adjustments
-home_pts += adj.get(home, {}).get("atk", 0.0)
-away_pts += adj.get(away, {}).get("atk", 0.0)
+    away_pts = mu + atk.get(away, 0.0) - dfn.get(home, 0.0)
 
-away_pts += adj.get(home, {}).get("def", 0.0)
-home_pts += adj.get(away, {}).get("def", 0.0)
-    # Apply venue/travel adjustment
+    # travel adjustment
     h_adj, a_adj = travel_points_adjustment(home, away, venue)
     home_pts += h_adj
     away_pts += a_adj
 
-    # Clamp to sensible range
-    return (max(4.0, min(40.0, home_pts)), max(4.0, min(40.0, away_pts)))
+    # player availability adjustments
+    home_pts += adj.get(home, {}).get("atk", 0.0)
+    away_pts += adj.get(away, {}).get("atk", 0.0)
+
+    away_pts += adj.get(home, {}).get("def", 0.0)
+    home_pts += adj.get(away, {}).get("def", 0.0)
+
+    return (max(4.0, min(40.0, home_pts)),
+            max(4.0, min(40.0, away_pts)))
 
 def simulate_match_ad(model: Dict[str, object], home: str, away: str, venue: str, adj: Dict[str, Dict[str, float]], n: int = 20000, seed: int = 7) -> Tuple[float, float, float, float]:
     random.seed(seed)
