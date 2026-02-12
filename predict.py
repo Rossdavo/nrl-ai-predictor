@@ -478,12 +478,13 @@ def build_predictions() -> pd.DataFrame:
 
     for m in fixtures:
         if ad_model:
-           win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue, adj)
+            win_prob, exp_margin, exp_total, conf = simulate_match_ad(
+                ad_model, m.home, m.away, m.venue, adj
+            )
             exp_home_pts = (exp_total + exp_margin) / 2.0
             exp_away_pts = (exp_total - exp_margin) / 2.0
             rating_mode = "ATTACK_DEFENCE"
         else:
-            # fallback early season/trials: simple priors
             win_prob, exp_margin, exp_total, conf = 0.50, 0.0, 40.0, 0.45
             exp_home_pts = exp_total / 2.0
             exp_away_pts = exp_total / 2.0
@@ -495,12 +496,21 @@ def build_predictions() -> pd.DataFrame:
             home_named = _try_profiles_fallback(exp_home_pts)
         if not away_named:
             away_named = _try_profiles_fallback(exp_away_pts)
-"adj_home_atk": round(adj.get(m.home, {}).get("atk", 0.0), 2),
-"adj_home_def": round(adj.get(m.home, {}).get("def", 0.0), 2),
-"adj_away_atk": round(adj.get(m.away, {}).get("atk", 0.0), 2),
-"adj_away_def": round(adj.get(m.away, {}).get("def", 0.0), 2),
-"adj_notes_home": adj.get(m.home, {}).get("notes", ""),
-"adj_notes_away": adj.get(m.away, {}).get("notes", ""),
+
+        key = (m.date, m.home, m.away)
+        o = odds.get(key, {})
+        home_odds = o.get("home_odds", float("nan"))
+        away_odds = o.get("away_odds", float("nan"))
+
+        home_edge = value_edge(win_prob, home_odds) if not math.isnan(home_odds) else float("nan")
+        away_edge = value_edge(1 - win_prob, away_odds) if not math.isnan(away_odds) else float("nan")
+
+        value_flag = ""
+        if not math.isnan(home_edge) and home_edge >= 0.03:
+            value_flag = f"HOME VALUE +{home_edge:.0%}"
+        elif not math.isnan(away_edge) and away_edge >= 0.03:
+            value_flag = f"AWAY VALUE +{away_edge:.0%}"
+
         rows.append({
             "mode": MODE,
             "rating_mode": rating_mode,
@@ -513,12 +523,16 @@ def build_predictions() -> pd.DataFrame:
             "exp_margin_home": round(exp_margin, 1),
             "exp_total": round(exp_total, 1),
             "confidence": round(conf, 2),
+            "home_odds": "" if math.isnan(home_odds) else round(home_odds, 2),
+            "away_odds": "" if math.isnan(away_odds) else round(away_odds, 2),
+            "home_value_edge": "" if math.isnan(home_edge) else round(home_edge, 3),
+            "away_value_edge": "" if math.isnan(away_edge) else round(away_edge, 3),
+            "value_flag": value_flag,
             "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
             "away_top_try": " | ".join([f"{n} {p:.0%}" for n, p in away_named]),
             "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
-
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
 
