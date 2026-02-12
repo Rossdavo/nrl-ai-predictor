@@ -348,8 +348,29 @@ def fit_attack_defence(
     dfn_map = {t: float(dfn[team_to_i[t]]) for t in teams}
 
     return {"mu": mu, "home_adv": home_adv, "atk": atk_map, "dfn": dfn_map}
-
-def expected_points(model: Dict[str, object], home: str, away: str, venue: str) -> Tuple[float, float]:
+def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float]]:
+    """
+    Reads manual adjustments file.
+    Returns: {team: {"atk": float, "def": float, "notes": str}}
+    atk_delta_pts: added to team expected points scored
+    def_delta_pts: added to opponent expected points scored (i.e., worse defence => +ve)
+    """
+    try:
+        df = pd.read_csv(path)
+        out = {}
+        for _, r in df.iterrows():
+            team = str(r.get("team", "")).strip()
+            if not team:
+                continue
+            out[team] = {
+                "atk": float(r.get("atk_delta_pts", 0.0)),
+                "def": float(r.get("def_delta_pts", 0.0)),
+                "notes": str(r.get("notes", "")).strip(),
+            }
+        return out
+    except Exception:
+        return {}
+def expected_points(model: Dict[str, object], home: str, away: str, venue: str, adj: Dict[str, Dict[str, float]]) -> Tuple[float, float]:
     mu = model["mu"]
     ha = model["home_adv"]
     atk = model["atk"]
@@ -357,7 +378,12 @@ def expected_points(model: Dict[str, object], home: str, away: str, venue: str) 
 
     home_pts = mu + ha + atk.get(home, 0.0) - dfn.get(away, 0.0)
     away_pts = mu +      atk.get(away, 0.0) - dfn.get(home, 0.0)
+# Player availability adjustments
+home_pts += adj.get(home, {}).get("atk", 0.0)
+away_pts += adj.get(away, {}).get("atk", 0.0)
 
+away_pts += adj.get(home, {}).get("def", 0.0)
+home_pts += adj.get(away, {}).get("def", 0.0)
     # Apply venue/travel adjustment
     h_adj, a_adj = travel_points_adjustment(home, away, venue)
     home_pts += h_adj
@@ -366,13 +392,13 @@ def expected_points(model: Dict[str, object], home: str, away: str, venue: str) 
     # Clamp to sensible range
     return (max(4.0, min(40.0, home_pts)), max(4.0, min(40.0, away_pts)))
 
-def simulate_match_ad(model: Dict[str, object], home: str, away: str, venue: str, n: int = 20000, seed: int = 7) -> Tuple[float, float, float, float]:
+def simulate_match_ad(model: Dict[str, object], home: str, away: str, venue: str, adj: Dict[str, Dict[str, float]], n: int = 20000, seed: int = 7) -> Tuple[float, float, float, float]:
     random.seed(seed)
     hw = 0
     margins = []
     totals = []
 
-    exp_home, exp_away = expected_points(model, home, away, venue)
+    exp_home, exp_away = expected_points(model, home, away, venue,adj)
     # score noise (keeps it realistic without needing a full Poisson conversion)
     sd = 8.5
 
@@ -443,10 +469,10 @@ def build_predictions() -> pd.DataFrame:
 
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     rows = []
-
+adj = load_adjustments()
     for m in fixtures:
         if ad_model:
-            win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue)
+           win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue, adj)
             exp_home_pts = (exp_total + exp_margin) / 2.0
             exp_away_pts = (exp_total - exp_margin) / 2.0
             rating_mode = "ATTACK_DEFENCE"
@@ -463,7 +489,12 @@ def build_predictions() -> pd.DataFrame:
             home_named = _try_profiles_fallback(exp_home_pts)
         if not away_named:
             away_named = _try_profiles_fallback(exp_away_pts)
-
+"adj_home_atk": round(adj.get(m.home, {}).get("atk", 0.0), 2),
+"adj_home_def": round(adj.get(m.home, {}).get("def", 0.0), 2),
+"adj_away_atk": round(adj.get(m.away, {}).get("atk", 0.0), 2),
+"adj_away_def": round(adj.get(m.away, {}).get("def", 0.0), 2),
+"adj_notes_home": adj.get(m.home, {}).get("notes", ""),
+"adj_notes_away": adj.get(m.away, {}).get("notes", ""),
         rows.append({
             "mode": MODE,
             "rating_mode": rating_mode,
