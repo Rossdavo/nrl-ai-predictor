@@ -471,8 +471,11 @@ def build_predictions() -> pd.DataFrame:
     ad_model = fit_attack_defence(results, teams)
 
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
+    adj = load_adjustments()
+    odds = load_odds()
+
     rows = []
-adj = load_adjustments()
+
     for m in fixtures:
         if ad_model:
            win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue, adj)
