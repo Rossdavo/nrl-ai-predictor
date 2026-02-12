@@ -455,7 +455,34 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
         out.append((name, p))
     out.sort(key=lambda x: x[1], reverse=True)
     return out[:3]
+def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
+    """
+    Returns odds keyed by (date, home, away)
+    """
+    try:
+        df = pd.read_csv(path)
+        out = {}
+        for _, r in df.iterrows():
+            date = str(r.get("date", "")).strip()
+            home = str(r.get("home", "")).strip()
+            away = str(r.get("away", "")).strip()
+            if not date or not home or not away:
+                continue
+            out[(date, home, away)] = {
+                "home_odds": float(r.get("home_odds")),
+                "away_odds": float(r.get("away_odds")),
+            }
+        return out
+    except Exception:
+        return {}
 
+def value_edge(model_prob: float, decimal_odds: float) -> float:
+    """
+    Positive means model_prob > implied_prob (value).
+    """
+    if decimal_odds <= 1.0:
+        return float("nan")
+    return model_prob - (1.0 / decimal_odds)
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
