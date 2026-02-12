@@ -494,9 +494,10 @@ def build_predictions() -> pd.DataFrame:
     else:
         fixtures = FIXTURES
 
+    # Use full league teams for rating fit
     teams = ALL_TEAMS
-results = fetch_completed_results()
-ad_model = fit_attack_defence(results, teams)
+    results = fetch_completed_results()
+    ad_model = fit_attack_defence(results, teams)
 
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
