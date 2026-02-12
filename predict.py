@@ -464,9 +464,7 @@ def build_predictions() -> pd.DataFrame:
         fixtures = fetch_upcoming_fixtures(days_ahead=7)
     else:
         fixtures = FIXTURES
-def value_edge(model_prob: float, decimal_odds: float) -> float:
-    return model_prob - (1.0 / decimal_odds) if decimal_odds > 1.0 else float("nan")
-    # Fit Attack/Defence model when there are enough completed results
+
     teams = sorted(list({m.home for m in fixtures} | {m.away for m in fixtures}))
     results = fetch_completed_results()
     ad_model = fit_attack_defence(results, teams)
@@ -474,26 +472,7 @@ def value_edge(model_prob: float, decimal_odds: float) -> float:
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
     odds = load_odds()
-def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
-    """
-    Returns odds keyed by (date, home, away)
-    """
-    try:
-        df = pd.read_csv(path)
-        out = {}
-        for _, r in df.iterrows():
-            date = str(r.get("date", "")).strip()
-            home = str(r.get("home", "")).strip()
-            away = str(r.get("away", "")).strip()
-            if not date or not home or not away:
-                continue
-            out[(date, home, away)] = {
-                "home_odds": float(r.get("home_odds")),
-                "away_odds": float(r.get("away_odds")),
-            }
-        return out
-    except Exception:
-        return {}
+
     rows = []
 
     for m in fixtures:
@@ -512,6 +491,7 @@ def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, fl
 
         home_named = _try_probs_named(starters_by_team.get(m.home, {}), exp_home_pts)
         away_named = _try_probs_named(starters_by_team.get(m.away, {}), exp_away_pts)
+
         if not home_named:
             home_named = _try_profiles_fallback(exp_home_pts)
         if not away_named:
