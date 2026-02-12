@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import requests
 from zoneinfo import ZoneInfo
-
+from io import StringIO
 # ----------------------------
 # RUN MODE
 # "TRIALS" = use hardcoded fixtures
@@ -144,25 +144,28 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 # ----------------------------
 def fetch_completed_results() -> pd.DataFrame:
     """
-    Returns dataframe with columns: home, away, home_pts, away_pts
+    Returns dataframe with columns: date, home, away, home_pts, away_pts
     Uses FixtureDownload results table.
     """
     r = requests.get(RESULTS_URL, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
     r.raise_for_status()
 
-    # First table on the page is the fixture/results table
+    # IMPORTANT: wrap HTML string
     tables = pd.read_html(StringIO(r.text))
-    df = tables[0].copy()
+    if not tables:
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
-    # Expected columns (site may vary slightly): Home Team, Away Team, Result
-    # Normalise column names
+    df = tables[0].copy()
     df.columns = [str(c).strip() for c in df.columns]
+
+    # Try common column names
     home_col = next((c for c in df.columns if "Home" in c), None)
     away_col = next((c for c in df.columns if "Away" in c), None)
     res_col  = next((c for c in df.columns if "Result" in c), None)
+    date_col = next((c for c in df.columns if "Date" in c), None)
 
     if not home_col or not away_col or not res_col:
-        return pd.DataFrame(columns=["home", "away", "home_pts", "away_pts"])
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     out_rows = []
     for _, row in df.iterrows():
@@ -170,12 +173,16 @@ def fetch_completed_results() -> pd.DataFrame:
         away = str(row.get(away_col, "")).strip()
         res  = str(row.get(res_col, "")).strip()
 
-        # Completed matches look like "20 - 18" (future matches are "-" or empty)
         m = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", res)
         if not m:
             continue
 
+        # Date is optional — if missing, we’ll set it NaT and weight=1 later
+        raw_date = str(row.get(date_col, "")).strip() if date_col else ""
+        match_dt = pd.to_datetime(raw_date, errors="coerce", dayfirst=True) if raw_date else pd.NaT
+
         out_rows.append({
+            "date": match_dt,
             "home": home,
             "away": away,
             "home_pts": int(m.group(1)),
@@ -184,58 +191,85 @@ def fetch_completed_results() -> pd.DataFrame:
 
     return pd.DataFrame(out_rows)
 
-def fit_attack_defence(results: pd.DataFrame, teams: List[str]) -> Optional[Dict[str, object]]:
+def fit_attack_defence(
+    results: pd.DataFrame,
+    teams: List[str],
+    half_life_days: int = 56,   # ~8 weeks
+) -> Optional[Dict[str, object]]:
     """
-    Least squares fit:
+    Weighted ridge least squares fit:
       HomePts = mu + home_adv + atk_home - def_away
       AwayPts = mu          + atk_away - def_home
 
-    Returns dict with mu, home_adv, atk (dict), dfn (dict)
-    If insufficient results, returns None.
+    Recency weighting: weight = 0.5 ** (age_days / half_life_days)
     """
     if results is None or results.empty or len(results) < 8:
         return None
 
+    # Drop rows without teams
+    results = results.dropna(subset=["home", "away", "home_pts", "away_pts"]).copy()
+    if results.empty:
+        return None
+
+    # Compute weights (if date missing, weight = 1)
+    now = pd.Timestamp.now(tz=None).normalize()
+    if "date" in results.columns:
+        # date may be tz-naive; that’s fine for age
+        age_days = (now - pd.to_datetime(results["date"], errors="coerce")).dt.days
+        age_days = age_days.fillna(0).clip(lower=0)
+        weights = (0.5 ** (age_days / float(half_life_days))).astype(float).values
+    else:
+        weights = np.ones(len(results), dtype=float)
+
     team_to_i = {t: i for i, t in enumerate(teams)}
     n_teams = len(teams)
 
-    # Parameters: [mu, home_adv, atk_0..atk_{T-1}, def_0..def_{T-1}]
+    # Params: [mu, home_adv, atk_0..atk_{T-1}, def_0..def_{T-1}]
     p = 2 + 2 * n_teams
-    X = []
-    y = []
+    X_rows = []
+    y_vals = []
+    w_vals = []
 
-    for _, r in results.iterrows():
-        h = r["home"]; a = r["away"]
+    for idx, rrow in results.iterrows():
+        h = rrow["home"]; a = rrow["away"]
         if h not in team_to_i or a not in team_to_i:
             continue
+
+        w = float(weights[list(results.index).index(idx)]) if len(weights) == len(results) else 1.0
         hi = team_to_i[h]; ai = team_to_i[a]
 
         # Home score row
         row = np.zeros(p)
-        row[0] = 1.0                 # mu
-        row[1] = 1.0                 # home_adv
-        row[2 + hi] = 1.0            # atk_home
-        row[2 + n_teams + ai] = -1.0 # -def_away
-        X.append(row); y.append(float(r["home_pts"]))
+        row[0] = 1.0
+        row[1] = 1.0
+        row[2 + hi] = 1.0
+        row[2 + n_teams + ai] = -1.0
+        X_rows.append(row); y_vals.append(float(rrow["home_pts"])); w_vals.append(w)
 
         # Away score row
         row = np.zeros(p)
-        row[0] = 1.0                 # mu
-        row[1] = 0.0                 # no home_adv
-        row[2 + ai] = 1.0            # atk_away
-        row[2 + n_teams + hi] = -1.0 # -def_home
-        X.append(row); y.append(float(r["away_pts"]))
+        row[0] = 1.0
+        row[1] = 0.0
+        row[2 + ai] = 1.0
+        row[2 + n_teams + hi] = -1.0
+        X_rows.append(row); y_vals.append(float(rrow["away_pts"])); w_vals.append(w)
 
-    if len(y) < 16:
+    if len(y_vals) < 16:
         return None
 
-    X = np.vstack(X)
-    y = np.array(y)
+    X = np.vstack(X_rows)
+    y = np.array(y_vals)
+    w = np.array(w_vals)
 
-    # Ridge to stabilise early-season fits
+    # Apply weights: solve (sqrt(w)X)b = (sqrt(w)y)
+    sw = np.sqrt(w)
+    Xw = X * sw[:, None]
+    yw = y * sw
+
+    # Ridge
     ridge = 1.0
-    XtX = X.T @ X + ridge * np.eye(p)
-    Xty = X.T @ y
+    XtX = Xw.T @ Xw + ridge * np.eye(p)
+    Xty = Xw.T @ yw
     beta = np.linalg.solve(XtX, Xty)
 
     mu = float(beta[0])
@@ -244,7 +278,7 @@ def fit_attack_defence(results: pd.DataFrame, teams: List[str]) -> Optional[Dict
     atk = beta[2:2+n_teams].copy()
     dfn = beta[2+n_teams:2+2*n_teams].copy()
 
-    # Centre them (identifiability)
+    # Centre (identifiability)
     atk -= atk.mean()
     dfn -= dfn.mean()
 
