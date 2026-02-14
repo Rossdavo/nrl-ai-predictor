@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import requests
 from zoneinfo import ZoneInfo
-from io import StringIO
 import json
 import os
 # ----------------------------
@@ -492,7 +491,12 @@ def value_edge(model_prob: float, decimal_odds: float) -> float:
     if decimal_odds <= 1.0:
         return float("nan")
     return model_prob - (1.0 / decimal_odds)
-    RATINGS_PATH = "ratings.json"
+
+
+# ----------------------------
+# RATINGS PERSISTENCE
+# ----------------------------
+RATINGS_PATH = "ratings.json"
 
 def load_saved_ratings(path: str = RATINGS_PATH) -> Optional[Dict[str, object]]:
     try:
@@ -500,7 +504,7 @@ def load_saved_ratings(path: str = RATINGS_PATH) -> Optional[Dict[str, object]]:
             return None
         with open(path, "r", encoding="utf-8") as f:
             model = json.load(f)
-        # basic shape check
+
         if not isinstance(model, dict):
             return None
         if "mu" not in model or "home_adv" not in model or "atk" not in model or "dfn" not in model:
@@ -515,6 +519,8 @@ def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
             json.dump(model, f, ensure_ascii=False, indent=2, sort_keys=True)
     except Exception:
         pass
+
+
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
@@ -524,21 +530,22 @@ def build_predictions() -> pd.DataFrame:
     else:
         fixtures = FIXTURES
 
-    # Use full league teams for rating fit
     teams = ALL_TEAMS
+
+    # Load saved ratings first (so we can still run if results fetch is empty/slow)
     saved_model = load_saved_ratings()
 
-results = fetch_completed_results()
-fresh_model = fit_attack_defence(results, teams)
+    results = fetch_completed_results()
+    fresh_model = fit_attack_defence(results, teams)
 
-# Prefer freshly fitted ratings; otherwise fall back to saved ratings
-if fresh_model:
-    ad_model = fresh_model
-    save_ratings(ad_model)
-elif saved_model:
-    ad_model = saved_model
-else:
-    ad_model = None
+    # Prefer freshly fitted ratings; otherwise fall back to saved ratings
+    if fresh_model:
+        ad_model = fresh_model
+        save_ratings(ad_model)
+    elif saved_model:
+        ad_model = saved_model
+    else:
+        ad_model = None
 
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
@@ -568,6 +575,7 @@ else:
         if not away_named:
             away_named = _try_profiles_fallback(exp_away_pts)
 
+        # Odds + value detection
         key = (m.date, m.home, m.away)
         o = odds.get(key, {})
         home_odds = o.get("home_odds", float("nan"))
@@ -594,6 +602,9 @@ else:
             "exp_margin_home": round(exp_margin, 1),
             "exp_total": round(exp_total, 1),
             "confidence": round(conf, 2),
+            "home_odds": home_odds,
+            "away_odds": away_odds,
+            "value_flag": value_flag,
             "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
             "away_top_try": " | ".join([f"{n} {p:.0%}" for n, p in away_named]),
             "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
