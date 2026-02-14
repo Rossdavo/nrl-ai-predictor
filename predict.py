@@ -606,7 +606,7 @@ else:
         })
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
-        return df
+    return df
 
 if __name__ == "__main__":
     df = build_predictions()
