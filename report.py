@@ -83,6 +83,50 @@ def build_accuracy_section() -> str:
 
     table = show.to_html(index=False)
     return headline + table
+  def build_profit_section() -> str:
+    if not os.path.exists("bet_log.csv"):
+        return ""
+
+    try:
+        bets = pd.read_csv("bet_log.csv")
+    except Exception:
+        return ""
+
+    if bets.empty:
+        return ""
+
+    # only settled bets count for ROI
+    if "settled" in bets.columns:
+        settled = bets[bets["settled"].astype(str).str.upper() == "Y"].copy()
+    else:
+        settled = pd.DataFrame()
+
+    total_logged = len(bets)
+    total_settled = len(settled)
+
+    profit = 0.0
+    roi = float("nan")
+
+    if total_settled > 0 and "profit_units" in settled.columns:
+        settled["profit_units"] = pd.to_numeric(settled["profit_units"], errors="coerce")
+        profit = float(settled["profit_units"].fillna(0).sum())
+        roi = profit / float(total_settled)
+
+    html = "<h2>Profit Tracker (1 unit stakes)</h2>"
+    html += f"<p class='note'><b>Bets logged:</b> {total_logged} | <b>Bets settled:</b> {total_settled}"
+
+    if total_settled > 0:
+        html += f" | <b>Total profit:</b> {profit:.2f}u | <b>ROI per bet:</b> {roi:.2%}"
+    else:
+        html += " | <b>Total profit:</b> 0.00u | <b>ROI per bet:</b> N/A"
+
+    html += "</p>"
+
+    # show last 10 bets (settled or not)
+    show = bets.tail(10)
+    html += show.to_html(index=False)
+
+    return html
 
 
 def main():
@@ -112,7 +156,7 @@ def main():
 
     table_html = df.to_html(index=False, escape=False)
 
-    sections = build_performance_section() + build_accuracy_section()
+    sections = build_profit_section() + build_performance_section() + build_accuracy_section()
 
     html = HTML_TEMPLATE.format(table=table_html, sections=sections)
 
