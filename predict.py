@@ -11,6 +11,8 @@ import pandas as pd
 import requests
 from zoneinfo import ZoneInfo
 from io import StringIO
+import json
+import os
 # ----------------------------
 # RUN MODE
 # "TRIALS" = use hardcoded fixtures
@@ -490,6 +492,29 @@ def value_edge(model_prob: float, decimal_odds: float) -> float:
     if decimal_odds <= 1.0:
         return float("nan")
     return model_prob - (1.0 / decimal_odds)
+    RATINGS_PATH = "ratings.json"
+
+def load_saved_ratings(path: str = RATINGS_PATH) -> Optional[Dict[str, object]]:
+    try:
+        if not os.path.exists(path):
+            return None
+        with open(path, "r", encoding="utf-8") as f:
+            model = json.load(f)
+        # basic shape check
+        if not isinstance(model, dict):
+            return None
+        if "mu" not in model or "home_adv" not in model or "atk" not in model or "dfn" not in model:
+            return None
+        return model
+    except Exception:
+        return None
+
+def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(model, f, ensure_ascii=False, indent=2, sort_keys=True)
+    except Exception:
+        pass
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
@@ -501,8 +526,19 @@ def build_predictions() -> pd.DataFrame:
 
     # Use full league teams for rating fit
     teams = ALL_TEAMS
-    results = fetch_completed_results()
-    ad_model = fit_attack_defence(results, teams)
+    saved_model = load_saved_ratings()
+
+results = fetch_completed_results()
+fresh_model = fit_attack_defence(results, teams)
+
+# Prefer freshly fitted ratings; otherwise fall back to saved ratings
+if fresh_model:
+    ad_model = fresh_model
+    save_ratings(ad_model)
+elif saved_model:
+    ad_model = saved_model
+else:
+    ad_model = None
 
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
