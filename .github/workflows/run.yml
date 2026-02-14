@@ -39,12 +39,13 @@ jobs:
           python report.py
 
       # Put the site output in a folder for Pages
-      - name: Prepare site
-        run: |
-          mkdir -p site
-          cp index.html site/index.html
-          cp predictions.csv site/predictions.csv
-
+     - name: Prepare site
+  run: |
+    mkdir -p site
+    cp index.html site/index.html
+    cp predictions.csv site/predictions.csv
+    if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
+    
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
