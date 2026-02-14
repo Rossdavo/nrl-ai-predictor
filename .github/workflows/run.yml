@@ -32,10 +32,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run model + tracker + page
-  run: |
-    python predict.py
-    python tracker.py
-    python report.py
+        run: |
+          python predict.py
+          python tracker.py
+          python report.py
 
       - name: Prepare site
         run: |
@@ -44,6 +44,7 @@ jobs:
           cp predictions.csv site/predictions.csv
           if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
           if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
+          if [ -f accuracy.csv ]; then cp accuracy.csv site/accuracy.csv; fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
