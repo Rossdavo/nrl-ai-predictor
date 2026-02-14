@@ -210,72 +210,51 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 def fetch_completed_results() -> pd.DataFrame:
     """
     Returns dataframe with columns: date, home, away, home_pts, away_pts
+    Safe against timeouts — falls back to empty results if feed unavailable.
     """
     headers = {"User-Agent": "Mozilla/5.0"}
 
+    html = None
     last_err = None
+
     for attempt in range(3):
         try:
             r = requests.get(RESULTS_URL, timeout=45, headers=headers)
             r.raise_for_status()
             html = r.text
             break
-        except (ReadTimeout, RequestException) as e:
+        except Exception as e:
             last_err = e
-            time.sleep(2 * (attempt + 1))  # 2s, 4s, 6s backoff
-    else:
-        # If results feed is unavailable, return empty results (model will fall back)
+            time.sleep(2 * (attempt + 1))
+
+    if html is None:
         print(f"[warn] results fetch failed: {last_err}")
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
-    tables = pd.read_html(StringIO(html))
-    if not tables:
+    try:
+        tables = pd.read_html(StringIO(html))
+    except Exception:
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
-        
-from requests.exceptions import ReadTimeout, RequestException
-    r.raise_for_status()
 
-    # IMPORTANT: wrap HTML string
-    tables = pd.read_html(StringIO(r.text))
     if not tables:
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     df = tables[0].copy()
-    df.columns = [str(c).strip() for c in df.columns]
 
-    # Try common column names
-    home_col = next((c for c in df.columns if "Home" in c), None)
-    away_col = next((c for c in df.columns if "Away" in c), None)
-    res_col  = next((c for c in df.columns if "Result" in c), None)
-    date_col = next((c for c in df.columns if "Date" in c), None)
-
-    if not home_col or not away_col or not res_col:
+    # Ensure required columns exist (adjust if feed changes)
+    required = {"Home", "Away", "HomeScore", "AwayScore"}
+    if not required.issubset(set(df.columns)):
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
-    out_rows = []
-    for _, row in df.iterrows():
-        home = str(row.get(home_col, "")).strip()
-        away = str(row.get(away_col, "")).strip()
-        res  = str(row.get(res_col, "")).strip()
+    out = pd.DataFrame({
+        "date": pd.to_datetime(df.get("Date", pd.Timestamp.utcnow())).astype(str),
+        "home": df["Home"],
+        "away": df["Away"],
+        "home_pts": df["HomeScore"],
+        "away_pts": df["AwayScore"],
+    })
 
-        m = re.match(r"^\s*(\d+)\s*-\s*(\d+)\s*$", res)
-        if not m:
-            continue
-
-        # Date is optional — if missing, we’ll set it NaT and weight=1 later
-        raw_date = str(row.get(date_col, "")).strip() if date_col else ""
-        match_dt = pd.to_datetime(raw_date, errors="coerce", dayfirst=True) if raw_date else pd.NaT
-
-        out_rows.append({
-            "date": match_dt,
-            "home": home,
-            "away": away,
-            "home_pts": int(m.group(1)),
-            "away_pts": int(m.group(2)),
-        })
-
-    return pd.DataFrame(out_rows)
-
+    return out
 def fit_attack_defence(
     results: pd.DataFrame,
     teams: List[str],
