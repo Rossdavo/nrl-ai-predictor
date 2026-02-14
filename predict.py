@@ -231,7 +231,7 @@ def fetch_completed_results() -> pd.DataFrame:
     tables = pd.read_html(StringIO(html))
     if not tables:
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
-   import time
+        
 from requests.exceptions import ReadTimeout, RequestException
     r.raise_for_status()
 
