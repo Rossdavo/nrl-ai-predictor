@@ -31,10 +31,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run model + build page
-        run: |
-          python predict.py
-          python report.py
+      - name: Run model + tracker + page
+  run: |
+    python predict.py
+    python tracker.py
+    python report.py
 
       - name: Prepare site
         run: |
