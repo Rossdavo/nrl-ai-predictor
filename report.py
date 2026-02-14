@@ -31,9 +31,21 @@ def build_accuracy_section():
         return "<p class='note'><b>Accuracy:</b> No completed matches scored yet.</p>"
 
     acc = pd.read_csv("accuracy.csv")
-
+  
+  perf_html = ""
+if os.path.exists("performance.csv"):
+    perf = pd.read_csv("performance.csv")
+    if not perf.empty:
+        perf_html = "<h2>CLV & ROI</h2>" + perf.to_html(index=False)
+perf_html = ""
+if os.path.exists("performance.csv"):
+    perf = pd.read_csv("performance.csv")
+    if not perf.empty:
+        perf_html = "<h2>CLV & ROI</h2>" + perf.to_html(index=False)
     if acc.empty:
         return "<p class='note'><b>Accuracy:</b> No completed matches scored yet.</p>"
+      
+      import os
 
     scored = len(acc)
     win_acc = acc["winner_correct"].mean() if "winner_correct" in acc.columns else 0.0
