@@ -53,6 +53,7 @@ jobs:
           if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
           if [ -f accuracy.csv ]; then cp accuracy.csv site/accuracy.csv; fi
           if [ -f performance.csv ]; then cp performance.csv site/performance.csv; fi
+          if [ -f bet_log.csv ]; then cp bet_log.csv site/bet_log.csv; fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
