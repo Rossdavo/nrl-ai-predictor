@@ -29,6 +29,8 @@ TEAMLIST_URL = "https://www.nrl.com/news/2026/02/10/witzer-pre-season-challenge-
 # ----------------------------
 RESULTS_URL = "https://fixturedownload.com/results/nrl-2026"
 
+RESULTS_CACHE_PATH = "results_cache.csv"
+
 @dataclass
 class Match:
     date: str  # YYYY-MM-DD
@@ -211,7 +213,12 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 def fetch_completed_results() -> pd.DataFrame:
     """
     Returns dataframe with columns: date, home, away, home_pts, away_pts
-    Safe against timeouts — falls back to empty results if feed unavailable.
+
+    Behaviour:
+    - Try to fetch live results (with retries)
+    - If successful, save results_cache.csv
+    - If fetch fails, load results_cache.csv if it exists
+    - If nothing available, return empty dataframe
     """
     headers = {"User-Agent": "Mozilla/5.0"}
 
@@ -229,31 +236,48 @@ def fetch_completed_results() -> pd.DataFrame:
             time.sleep(2 * (attempt + 1))
 
     if html is None:
-        print(f"[warn] results fetch failed: {last_err}")
+        # Fallback to cached results if available
+        if os.path.exists(RESULTS_CACHE_PATH):
+            try:
+                cached = pd.read_csv(RESULTS_CACHE_PATH)
+                needed = {"date", "home", "away", "home_pts", "away_pts"}
+                if needed.issubset(set(cached.columns)):
+                    print(f"[warn] results fetch failed: {last_err} — using cached results")
+                    return cached
+            except Exception:
+                pass
+
+        print(f"[warn] results fetch failed: {last_err} — no cache available")
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
+    # Parse tables from HTML
     try:
         tables = pd.read_html(StringIO(html))
     except Exception:
-        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+        tables = []
 
     if not tables:
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     df = tables[0].copy()
 
-    # Ensure required columns exist (adjust if feed changes)
     required = {"Home", "Away", "HomeScore", "AwayScore"}
     if not required.issubset(set(df.columns)):
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     out = pd.DataFrame({
-        "date": pd.to_datetime(df.get("Date", pd.Timestamp.utcnow())).astype(str),
-        "home": df["Home"],
-        "away": df["Away"],
-        "home_pts": df["HomeScore"],
-        "away_pts": df["AwayScore"],
-    })
+        "date": pd.to_datetime(df.get("Date", pd.Timestamp.utcnow()), errors="coerce").astype(str),
+        "home": df["Home"].astype(str),
+        "away": df["Away"].astype(str),
+        "home_pts": pd.to_numeric(df["HomeScore"], errors="coerce"),
+        "away_pts": pd.to_numeric(df["AwayScore"], errors="coerce"),
+    }).dropna(subset=["home_pts", "away_pts"])
+
+    # Save cache for next run
+    try:
+        out.to_csv(RESULTS_CACHE_PATH, index=False)
+    except Exception:
+        pass
 
     return out
 def fit_attack_defence(
