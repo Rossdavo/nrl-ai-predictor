@@ -8,6 +8,7 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 import requests
+import time
 from zoneinfo import ZoneInfo
 from io import StringIO
 # ----------------------------
@@ -209,9 +210,29 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 def fetch_completed_results() -> pd.DataFrame:
     """
     Returns dataframe with columns: date, home, away, home_pts, away_pts
-    Uses FixtureDownload results table.
     """
-    r = requests.get(RESULTS_URL, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    last_err = None
+    for attempt in range(3):
+        try:
+            r = requests.get(RESULTS_URL, timeout=45, headers=headers)
+            r.raise_for_status()
+            html = r.text
+            break
+        except (ReadTimeout, RequestException) as e:
+            last_err = e
+            time.sleep(2 * (attempt + 1))  # 2s, 4s, 6s backoff
+    else:
+        # If results feed is unavailable, return empty results (model will fall back)
+        print(f"[warn] results fetch failed: {last_err}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+    tables = pd.read_html(StringIO(html))
+    if not tables:
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+   import time
+from requests.exceptions import ReadTimeout, RequestException
     r.raise_for_status()
 
     # IMPORTANT: wrap HTML string
