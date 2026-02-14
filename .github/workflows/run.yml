@@ -49,12 +49,14 @@ jobs:
           mkdir -p site
           cp index.html site/index.html
           cp predictions.csv site/predictions.csv
-          if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
-          if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
+          if [ -f odds.csv ]; then cp odds.csv site/odds.csv; fi
+          if [ -f bet_log.csv ]; then cp bet_log.csv site/bet_log.csv; fi
           if [ -f accuracy.csv ]; then cp accuracy.csv site/accuracy.csv; fi
           if [ -f performance.csv ]; then cp performance.csv site/performance.csv; fi
-          if [ -f bet_log.csv ]; then cp bet_log.csv site/bet_log.csv; fi
-
+          if [ -f predictions_history.csv ]; then cp predictions_history.csv site/predictions_history.csv; fi
+          if [ -f odds_history.csv ]; then cp odds_history.csv site/odds_history.csv; fi
+          if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
+          if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
