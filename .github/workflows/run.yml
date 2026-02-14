@@ -42,6 +42,7 @@ jobs:
           cp index.html site/index.html
           cp predictions.csv site/predictions.csv
           if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
+          if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
