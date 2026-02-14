@@ -58,9 +58,20 @@ def build_clv_roi_section() -> str:
     if not os.path.exists("performance.csv"):
         return "<h2>CLV & ROI</h2><p class='note'>No performance.csv yet.</p>"
 
-    perf = pd.read_csv("performance.csv")
+    # Handle empty file safely
+    try:
+        if os.path.getsize("performance.csv") == 0:
+            return "<h2>CLV & ROI</h2><p class='note'>No performance data yet.</p>"
+    except Exception:
+        pass
+
+    try:
+        perf = pd.read_csv("performance.csv")
+    except Exception:
+        return "<h2>CLV & ROI</h2><p class='note'>No performance data yet.</p>"
+
     if perf.empty:
-        return "<h2>CLV & ROI</h2><p class='note'>Nothing scored yet (needs results/accuracy).</p>"
+        return "<h2>CLV & ROI</h2><p class='note'>No performance data yet.</p>"
 
     return "<h2>CLV & ROI</h2>" + perf.to_html(index=False)
 
