@@ -1,10 +1,8 @@
-name: Run NRL trial predictions
+name: Run NRL predictions
 
 on:
   workflow_dispatch:
   schedule:
-    # Runs daily at 07:10 Sydney time approx.
-    # GitHub uses UTC; Sydney is UTC+11 in Feb.
     - cron: "20 20 * * *"
 
 permissions:
@@ -38,25 +36,24 @@ jobs:
           python predict.py
           python report.py
 
-      # Put the site output in a folder for Pages
-     - name: Prepare site
-  run: |
-    mkdir -p site
-    cp index.html site/index.html
-    cp predictions.csv site/predictions.csv
-    if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
-    
+      - name: Prepare site
+        run: |
+          mkdir -p site
+          cp index.html site/index.html
+          cp predictions.csv site/predictions.csv
+          if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
   deploy:
+    runs-on: ubuntu-latest
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
