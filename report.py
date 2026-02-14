@@ -1,5 +1,5 @@
-import pandas as pd
 import os
+import pandas as pd
 
 HTML_TEMPLATE = """<!doctype html>
 <html>
@@ -20,32 +20,39 @@ HTML_TEMPLATE = """<!doctype html>
   <h1>NRL AI Predictions</h1>
   <p class="note">Automated predictions with model probabilities, odds comparison, and value detection.</p>
   {table}
-  {accuracy}
+  {sections}
   <p class="small">Generated automatically via GitHub Actions.</p>
 </body>
 </html>
 """
 
-def build_accuracy_section():
+
+def build_performance_section() -> str:
+    if not os.path.exists("performance.csv"):
+        return ""
+
+    try:
+        perf = pd.read_csv("performance.csv")
+    except Exception:
+        return ""
+
+    if perf.empty:
+        return ""
+
+    return "<h2>CLV & ROI</h2>" + perf.to_html(index=False)
+
+
+def build_accuracy_section() -> str:
     if not os.path.exists("accuracy.csv"):
         return "<p class='note'><b>Accuracy:</b> No completed matches scored yet.</p>"
 
-    acc = pd.read_csv("accuracy.csv")
-  
-  perf_html = ""
-if os.path.exists("performance.csv"):
-    perf = pd.read_csv("performance.csv")
-    if not perf.empty:
-        perf_html = "<h2>CLV & ROI</h2>" + perf.to_html(index=False)
-perf_html = ""
-if os.path.exists("performance.csv"):
-    perf = pd.read_csv("performance.csv")
-    if not perf.empty:
-        perf_html = "<h2>CLV & ROI</h2>" + perf.to_html(index=False)
+    try:
+        acc = pd.read_csv("accuracy.csv")
+    except Exception:
+        return "<p class='note'><b>Accuracy:</b> Unable to read accuracy.csv</p>"
+
     if acc.empty:
         return "<p class='note'><b>Accuracy:</b> No completed matches scored yet.</p>"
-      
-      import os
 
     scored = len(acc)
     win_acc = acc["winner_correct"].mean() if "winner_correct" in acc.columns else 0.0
@@ -57,14 +64,24 @@ if os.path.exists("performance.csv"):
         if len(s):
             mae = s.mean()
 
-    headline = f"<h2>Results & Accuracy</h2><p class='note'><b>Scored games:</b> {scored} | Winner accuracy: {win_acc:.0%} | Brier: {brier:.3f}"
+    headline = (
+        f"<h2>Results & Accuracy</h2>"
+        f"<p class='note'><b>Scored games:</b> {scored} | "
+        f"Winner accuracy: {win_acc:.0%} | "
+        f"Brier: {brier:.3f}"
+    )
     if mae == mae:
         headline += f" | Margin MAE: {mae:.2f}"
     headline += "</p>"
 
-    show = acc.sort_values(["date", "home"]).tail(10)
-    table = show.to_html(index=False)
+    # Show last 10 scored matches (if columns exist)
+    sort_cols = [c for c in ["date", "home"] if c in acc.columns]
+    if sort_cols:
+        show = acc.sort_values(sort_cols).tail(10)
+    else:
+        show = acc.tail(10)
 
+    table = show.to_html(index=False)
     return headline + table
 
 
@@ -95,9 +112,9 @@ def main():
 
     table_html = df.to_html(index=False, escape=False)
 
-    accuracy_html = build_accuracy_section()
+    sections = build_performance_section() + build_accuracy_section()
 
-    html = HTML_TEMPLATE.format(table=table_html, accuracy=accuracy_html)
+    html = HTML_TEMPLATE.format(table=table_html, sections=sections)
 
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
