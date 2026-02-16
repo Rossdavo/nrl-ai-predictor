@@ -38,10 +38,9 @@ jobs:
           python odds_fetch.py
           python predict.py
           python tracker.py
-          python bet_log.py
-          python settle_bets.py
           python archive.py
           python performance.py
+          python closing_odds.py
           python clv_tracker.py
           python report.py
 
