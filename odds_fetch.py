@@ -75,6 +75,12 @@ def main():
             "away_odds": away_odds,
         })
 
+    from datetime import datetime, timezone
+
+# ... after you build df ...
+df["captured_at_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+df.to_csv("odds.csv", index=False)
+
     df = pd.DataFrame(rows).drop_duplicates(subset=["date", "home", "away"])
     df.to_csv("odds.csv", index=False)
 
