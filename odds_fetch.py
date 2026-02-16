@@ -1,6 +1,7 @@
 import os
 import requests
 import pandas as pd
+from datetime import datetime, timezone
 
 API_KEY = os.getenv("ODDS_API_KEY")
 
@@ -26,8 +27,10 @@ def best_h2h_prices(bookmakers, home, away):
             for outcome in market.get("outcomes", []):
                 name = outcome.get("name")
                 price = outcome.get("price")
+
                 if name == home and price is not None:
                     home_best = price if home_best is None else max(home_best, price)
+
                 if name == away and price is not None:
                     away_best = price if away_best is None else max(away_best, price)
 
@@ -37,7 +40,6 @@ def best_h2h_prices(bookmakers, home, away):
 def main():
     if not API_KEY:
         print("No ODDS_API_KEY provided")
-        # still write an empty odds.csv so downstream doesn't crash
         pd.DataFrame(columns=["date", "home", "away", "home_odds", "away_odds"]).to_csv("odds.csv", index=False)
         return
 
@@ -55,6 +57,7 @@ def main():
     data = r.json()
 
     rows = []
+
     for game in data:
         home = game.get("home_team")
         away = game.get("away_team")
@@ -75,13 +78,11 @@ def main():
             "away_odds": away_odds,
         })
 
-    from datetime import datetime, timezone
-
-# ... after you build df ...
-df["captured_at_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-df.to_csv("odds.csv", index=False)
-
     df = pd.DataFrame(rows).drop_duplicates(subset=["date", "home", "away"])
+
+    # timestamp capture
+    df["captured_at_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
     df.to_csv("odds.csv", index=False)
 
     print(f"odds.csv updated ({len(df)} rows)")
