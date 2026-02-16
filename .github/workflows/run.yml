@@ -42,6 +42,7 @@ jobs:
           python settle_bets.py
           python archive.py
           python performance.py
+          python clv_tracker.py
           python report.py
 
       - name: Prepare site
