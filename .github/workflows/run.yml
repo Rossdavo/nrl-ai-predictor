@@ -57,6 +57,8 @@ jobs:
           if [ -f odds_history.csv ]; then cp odds_history.csv site/odds_history.csv; fi
           if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
           if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
+          if [ -f closing_odds.csv ]; then cp closing_odds.csv site/closing_odds.csv; fi
+          if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
