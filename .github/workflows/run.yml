@@ -37,6 +37,7 @@ jobs:
         run: |
           python odds_fetch.py
           python predict.py
+          python staking.py
           python tracker.py
           python archive.py
           python performance.py
