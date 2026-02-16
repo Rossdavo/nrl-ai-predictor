@@ -21,6 +21,16 @@ HTML_TEMPLATE = """<!doctype html>
   <h1>NRL AI Predictions</h1>
   <p class="note">Automated predictions with model probabilities, odds comparison, value detection, staking, and tracking.</p>
 
+  <p class="note">
+  <b>Downloads:</b>
+  <a href="predictions.csv">predictions.csv</a> ·
+  <a href="odds.csv">odds.csv</a> ·
+  <a href="bet_log.csv">bet_log.csv</a> ·
+  <a href="accuracy.csv">accuracy.csv</a> ·
+  <a href="performance.csv">performance.csv</a> ·
+  <a href="closing_odds.csv">closing_odds.csv</a>
+</p>
+
   {table}
 
   {bets}
