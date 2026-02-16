@@ -1,34 +1,64 @@
-import pandas as pd
 import os
+import pandas as pd
 
-BET_LOG = "bet_log.csv"
-CLOSING_ODDS = "closing_odds.csv"
-CLV_FILE = "clv_results.csv"
+def _load_csv_safe(path: str) -> pd.DataFrame:
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path)
+    except Exception:
+        return pd.DataFrame()
 
 def main():
+    bets = _load_csv_safe("bet_log.csv")
+    closing = _load_csv_safe("closing_odds.csv")
 
-    if not os.path.exists(BET_LOG) or not os.path.exists(CLOSING_ODDS):
-        print("Missing inputs — no CLV calculated")
+    if bets.empty:
+        print("No bet_log.csv or no bets yet — skipping CLV.")
+        pd.DataFrame(columns=[
+            "date","home","away","side","odds_taken","odds_close","clv_implied_prob","clv_pct"
+        ]).to_csv("clv_results.csv", index=False)
         return
 
-    bets = pd.read_csv(BET_LOG)
-    closing = pd.read_csv(CLOSING_ODDS)
+    if closing.empty:
+        print("No closing odds yet — skipping CLV.")
+        pd.DataFrame(columns=[
+            "date","home","away","side","odds_taken","odds_close","clv_implied_prob","clv_pct"
+        ]).to_csv("clv_results.csv", index=False)
+        return
 
-    merged = bets.merge(
-        closing,
-        on=["date", "home", "away"],
-        how="left",
-        suffixes=("", "_close")
-    )
+    # Expected bet_log columns: date, home, away, side, odds_taken
+    # side should be HOME or AWAY
+    need = {"date","home","away","side","odds_taken"}
+    if not need.issubset(set(bets.columns)):
+        print("bet_log.csv missing required columns for CLV.")
+        pd.DataFrame(columns=[
+            "date","home","away","side","odds_taken","odds_close","clv_implied_prob","clv_pct"
+        ]).to_csv("clv_results.csv", index=False)
+        return
 
-    merged["clv"] = (
-        (1 / merged["home_odds_close"]) -
-        (1 / merged["home_odds"])
-    )
+    merged = bets.merge(closing, on=["date","home","away"], how="left")
 
-    merged.to_csv(CLV_FILE, index=False)
+    def pick_close(row):
+        side = str(row.get("side","")).upper().strip()
+        if side == "HOME":
+            return row.get("home_odds_close")
+        if side == "AWAY":
+            return row.get("away_odds_close")
+        return None
 
-    print("CLV updated")
+    merged["odds_close"] = merged.apply(pick_close, axis=1)
+
+    merged["odds_taken"] = pd.to_numeric(merged["odds_taken"], errors="coerce")
+    merged["odds_close"] = pd.to_numeric(merged["odds_close"], errors="coerce")
+
+    # CLV implied probability = (1/close) - (1/taken)
+    merged["clv_implied_prob"] = (1.0 / merged["odds_close"]) - (1.0 / merged["odds_taken"])
+    merged["clv_pct"] = merged["clv_implied_prob"]
+
+    out = merged[["date","home","away","side","odds_taken","odds_close","clv_implied_prob","clv_pct"]].copy()
+    out.to_csv("clv_results.csv", index=False)
+    print(f"clv_results.csv updated ({len(out)} rows)")
 
 if __name__ == "__main__":
     main()
