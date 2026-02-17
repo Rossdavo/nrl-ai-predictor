@@ -249,7 +249,27 @@ def main():
 
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
+      
+def build_downloads_section() -> str:
+    links = [
+        ("predictions.csv", "Predictions CSV"),
+        ("odds.csv", "Odds CSV"),
+        ("bet_log.csv", "Bet Log CSV"),
+        ("accuracy.csv", "Accuracy CSV"),
+        ("performance.csv", "Performance CSV"),
+        ("closing_odds.csv", "Closing Odds CSV"),
+        ("bankroll_status.csv", "Bankroll Status CSV"),
+        ("predictions_history.csv", "Predictions History CSV"),
+        ("odds_history.csv", "Odds History CSV"),
+        ("results_cache.csv", "Results Cache CSV"),
+        ("ratings.json", "Ratings JSON"),
+    ]
 
+    items = []
+    for filename, label in links:
+        items.append(f"<li><a href='{filename}' target='_blank' rel='noopener'>{label}</a></li>")
+
+    return "<h2>Downloads</h2><ul>" + "".join(items) + "</ul>"
 
 if __name__ == "__main__":
     main()
