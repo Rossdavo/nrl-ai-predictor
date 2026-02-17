@@ -15,140 +15,100 @@ HTML_TEMPLATE = """<!doctype html>
     th, td {{ border: 1px solid #ddd; padding: 10px; vertical-align: top; }}
     th {{ background: #f6f6f6; text-align: left; }}
     .small {{ font-size: 12px; color: #666; }}
-    a {{ color: #0b66c3; text-decoration: none; }}
-    a:hover {{ text-decoration: underline; }}
+    .pill {{ display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; margin-right:6px; }}
   </style>
 </head>
 <body>
   <h1>NRL AI Predictions</h1>
   <p class="note">Automated predictions with model probabilities, odds comparison, and value detection.</p>
-
-  <p class="note">
-    <b>Downloads:</b>
-    <a href="predictions.csv">predictions.csv</a> ·
-    <a href="odds.csv">odds.csv</a> ·
-    <a href="bet_log.csv">bet_log.csv</a> ·
-    <a href="accuracy.csv">accuracy.csv</a> ·
-    <a href="performance.csv">performance.csv</a> ·
-    <a href="closing_odds.csv">closing_odds.csv</a>
-  </p>
-
   {table}
-
-  {bets}
-
+  {bankroll}
   {accuracy}
-
   {clv_roi}
-
   <p class="small">Generated automatically via GitHub Actions.</p>
 </body>
 </html>
 """
 
 def _safe_read_csv(path: str) -> pd.DataFrame:
+    if not os.path.exists(path):
+        return pd.DataFrame()
+    if os.path.getsize(path) == 0:
+        return pd.DataFrame()
     try:
-        if not os.path.exists(path):
-            return pd.DataFrame()
-        # Empty file can throw EmptyDataError
         return pd.read_csv(path)
     except Exception:
         return pd.DataFrame()
 
-def build_bets_section() -> str:
-    bets = _safe_read_csv("bet_log.csv")
-    if bets.empty:
-        return "<h2>Latest Bets</h2><p class='note'>No bets generated this run (no positive Kelly edge / no odds available).</p>"
-
-    # Keep a sensible set of columns if present
-    preferred = ["date", "home", "away", "bet_side", "prob", "odds", "kelly_fraction", "stake"]
-    cols = [c for c in preferred if c in bets.columns]
-    if cols:
-        bets = bets[cols]
-
-    # Sort: biggest stakes first, then date
-    if "stake" in bets.columns:
-        bets["stake"] = pd.to_numeric(bets["stake"], errors="coerce")
-        bets = bets.sort_values(["stake"], ascending=False)
-    elif "date" in bets.columns:
-        bets = bets.sort_values(["date"], ascending=False)
-
-    show = bets.head(10)
-    return "<h2>Latest Bets</h2>" + show.to_html(index=False)
+def build_bankroll_section() -> str:
+    df = _safe_read_csv("bankroll_status.csv")
+    if df.empty:
+        return "<h2>Bankroll</h2><p class='note'>No bankroll tracking yet.</p>"
+    r = df.iloc[-1].to_dict()
+    return (
+        "<h2>Bankroll</h2>"
+        f"<p class='note'>"
+        f"<span class='pill'><b>Start</b> ${r.get('start_bankroll', '')}</span>"
+        f"<span class='pill'><b>Current</b> ${r.get('current_bankroll', '')}</span>"
+        f"<span class='pill'><b>Peak</b> ${r.get('peak_bankroll', '')}</span>"
+        f"<span class='pill'><b>Drawdown</b> {r.get('drawdown_pct', '')}%</span>"
+        f"<span class='pill'><b>ROI</b> {r.get('roi_pct', '')}%</span>"
+        f"<span class='pill'><b>Settled bets</b> {r.get('settled_bets', '')}</span>"
+        f"</p>"
+    )
 
 def build_accuracy_section() -> str:
     acc = _safe_read_csv("accuracy.csv")
     if acc.empty:
-        return "<h2>Results & Accuracy</h2><p class='note'>No completed matches scored yet.</p>"
+        return "<h2>Results & Accuracy</h2><p class='note'><b>Accuracy:</b> No completed matches scored yet.</p>"
 
     scored = len(acc)
-
-    win_acc = 0.0
-    if "winner_correct" in acc.columns:
-        win_acc = pd.to_numeric(acc["winner_correct"], errors="coerce").mean()
-
-    brier = float("nan")
-    if "brier" in acc.columns:
-        brier = pd.to_numeric(acc["brier"], errors="coerce").mean()
+    win_acc = acc["winner_correct"].mean() if "winner_correct" in acc.columns else 0.0
+    brier = acc["brier"].mean() if "brier" in acc.columns else float("nan")
 
     mae = float("nan")
     if "abs_margin_error" in acc.columns:
-        mae = pd.to_numeric(acc["abs_margin_error"], errors="coerce").mean()
+        s = pd.to_numeric(acc["abs_margin_error"], errors="coerce").dropna()
+        if len(s):
+            mae = float(s.mean())
 
-    headline = f"<h2>Results & Accuracy</h2><p class='note'><b>Scored games:</b> {scored} | Winner accuracy: {win_acc:.0%}"
-    if brier == brier:
-        headline += f" | Brier: {brier:.3f}"
+    headline = f"<h2>Results & Accuracy</h2><p class='note'><b>Scored games:</b> {scored} | Winner accuracy: {win_acc:.0%} | Brier: {brier:.3f}"
     if mae == mae:
         headline += f" | Margin MAE: {mae:.2f}"
     headline += "</p>"
 
-    # Show last 10 scored games if columns exist
-    sort_cols = [c for c in ["date", "home"] if c in acc.columns]
-    if sort_cols:
-        show = acc.sort_values(sort_cols).tail(10)
-    else:
-        show = acc.tail(10)
-
+    show = acc.sort_values(["date", "home"]).tail(10)
     return headline + show.to_html(index=False)
 
 def build_clv_roi_section() -> str:
     perf = _safe_read_csv("performance.csv")
     if perf.empty:
-        return "<h2>CLV & ROI</h2><p class='note'>No performance data yet (need bets + closing odds + settled results).</p>"
-    return "<h2>CLV & ROI</h2>" + perf.to_html(index=False)
+        return "<h2>CLV & ROI</h2><p class='note'>No settled bets yet.</p>"
+
+    # If you later add clv columns, they will show automatically.
+    show = perf.tail(10)
+    return "<h2>CLV & ROI</h2>" + show.to_html(index=False)
 
 def main():
-    df = _safe_read_csv("predictions.csv")
-    if df.empty:
-        table_html = "<p class='note'>No predictions.csv found yet.</p>"
+    preds = _safe_read_csv("predictions.csv")
+    if preds.empty:
+        table_html = "<p class='note'>No predictions yet.</p>"
     else:
         cols = [
-            "date",
-            "kickoff_local",
-            "home",
-            "away",
-            "home_win_prob",
-            "exp_margin_home",
-            "exp_total",
-            "confidence",
-            "home_odds",
-            "away_odds",
-            "value_flag",
-            "home_top_try",
-            "away_top_try",
+            "date","kickoff_local","home","away",
+            "home_win_prob","exp_margin_home","exp_total","confidence",
+            "home_odds","away_odds","value_flag",
+            "home_top_try","away_top_try",
         ]
-        cols = [c for c in cols if c in df.columns]
-        if cols:
-            df = df[cols]
-
-        if "value_flag" in df.columns:
-            df["value_flag"] = df["value_flag"].fillna("")
-
-        table_html = df.to_html(index=False, escape=False)
+        cols = [c for c in cols if c in preds.columns]
+        preds = preds[cols].copy()
+        if "value_flag" in preds.columns:
+            preds["value_flag"] = preds["value_flag"].fillna("")
+        table_html = preds.to_html(index=False, escape=False)
 
     html = HTML_TEMPLATE.format(
         table=table_html,
-        bets=build_bets_section(),
+        bankroll=build_bankroll_section(),
         accuracy=build_accuracy_section(),
         clv_roi=build_clv_roi_section(),
     )
