@@ -31,6 +31,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Load 2025 results into cache (one-off)
+        run: |
+          python load_2025_results.py
+
       - name: Run model + tracker + page
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
