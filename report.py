@@ -19,11 +19,14 @@ HTML_TEMPLATE = """<!doctype html>
     th {{ background: #f6f6f6; text-align: left; }}
     .small {{ font-size: 12px; color: #666; }}
     .value {{ font-weight: bold; }}
+    ul {{ margin-top: 10px; }}
   </style>
 </head>
 <body>
   <h1>NRL AI Predictions</h1>
   <p class="note">Automated predictions with model probabilities, odds comparison, value detection, and staking suggestions.</p>
+
+  {downloads}
 
   {table}
 
@@ -64,9 +67,9 @@ def implied_prob(decimal_odds) -> float:
 
 
 def pct(x) -> str:
-    if x is None:
-        return ""
     try:
+        if x is None:
+            return ""
         if isinstance(x, float) and math.isnan(x):
             return ""
         return f"{float(x):.1%}"
@@ -75,9 +78,9 @@ def pct(x) -> str:
 
 
 def money(x) -> str:
-    if x is None:
-        return ""
     try:
+        if x is None:
+            return ""
         if isinstance(x, float) and math.isnan(x):
             return ""
         return f"${float(x):.2f}"
@@ -85,10 +88,34 @@ def money(x) -> str:
         return ""
 
 
+def build_downloads_section() -> str:
+    links = [
+        ("predictions.csv", "Predictions CSV"),
+        ("odds.csv", "Odds CSV"),
+        ("bet_log.csv", "Bet Log CSV"),
+        ("accuracy.csv", "Accuracy CSV"),
+        ("performance.csv", "Performance CSV"),
+        ("closing_odds.csv", "Closing Odds CSV"),
+        ("bankroll_status.csv", "Bankroll Status CSV"),
+        ("predictions_history.csv", "Predictions History CSV"),
+        ("odds_history.csv", "Odds History CSV"),
+        ("results_cache.csv", "Results Cache CSV"),
+        ("ratings.json", "Ratings JSON"),
+    ]
+
+    items = []
+    for filename, label in links:
+        items.append(
+            f"<li><a href='{filename}' target='_blank' rel='noopener'>{label}</a></li>"
+        )
+
+    return "<h2>Downloads</h2><ul>" + "".join(items) + "</ul>"
+
+
 def build_accuracy_section() -> str:
     acc = safe_read_csv("accuracy.csv")
     if acc.empty:
-        return "<p class='note'><b>Results & Accuracy:</b> No completed matches scored yet.</p>"
+        return "<p class='note'><b>Results &amp; Accuracy:</b> No completed matches scored yet.</p>"
 
     scored = len(acc)
     win_acc = acc["winner_correct"].mean() if "winner_correct" in acc.columns else float("nan")
@@ -121,7 +148,7 @@ def build_accuracy_section() -> str:
 def build_clv_roi_section() -> str:
     perf = safe_read_csv("performance.csv")
     if perf.empty:
-        return "<p class='note'><b>CLV & ROI:</b> Nothing to report yet.</p>"
+        return "<p class='note'><b>CLV &amp; ROI:</b> Nothing to report yet.</p>"
 
     return "<h2>CLV &amp; ROI</h2>" + perf.to_html(index=False, escape=False)
 
@@ -130,6 +157,7 @@ def main():
     df = safe_read_csv("predictions.csv")
     if df.empty:
         html = HTML_TEMPLATE.format(
+            downloads=build_downloads_section(),
             table="<p class='note'>No predictions.csv found yet.</p>",
             accuracy=build_accuracy_section(),
             clv_roi=build_clv_roi_section(),
@@ -138,7 +166,7 @@ def main():
             f.write(html)
         return
 
-    # Merge odds.csv if it exists (some runs write odds into predictions.csv already)
+    # Merge odds.csv if it exists
     odds = safe_read_csv("odds.csv")
     if not odds.empty:
         for col in ["date", "home", "away"]:
@@ -156,7 +184,7 @@ def main():
         if drop_cols:
             df = df.drop(columns=drop_cols)
 
-    # Merge bet_log.csv for stake suggestions (only one recommended side per match)
+    # Merge bet_log.csv for stake suggestions
     bets = safe_read_csv("bet_log.csv")
     if not bets.empty:
         for col in ["date", "home", "away"]:
@@ -177,7 +205,6 @@ def main():
     else:
         df["away_implied_prob"] = float("nan")
 
-    # Model probabilities
     if "home_win_prob" not in df.columns:
         df["home_win_prob"] = 0.5
 
@@ -186,7 +213,6 @@ def main():
     df["home_edge"] = pd.to_numeric(df["home_win_prob"], errors="coerce") - pd.to_numeric(df["home_implied_prob"], errors="coerce")
     df["away_edge"] = pd.to_numeric(df["away_win_prob"], errors="coerce") - pd.to_numeric(df["away_implied_prob"], errors="coerce")
 
-    # Pick display edge based on recommended bet_side (if any)
     def pick_edge(row):
         side = row.get("bet_side", "")
         if side == "HOME":
@@ -198,15 +224,10 @@ def main():
     df["edge_pct"] = df.apply(pick_edge, axis=1)
     df["stake_display"] = df.get("stake", float("nan"))
 
-    # Pretty formatting columns
-    df["home_win_prob"] = df["home_win_prob"].apply(lambda x: round(float(x), 3) if str(x) != "nan" else x)
-    if "confidence" in df.columns:
-        df["confidence"] = df["confidence"].apply(lambda x: round(float(x), 2) if str(x) != "nan" else x)
+    df["edge_pct"] = df["edge_pct"].apply(pct)
+    df["stake_display"] = df["stake_display"].apply(money)
 
-    df["edge_pct"] = df["edge_pct"].apply(lambda x: pct(x))
-    df["stake_display"] = df["stake_display"].apply(lambda x: money(x))
-
-    # Build display table columns
+    # Display columns
     cols = [
         "date",
         "kickoff_local",
@@ -225,12 +246,10 @@ def main():
     ]
     cols = [c for c in cols if c in df.columns]
 
-    # Clean NaNs for nicer display
     for c in ["value_flag", "bet_side"]:
         if c in df.columns:
             df[c] = df[c].fillna("")
 
-    # Rename headers for readability
     rename = {
         "home_win_prob": "model_home_prob",
         "bet_side": "recommended_bet",
@@ -238,10 +257,10 @@ def main():
         "stake_display": "stake",
     }
     show = df[cols].rename(columns=rename)
-
     table_html = show.to_html(index=False, escape=False)
 
     html = HTML_TEMPLATE.format(
+        downloads=build_downloads_section(),
         table=table_html,
         accuracy=build_accuracy_section(),
         clv_roi=build_clv_roi_section(),
@@ -249,27 +268,7 @@ def main():
 
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
-      
-def build_downloads_section() -> str:
-    links = [
-        ("predictions.csv", "Predictions CSV"),
-        ("odds.csv", "Odds CSV"),
-        ("bet_log.csv", "Bet Log CSV"),
-        ("accuracy.csv", "Accuracy CSV"),
-        ("performance.csv", "Performance CSV"),
-        ("closing_odds.csv", "Closing Odds CSV"),
-        ("bankroll_status.csv", "Bankroll Status CSV"),
-        ("predictions_history.csv", "Predictions History CSV"),
-        ("odds_history.csv", "Odds History CSV"),
-        ("results_cache.csv", "Results Cache CSV"),
-        ("ratings.json", "Ratings JSON"),
-    ]
 
-    items = []
-    for filename, label in links:
-        items.append(f"<li><a href='{filename}' target='_blank' rel='noopener'>{label}</a></li>")
-
-    return "<h2>Downloads</h2><ul>" + "".join(items) + "</ul>"
 
 if __name__ == "__main__":
     main()
