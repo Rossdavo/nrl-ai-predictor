@@ -6,7 +6,7 @@ on:
     - cron: "20 20 * * *"
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -50,6 +50,15 @@ jobs:
           python clv_tracker.py
           python report.py
 
+      # OPTIONAL but recommended: save updated CSVs back into the repo
+      - name: Commit generated data back to repo
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add -A
+          git commit -m "Update predictions/data" || echo "No changes to commit"
+          git push
+
       - name: Prepare site
         run: |
           mkdir -p site
@@ -65,7 +74,7 @@ jobs:
           if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
           if [ -f closing_odds.csv ]; then cp closing_odds.csv site/closing_odds.csv; fi
           if [ -f bankroll_status.csv ]; then cp bankroll_status.csv site/bankroll_status.csv; fi
-          
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
