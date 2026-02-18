@@ -2,65 +2,47 @@ import os
 import pandas as pd
 from pandas.errors import EmptyDataError
 
-CANDIDATE_PATHS = [
-    "data/results_2025.csv",   # <-- most likely (you said it's in /data)
-    "results_2025.csv",        # fallback if you move it to repo root
-]
-
-def read_first_nonempty_csv(paths):
-    last_err = None
-    for p in paths:
-        if not os.path.exists(p):
-            continue
-        # skip truly empty files
-        if os.path.getsize(p) == 0:
-            last_err = f"{p} exists but is 0 bytes"
-            continue
-        try:
-            # sep=None lets pandas auto-detect commas/tabs; utf-8-sig handles BOM
-            return p, pd.read_csv(p, sep=None, engine="python", encoding="utf-8-sig")
-        except EmptyDataError:
-            last_err = f"{p} parsed as empty (no columns)"
-            continue
-        except Exception as e:
-            last_err = f"{p} read failed: {e}"
-            continue
-    raise RuntimeError(f"Could not load results_2025 CSV. Last error: {last_err}")
-
 def main():
-    src_path, df = read_first_nonempty_csv(CANDIDATE_PATHS)
+    src = "data/results_2025.csv"  # FORCE data folder
 
-    # If your file already has correct columns, keep them
-    expected = {"date", "home", "away", "home_pts", "away_pts"}
-    if not expected.issubset(set(df.columns)):
-        # Try common alternate headings
+    print("PWD:", os.getcwd())
+    print("Reading:", src)
+
+    if not os.path.exists(src):
+        print(f"ERROR: {src} not found")
+        pd.DataFrame(columns=["date","home","away","home_pts","away_pts"]).to_csv("results_cache.csv", index=False)
+        return
+
+    size = os.path.getsize(src)
+    print("File size:", size, "bytes")
+    if size == 0:
+        print("ERROR: results_2025.csv is EMPTY (0 bytes)")
+        pd.DataFrame(columns=["date","home","away","home_pts","away_pts"]).to_csv("results_cache.csv", index=False)
+        return
+
+    try:
+        df = pd.read_csv(src)
+    except EmptyDataError:
+        print("ERROR: CSV has no columns (empty or broken file)")
+        pd.DataFrame(columns=["date","home","away","home_pts","away_pts"]).to_csv("results_cache.csv", index=False)
+        return
+
+    # If your file already has correct headers, keep it simple:
+    expected = {"date","home","away","home_pts","away_pts"}
+    if expected.issubset(set(df.columns)):
+        df = df[["date","home","away","home_pts","away_pts"]]
+    else:
+        # fallback rename mapping (only used if your headers differ)
         df = df.rename(columns={
             "Date": "date",
             "Home": "home",
             "Away": "away",
             "Homescore": "home_pts",
             "Awayscore": "away_pts",
-            "HomeScore": "home_pts",
-            "AwayScore": "away_pts",
         })
+        df = df[["date","home","away","home_pts","away_pts"]]
 
-    # Keep only the required columns if they exist now
-    missing = [c for c in ["date", "home", "away", "home_pts", "away_pts"] if c not in df.columns]
-    if missing:
-        raise RuntimeError(f"{src_path} is missing columns: {missing}. Found: {list(df.columns)}")
-
-    df = df[["date", "home", "away", "home_pts", "away_pts"]].copy()
-
-    # Clean types
-    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    df["home"] = df["home"].astype(str).str.strip()
-    df["away"] = df["away"].astype(str).str.strip()
-    df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
-    df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
-
-    df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
-
-    # Append into results_cache.csv (create if missing)
+    # Append to results_cache.csv
     if os.path.exists("results_cache.csv") and os.path.getsize("results_cache.csv") > 0:
         try:
             existing = pd.read_csv("results_cache.csv")
@@ -68,10 +50,10 @@ def main():
         except Exception:
             pass
 
-    df = df.drop_duplicates(subset=["date", "home", "away"]).sort_values(["date", "home"])
+    df = df.drop_duplicates(subset=["date","home","away"])
     df.to_csv("results_cache.csv", index=False)
 
-    print(f"Loaded {len(df)} total results into results_cache.csv (source: {src_path})")
+    print(f"Loaded {len(df)} total results into results_cache.csv")
 
 if __name__ == "__main__":
     main()
