@@ -1,0 +1,2 @@
+start_bankroll,current_bankroll,peak_bankroll,drawdown_pct,roi_pct,settled_bets,total_profit
+200.0,200.0,200.0,0.0,0.0,0,0.0

@@ -6,16 +6,22 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 28px; }
     h1 { margin-bottom: 6px; }
+    h2 { margin-top: 28px; }
     .note { color: #444; margin-top: 0; }
     table { border-collapse: collapse; width: 100%; margin-top: 18px; }
     th, td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
     th { background: #f6f6f6; text-align: left; }
     .small { font-size: 12px; color: #666; }
+    .value { font-weight: bold; }
+    ul { margin-top: 10px; }
   </style>
 </head>
 <body>
   <h1>NRL AI Predictions</h1>
-  <p class="note">Automated predictions with model probabilities, odds comparison, and value detection.</p>
+  <p class="note">Automated predictions with model probabilities, odds comparison, value detection, and staking suggestions.</p>
+
+  <h2>Downloads</h2><ul><li><a href='predictions.csv' target='_blank' rel='noopener'>Predictions CSV</a></li><li><a href='odds.csv' target='_blank' rel='noopener'>Odds CSV</a></li><li><a href='bet_log.csv' target='_blank' rel='noopener'>Bet Log CSV</a></li><li><a href='accuracy.csv' target='_blank' rel='noopener'>Accuracy CSV</a></li><li><a href='performance.csv' target='_blank' rel='noopener'>Performance CSV</a></li><li><a href='closing_odds.csv' target='_blank' rel='noopener'>Closing Odds CSV</a></li><li><a href='bankroll_status.csv' target='_blank' rel='noopener'>Bankroll Status CSV</a></li><li><a href='predictions_history.csv' target='_blank' rel='noopener'>Predictions History CSV</a></li><li><a href='odds_history.csv' target='_blank' rel='noopener'>Odds History CSV</a></li><li><a href='results_cache.csv' target='_blank' rel='noopener'>Results Cache CSV</a></li><li><a href='ratings.json' target='_blank' rel='noopener'>Ratings JSON</a></li></ul>
+
   <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -23,13 +29,13 @@
       <th>kickoff_local</th>
       <th>home</th>
       <th>away</th>
-      <th>home_win_prob</th>
-      <th>exp_margin_home</th>
-      <th>exp_total</th>
+      <th>model_home_prob</th>
       <th>confidence</th>
       <th>home_odds</th>
       <th>away_odds</th>
       <th>value_flag</th>
+      <th>edge</th>
+      <th>stake</th>
       <th>home_top_try</th>
       <th>away_top_try</th>
     </tr>
@@ -41,11 +47,11 @@
       <td>Dolphins</td>
       <td>Titans</td>
       <td>0.5</td>
-      <td>0.0</td>
-      <td>40.0</td>
       <td>0.45</td>
       <td>NaN</td>
       <td>NaN</td>
+      <td></td>
+      <td></td>
       <td></td>
       <td>Winger 88% | Centre 74% | Fullback 44%</td>
       <td>Sialetili Faeamani 68% | Jensen Taumoepeau 68% | Jaylan De Groot 49%</td>
@@ -56,11 +62,11 @@
       <td>Raiders</td>
       <td>Storm</td>
       <td>0.5</td>
-      <td>0.0</td>
-      <td>40.0</td>
       <td>0.45</td>
       <td>NaN</td>
       <td>NaN</td>
+      <td></td>
+      <td></td>
       <td></td>
       <td>Winger 88% | Centre 74% | Fullback 44%</td>
       <td>Luke Cesari 68% | Siulagi Tuimalatu-Brown 68% | Hugo Peel 49%</td>
@@ -71,11 +77,11 @@
       <td>Cowboys</td>
       <td>Panthers</td>
       <td>0.5</td>
-      <td>0.0</td>
-      <td>40.0</td>
       <td>0.45</td>
       <td>NaN</td>
       <td>NaN</td>
+      <td></td>
+      <td></td>
       <td></td>
       <td>Winger 88% | Centre 74% | Fullback 44%</td>
       <td>Jesse McLean 68% | Nick Murphy 68% | Jaxen Edgar 49%</td>
@@ -86,11 +92,11 @@
       <td>Warriors</td>
       <td>Sea Eagles</td>
       <td>0.5</td>
-      <td>0.0</td>
-      <td>40.0</td>
       <td>0.45</td>
       <td>NaN</td>
       <td>NaN</td>
+      <td></td>
+      <td></td>
       <td></td>
       <td>Winger 88% | Centre 74% | Fullback 44%</td>
       <td>Blake Wilson 68% | Navren Willett 68% | Blake Metcalfe 49%</td>
@@ -101,11 +107,11 @@
       <td>Wests Tigers</td>
       <td>Roosters</td>
       <td>0.5</td>
-      <td>0.0</td>
-      <td>40.0</td>
       <td>0.45</td>
       <td>NaN</td>
       <td>NaN</td>
+      <td></td>
+      <td></td>
       <td></td>
       <td>Winger 88% | Centre 74% | Fullback 44%</td>
       <td>Junior Tupou 68% | Tom Rodwell 68% | Rex Bassingthwaighte 49%</td>
@@ -116,11 +122,11 @@
       <td>Knights</td>
       <td>Bulldogs</td>
       <td>0.5</td>
-      <td>0.0</td>
-      <td>40.0</td>
       <td>0.45</td>
       <td>NaN</td>
       <td>NaN</td>
+      <td></td>
+      <td></td>
       <td></td>
       <td>Winger 88% | Centre 74% | Fullback 44%</td>
       <td>Jonathan Sua 68% | Enari Tuala 68% | Connor Tracey 49%</td>
@@ -131,11 +137,11 @@
       <td>Dragons</td>
       <td>Rabbitohs</td>
       <td>0.5</td>
-      <td>0.0</td>
-      <td>40.0</td>
       <td>0.45</td>
       <td>NaN</td>
       <td>NaN</td>
+      <td></td>
+      <td></td>
       <td></td>
       <td>Winger 88% | Centre 74% | Fullback 44%</td>
       <td>Bayleigh Bentley-Hape 68% | Jordi Mazzone 68% | Matthew Dufty 49%</td>
@@ -146,17 +152,22 @@
       <td>Sharks</td>
       <td>Eels</td>
       <td>0.5</td>
-      <td>0.0</td>
-      <td>40.0</td>
       <td>0.45</td>
       <td>NaN</td>
       <td>NaN</td>
+      <td></td>
+      <td></td>
       <td></td>
       <td>Winger 88% | Centre 74% | Fullback 44%</td>
       <td>Jake Tago 68% | Bailey Simonsson 68% | Isaiah Iongi 49%</td>
     </tr>
   </tbody>
 </table>
+
+  <p class='note'><b>Results &amp; Accuracy:</b> No completed matches scored yet.</p>
+
+  <p class='note'><b>CLV &amp; ROI:</b> Nothing to report yet.</p>
+
   <p class="small">Generated automatically via GitHub Actions.</p>
 </body>
 </html>
