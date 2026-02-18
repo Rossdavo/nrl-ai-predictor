@@ -1,5 +1,5 @@
 date,home,away,home_pts,away_pts
-2/03/2025,	Raiders,	Warriors,	30	8
+2/03/2025	Raiders	Warriors	30	8
 2/03/2025	Panthers	Sharks	28	22
 6/03/2025	Roosters	Broncos	14	50
 7/03/2025	Wests Tigers	Knights	8	10
@@ -10,9 +10,9 @@ date,home,away,home_pts,away_pts
 13/03/2025	Knights	Dolphins	26	12
 14/03/2025	Warriors	Sea Eagles	36	16
 14/03/2025	Panthers	Roosters	32	38
-15/03/2025	Raiders	Broncos	32	22
-15/03/2025	Cowboys	Sharks	12	36
 15/03/2025	Dragons	Rabbitohs	24	25
+15/03/2025	Cowboys	Sharks	12	36
+15/03/2025	Raiders	Broncos	32	22
 16/03/2025	Eels	Wests Tigers	6	32
 16/03/2025	Bulldogs	Titans	40	24
 20/03/2025	Storm	Panthers	30	24
@@ -24,8 +24,8 @@ date,home,away,home_pts,away_pts
 23/03/2025	Eels	Bulldogs	8	16
 23/03/2025	Sea Eagles	Raiders	40	12
 27/03/2025	Rabbitohs	Panthers	28	18
-28/03/2025	Dolphins	Broncos	12	20
 28/03/2025	Roosters	Titans	12	30
+28/03/2025	Dolphins	Broncos	12	20
 29/03/2025	Dragons	Storm	14	8
 29/03/2025	Cowboys	Raiders	30	20
 29/03/2025	Sharks	Bulldogs	6	20
@@ -37,8 +37,8 @@ date,home,away,home_pts,away_pts
 5/04/2025	Eels	Dragons	23	22
 5/04/2025	Titans	Dolphins	10	36
 5/04/2025	Broncos	Wests Tigers	46	24
-6/04/2025	Bulldogs	Knights	20	0
 6/04/2025	Sea Eagles	Storm	24	48
+6/04/2025	Bulldogs	Knights	20	0
 10/04/2025	Dolphins	Panthers	30	12
 11/04/2025	Dragons	Titans	38	16
 11/04/2025	Broncos	Roosters	16	26
@@ -50,8 +50,8 @@ date,home,away,home_pts,away_pts
 17/04/2025	Sea Eagles	Dragons	18	20
 18/04/2025	Bulldogs	Rabbitohs	32	0
 18/04/2025	Dolphins	Storm	42	22
-19/04/2025	Roosters	Panthers	12	40
 19/04/2025	Warriors	Broncos	20	18
+19/04/2025	Roosters	Panthers	12	40
 20/04/2025	Titans	Raiders	20	30
 20/04/2025	Knights	Sharks	14	34
 21/04/2025	Wests Tigers	Eels	22	38
@@ -63,8 +63,8 @@ date,home,away,home_pts,away_pts
 26/04/2025	Panthers	Sea Eagles	10	26
 27/04/2025	Raiders	Dolphins	40	28
 27/04/2025	Wests Tigers	Sharks	20	18
-2/05/2025	Roosters	Dolphins	36	26
 2/05/2025	Sharks	Eels	28	18
+2/05/2025	Roosters	Dolphins	36	26
 3/05/2025	Rabbitohs	Knights	4	30
 3/05/2025	Warriors	Cowboys	30	26
 3/05/2025	Wests Tigers	Dragons	34	28
@@ -77,8 +77,8 @@ date,home,away,home_pts,away_pts
 10/05/2025	Raiders	Bulldogs	20	32
 10/05/2025	Dragons	Warriors	14	15
 10/05/2025	Cowboys	Panthers	30	30
-11/05/2025	Sea Eagles	Sharks	14	30
 11/05/2025	Storm	Wests Tigers	64	0
+11/05/2025	Sea Eagles	Sharks	14	30
 16/05/2025	Knights	Eels	6	28
 16/05/2025	Bulldogs	Roosters	24	20
 17/05/2025	Dolphins	Warriors	12	16
@@ -89,8 +89,8 @@ date,home,away,home_pts,away_pts
 18/05/2025	Wests Tigers	Rabbitohs	14	22
 22/05/2025	Bulldogs	Dolphins	8	44
 23/05/2025	Eels	Sea Eagles	30	10
-24/05/2025	Roosters	Sharks	42	16
 24/05/2025	Panthers	Knights	6	25
+24/05/2025	Roosters	Sharks	42	16
 25/05/2025	Warriors	Raiders	10	16
 30/05/2025	Dragons	Knights	20	6
 31/05/2025	Titans	Storm	16	28
@@ -104,8 +104,8 @@ date,home,away,home_pts,away_pts
 6/06/2025	Dolphins	Dragons	56	6
 7/06/2025	Sharks	Warriors	10	40
 7/06/2025	Broncos	Titans	44	14
-8/06/2025	Wests Tigers	Panthers	14	18
 8/06/2025	Raiders	Rabbitohs	36	12
+8/06/2025	Wests Tigers	Panthers	14	18
 9/06/2025	Bulldogs	Eels	30	12
 12/06/2025	Sharks	Dragons	30	18
 13/06/2025	Titans	Sea Eagles	28	8
@@ -116,9 +116,9 @@ date,home,away,home_pts,away_pts
 21/06/2025	Warriors	Panthers	18	28
 21/06/2025	Dolphins	Knights	20	26
 21/06/2025	Rabbitohs	Storm	24	25
-22/06/2025	Eels	Titans	36	20
-22/06/2025	Roosters	Cowboys	42	8
 22/06/2025	Broncos	Sharks	34	28
+22/06/2025	Roosters	Cowboys	42	8
+22/06/2025	Eels	Titans	36	20
 26/06/2025	Panthers	Bulldogs	8	6
 27/06/2025	Sea Eagles	Wests Tigers	28	10
 27/06/2025	Knights	Raiders	18	22
@@ -130,8 +130,8 @@ date,home,away,home_pts,away_pts
 4/07/2025	Bulldogs	Broncos	18	22
 5/07/2025	Raiders	Dragons	28	24
 5/07/2025	Cowboys	Storm	20	26
-6/07/2025	Sea Eagles	Rabbitohs	30	12
 6/07/2025	Roosters	Wests Tigers	28	30
+6/07/2025	Sea Eagles	Rabbitohs	30	12
 11/07/2025	Sharks	Dolphins	24	12
 12/07/2025	Knights	Storm	14	32
 12/07/2025	Dragons	Roosters	24	31
@@ -142,9 +142,9 @@ date,home,away,home_pts,away_pts
 17/07/2025	Dolphins	Cowboys	43	24
 18/07/2025	Sharks	Roosters	31	18
 18/07/2025	Panthers	Rabbitohs	30	10
-19/07/2025	Storm	Sea Eagles	16	18
-19/07/2025	Bulldogs	Dragons	20	18
 19/07/2025	Raiders	Eels	40	16
+19/07/2025	Bulldogs	Dragons	20	18
+19/07/2025	Storm	Sea Eagles	16	18
 20/07/2025	Wests Tigers	Titans	21	20
 20/07/2025	Knights	Warriors	15	20
 24/07/2025	Roosters	Storm	30	34
@@ -156,11 +156,11 @@ date,home,away,home_pts,away_pts
 27/07/2025	Raiders	Knights	44	18
 27/07/2025	Bulldogs	Sea Eagles	42	4
 31/07/2025	Eels	Storm	10	16
-1/08/2025	Broncos	Rabbitohs	60	14
 1/08/2025	Warriors	Dolphins	18	20
-2/08/2025	Sea Eagles	Roosters	4	20
+1/08/2025	Broncos	Rabbitohs	60	14
 2/08/2025	Titans	Panthers	26	30
 2/08/2025	Dragons	Raiders	18	12
+2/08/2025	Sea Eagles	Roosters	4	20
 3/08/2025	Wests Tigers	Bulldogs	28	14
 3/08/2025	Sharks	Cowboys	32	12
 7/08/2025	Storm	Broncos	22	2
@@ -182,9 +182,9 @@ date,home,away,home_pts,away_pts
 21/08/2025	Rabbitohs	Dragons	40	0
 22/08/2025	Panthers	Raiders	16	20
 22/08/2025	Storm	Bulldogs	20	14
-23/08/2025	Eels	Roosters	30	10
-23/08/2025	Titans	Warriors	18	32
 23/08/2025	Sea Eagles	Dolphins	58	30
+23/08/2025	Titans	Warriors	18	32
+23/08/2025	Eels	Roosters	30	10
 24/08/2025	Knights	Broncos	12	46
 24/08/2025	Wests Tigers	Cowboys	28	34
 28/08/2025	Bulldogs	Panthers	28	4
