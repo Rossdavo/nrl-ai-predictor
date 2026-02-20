@@ -104,7 +104,7 @@ def norm_team(name: str) -> str:
 # Regions (must use SHORT names only)
 # ----------------------------
 TEAM_REGION = {
-ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
+teams = ALL_TEAMS
     "Broncos": "QLD",
     "Cowboys": "QLD",
     "Dolphins": "QLD",
