@@ -630,33 +630,25 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 # BUILD OUTPUT
 # ----------------------------
 def build_predictions():
-
     # --- Fixture selection ---
     if MODE == "AUTO":
         # 1) Prefer odds.csv (best for auto-switching to Round 1 once markets appear)
         fixtures = fixtures_from_odds_csv("odds.csv")
-
         # 2) If no odds fixtures yet, try the feed
         if not fixtures:
             fixtures = fetch_upcoming_fixtures(days_ahead=14)
-
         # 3) If still nothing, fall back to hardcoded trials
         if not fixtures:
             print("[warn] No upcoming fixtures found from odds or feed — falling back to FIXTURES")
             fixtures = FIXTURES
     else:
         fixtures = FIXTURES
-
-    teams = ALL_TEAMS
-    
-    ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
-
+    # --- Team selection ---
+    teams = sorted(list(TEAM_REGION.keys()))  # Define teams directly; avoids shadowing issues
     # Load saved ratings first (so we can still run if results fetch is empty/slow)
     saved_model = load_saved_ratings()
-
     results = fetch_completed_results()
     fresh_model = fit_attack_defence(results, teams)
-
     # Prefer freshly fitted ratings; otherwise fall back to saved ratings
     if fresh_model:
         ad_model = fresh_model
@@ -665,13 +657,10 @@ def build_predictions():
         ad_model = saved_model
     else:
         ad_model = None
-
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
     odds = load_odds()
-
     rows = []
-
     for m in fixtures:
         if ad_model:
             win_prob, exp_margin, exp_total, conf = simulate_match_ad(
@@ -685,30 +674,24 @@ def build_predictions():
             exp_home_pts = exp_total / 2.0
             exp_away_pts = exp_total / 2.0
             rating_mode = "FALLBACK"
-
         home_named = _try_probs_named(starters_by_team.get(m.home, {}), exp_home_pts)
         away_named = _try_probs_named(starters_by_team.get(m.away, {}), exp_away_pts)
-
         if not home_named:
             home_named = _try_profiles_fallback(exp_home_pts)
         if not away_named:
             away_named = _try_profiles_fallback(exp_away_pts)
-
         # Odds + value detection
         key = (m.date, m.home, m.away)
         o = odds.get(key, {})
         home_odds = o.get("home_odds", float("nan"))
         away_odds = o.get("away_odds", float("nan"))
-
         home_edge = value_edge(win_prob, home_odds) if not math.isnan(home_odds) else float("nan")
         away_edge = value_edge(1 - win_prob, away_odds) if not math.isnan(away_odds) else float("nan")
-
         value_flag = ""
         if not math.isnan(home_edge) and home_edge >= 0.03:
             value_flag = f"HOME VALUE +{home_edge:.0%}"
         elif not math.isnan(away_edge) and away_edge >= 0.03:
             value_flag = f"AWAY VALUE +{away_edge:.0%}"
-
         rows.append({
             "mode": MODE,
             "rating_mode": rating_mode,
@@ -729,11 +712,8 @@ def build_predictions():
             "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
-
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
-
-
 if __name__ == "__main__":
     df = build_predictions()
     df.to_csv("predictions.csv", index=False)
