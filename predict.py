@@ -59,30 +59,46 @@ FIXTURES: List[Match] = [
 FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 TEAM_REGION = {
-    "Broncos": "QLD",
-    "Cowboys": "QLD",
-    "Dolphins": "QLD",
-    "Titans": "QLD",
+   TEAM_NAME_NORMALISE = {
+    # long -> short
+    "Canterbury Bulldogs": "Bulldogs",
+    "St George Illawarra Dragons": "Dragons",
+    "Newcastle Knights": "Knights",
+    "North Queensland Cowboys": "Cowboys",
+    "Melbourne Storm": "Storm",
+    "Parramatta Eels": "Eels",
+    "New Zealand Warriors": "Warriors",
+    "Sydney Roosters": "Roosters",
+    "Brisbane Broncos": "Broncos",
+    "Penrith Panthers": "Panthers",
+    "Cronulla Sutherland Sharks": "Sharks",
+    "Gold Coast Titans": "Titans",
+    "Manly Warringah Sea Eagles": "Sea Eagles",
+    "Canberra Raiders": "Raiders",
+    "Dolphins": "Dolphins",
+    "South Sydney Rabbitohs": "Rabbitohs",
 
-    "Storm": "VIC",
-
-    "Raiders": "ACT",
-
-    "Warriors": "NZ",
-
-    "Roosters": "NSW",
-    "Rabbitohs": "NSW",
-    "Sea Eagles": "NSW",
-    "Sharks": "NSW",
-    "Dragons": "NSW",
-    "Wests Tigers": "NSW",
-    "Bulldogs": "NSW",
-    "Eels": "NSW",
-    "Knights": "NSW",
-    "Panthers": "NSW",
+    # short -> short (safe)
+    "Bulldogs": "Bulldogs",
+    "Dragons": "Dragons",
+    "Knights": "Knights",
+    "Cowboys": "Cowboys",
+    "Storm": "Storm",
+    "Eels": "Eels",
+    "Warriors": "Warriors",
+    "Roosters": "Roosters",
+    "Broncos": "Broncos",
+    "Panthers": "Panthers",
+    "Sharks": "Sharks",
+    "Titans": "Titans",
+    "Sea Eagles": "Sea Eagles",
+    "Raiders": "Raiders",
+    "Rabbitohs": "Rabbitohs",
 }
 
-ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
+def norm_team(name: str) -> str:
+    name = str(name).strip()
+    return TEAM_NAME_NORMALISE.get(name, name)
 
 def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, float]:
     """
