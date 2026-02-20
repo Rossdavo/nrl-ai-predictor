@@ -77,6 +77,7 @@ TEAM_REGION = {
     "Canberra Raiders": "Raiders",
     "Dolphins": "Dolphins",
     "South Sydney Rabbitohs": "Rabbitohs",
+}
 
     # short -> short (safe)
     "Bulldogs": "Bulldogs",
