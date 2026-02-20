@@ -536,12 +536,10 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
     out.sort(key=lambda x: x[1], reverse=True)
     return out[:3]
 def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
-    """
-    Returns odds keyed by (date, home, away) using NORMALISED short team names.
-    """
     try:
         df = pd.read_csv(path)
         out = {}
+
         for _, r in df.iterrows():
             date = str(r.get("date", "")).strip()
             home = norm_team(r.get("home", ""))
@@ -550,13 +548,14 @@ def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, fl
             if not date or not home or not away:
                 continue
 
-            home_odds = pd.to_numeric(pd.Series([r.get("home_odds")]), errors="coerce").iloc[0]
-            away_odds = pd.to_numeric(pd.Series([r.get("away_odds")]), errors="coerce").iloc[0]
+            home_odds = pd.to_numeric(r.get("home_odds"), errors="coerce")
+            away_odds = pd.to_numeric(r.get("away_odds"), errors="coerce")
 
             out[(date, home, away)] = {
-                "home_odds": float(home_odds) if home_odds == home_odds else float("nan"),
-                "away_odds": float(away_odds) if away_odds == away_odds else float("nan"),
+                "home_odds": float(home_odds) if pd.notna(home_odds) else float("nan"),
+                "away_odds": float(away_odds) if pd.notna(away_odds) else float("nan"),
             }
+
         return out
     except Exception:
         return {}
