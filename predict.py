@@ -58,8 +58,7 @@ FIXTURES: List[Match] = [
 # ----------------------------
 FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
-TEAM_REGION = {
-   TEAM_NAME_NORMALISE = {
+TEAM_NAME_NORMALISE = {
     # long -> short
     "Canterbury Bulldogs": "Bulldogs",
     "St George Illawarra Dragons": "Dragons",
@@ -75,9 +74,8 @@ TEAM_REGION = {
     "Gold Coast Titans": "Titans",
     "Manly Warringah Sea Eagles": "Sea Eagles",
     "Canberra Raiders": "Raiders",
-    "Dolphins": "Dolphins",
     "South Sydney Rabbitohs": "Rabbitohs",
-}
+    "Dolphins": "Dolphins",
 
     # short -> short (safe)
     "Bulldogs": "Bulldogs",
@@ -100,6 +98,33 @@ TEAM_REGION = {
 def norm_team(name: str) -> str:
     name = str(name).strip()
     return TEAM_NAME_NORMALISE.get(name, name)
+
+# ----------------------------
+# Regions (must use SHORT names only)
+# ----------------------------
+TEAM_REGION = {
+    "Broncos": "QLD",
+    "Cowboys": "QLD",
+    "Dolphins": "QLD",
+    "Titans": "QLD",
+
+    "Storm": "VIC",
+
+    "Raiders": "ACT",
+
+    "Warriors": "NZ",
+
+    "Roosters": "NSW",
+    "Rabbitohs": "NSW",
+    "Sea Eagles": "NSW",
+    "Sharks": "NSW",
+    "Dragons": "NSW",
+    "Wests Tigers": "NSW",
+    "Bulldogs": "NSW",
+    "Eels": "NSW",
+    "Knights": "NSW",
+    "Panthers": "NSW",
+}
 
 def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, float]:
     """
