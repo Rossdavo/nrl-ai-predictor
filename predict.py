@@ -565,12 +565,8 @@ def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
     except Exception:
         pass
 def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
-    """
-    Build upcoming fixtures from odds.csv (most reliable once bookmakers post Round 1).
-    """
     if not os.path.exists(path):
         return []
-
     try:
         o = pd.read_csv(path)
     except Exception:
@@ -583,14 +579,15 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     fixtures: List[Match] = []
     for _, r in o.iterrows():
         date = str(r.get("date", "")).strip()
-        home = str(r.get("home", "")).strip()
-        away = str(r.get("away", "")).strip()
+        home = norm_team(r.get("home", ""))
+        away = norm_team(r.get("away", ""))
+
         if not date or not home or not away:
             continue
 
         fixtures.append(Match(
             date=date,
-            kickoff_local="",   # not always available from odds
+            kickoff_local="",
             home=home,
             away=away,
             venue=""
