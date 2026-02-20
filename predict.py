@@ -214,14 +214,24 @@ def fetch_completed_results() -> pd.DataFrame:
     """
     Returns dataframe with columns: date, home, away, home_pts, away_pts
 
-    Behaviour:
-    - Try to fetch live results (with retries)
-    - If successful, save results_cache.csv
-    - If fetch fails, load results_cache.csv if it exists
-    - If nothing available, return empty dataframe
+    New behaviour (preferred for your setup):
+    - Always try local cache FIRST (results_cache.csv)
+    - If cache missing/invalid, then try web
+    - If web fails, return empty
     """
-    headers = {"User-Agent": "Mozilla/5.0"}
+    # 1) Local cache first (this is what you want)
+    if os.path.exists(RESULTS_CACHE_PATH):
+        try:
+            cached = pd.read_csv(RESULTS_CACHE_PATH)
+            needed = {"date", "home", "away", "home_pts", "away_pts"}
+            if needed.issubset(set(cached.columns)) and len(cached) > 20:
+                print(f"[info] Using cached results: {RESULTS_CACHE_PATH} ({len(cached)} rows)")
+                return cached
+        except Exception as e:
+            print(f"[warn] Could not read cached results: {e}")
 
+    # 2) If no cache, try web fetch
+    headers = {"User-Agent": "Mozilla/5.0"}
     html = None
     last_err = None
 
@@ -236,17 +246,6 @@ def fetch_completed_results() -> pd.DataFrame:
             time.sleep(2 * (attempt + 1))
 
     if html is None:
-        # Fallback to cached results if available
-        if os.path.exists(RESULTS_CACHE_PATH):
-            try:
-                cached = pd.read_csv(RESULTS_CACHE_PATH)
-                needed = {"date", "home", "away", "home_pts", "away_pts"}
-                if needed.issubset(set(cached.columns)):
-                    print(f"[warn] results fetch failed: {last_err} — using cached results")
-                    return cached
-            except Exception:
-                pass
-
         print(f"[warn] results fetch failed: {last_err} — no cache available")
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
@@ -266,7 +265,7 @@ def fetch_completed_results() -> pd.DataFrame:
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     out = pd.DataFrame({
-        "date": pd.to_datetime(df.get("Date", pd.Timestamp.utcnow()), errors="coerce").astype(str),
+        "date": pd.to_datetime(df.get("Date", pd.Timestamp.utcnow()), errors="coerce").dt.strftime("%Y-%m-%d"),
         "home": df["Home"].astype(str),
         "away": df["Away"].astype(str),
         "home_pts": pd.to_numeric(df["HomeScore"], errors="coerce"),
@@ -276,6 +275,7 @@ def fetch_completed_results() -> pd.DataFrame:
     # Save cache for next run
     try:
         out.to_csv(RESULTS_CACHE_PATH, index=False)
+        print(f"[info] Saved fetched results to {RESULTS_CACHE_PATH} ({len(out)} rows)")
     except Exception:
         pass
 
