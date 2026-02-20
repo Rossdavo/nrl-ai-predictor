@@ -505,15 +505,16 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
     return out[:3]
 def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
     """
-    Returns odds keyed by (date, home, away)
+    Returns odds keyed by (date, home, away) using NORMALISED short team names.
     """
     try:
         df = pd.read_csv(path)
         out = {}
         for _, r in df.iterrows():
             date = str(r.get("date", "")).strip()
-            home = str(r.get("home", "")).strip()
-            away = str(r.get("away", "")).strip()
+            home = norm_team(r.get("home", ""))
+            away = norm_team(r.get("away", ""))
+
             if not date or not home or not away:
                 continue
 
