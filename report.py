@@ -10,33 +10,75 @@ HTML_TEMPLATE = """<!doctype html>
   <meta charset="utf-8">
   <title>NRL AI Predictions</title>
   <style>
-    body {{ font-family: Arial, sans-serif; margin: 28px; }}
-    h1 {{ margin-bottom: 6px; }}
-    h2 {{ margin-top: 28px; }}
-    .note {{ color: #444; margin-top: 0; }}
-    table {{ border-collapse: collapse; width: 100%; margin-top: 18px; }}
-    th, td {{ border: 1px solid #ddd; padding: 10px; vertical-align: top; }}
-    th {{ background: #f6f6f6; text-align: left; }}
-    .small {{ font-size: 12px; color: #666; }}
-    .value {{ font-weight: bold; }}
-    .positive-edge { background-color: #e6ffe6; }
-    .negative-edge { background-color: #ffe6e6; }
-    ul {{ margin-top: 10px; }}
+    :root {{
+      --bg: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --header: #f9fafb;
+      --pos: #ecfdf5;
+      --neg: #fef2f2;
+      --card: #ffffff;
+      --shadow: 0 6px 20px rgba(0,0,0,.06);
+    }}
+
+    body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 28px; background: var(--bg); color: var(--text); }}
+    h1 {{ margin: 0 0 6px 0; font-size: 28px; }}
+    h2 {{ margin-top: 28px; font-size: 18px; }}
+    .note {{ color: var(--muted); margin-top: 6px; }}
+    .small {{ font-size: 12px; color: var(--muted); margin-top: 18px; }}
+
+    .wrap {{ max-width: 1100px; margin: 0 auto; }}
+    .card {{ background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }}
+
+    .downloads ul {{ display: flex; flex-wrap: wrap; gap: 10px; padding-left: 18px; }}
+    .downloads a {{ text-decoration: none; border: 1px solid var(--border); padding: 8px 10px; border-radius: 10px; color: var(--text); background: var(--header); }}
+    .downloads a:hover {{ filter: brightness(0.98); }}
+
+    table {{ border-collapse: separate; border-spacing: 0; width: 100%; margin-top: 14px; font-size: 14px; }}
+    th, td {{ border-bottom: 1px solid var(--border); padding: 10px 12px; vertical-align: top; }}
+    th {{ position: sticky; top: 0; background: var(--header); text-align: left; font-weight: 650; z-index: 2; border-top: 1px solid var(--border); }}
+    tr:nth-child(even) td {{ background: #fcfcfd; }}
+
+    .badge {{ display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); background: var(--header); }}
+    .badge-home {{ background: #eef2ff; }}
+    .badge-away {{ background: #fff7ed; }}
+
+    .row-pos td {{ background: var(--pos) !important; }}
+    .row-neg td {{ background: var(--neg) !important; }}
+    .muted {{ color: var(--muted); }}
+
+    @media (max-width: 900px) {{
+      body {{ margin: 14px; }}
+      table {{ font-size: 13px; }}
+      th, td {{ padding: 8px 10px; }}
+    }}
   </style>
 </head>
 <body>
-  <h1>NRL AI Predictions</h1>
-  <p class="note">Automated predictions with model probabilities, odds comparison, value detection, and staking suggestions.</p>
+  <div class="wrap">
+    <div class="card">
+      <h1>NRL AI Predictions</h1>
+      <p class="note">Automated predictions with model probabilities, odds comparison, value detection, and staking suggestions.</p>
+      <div class="downloads">
+        {downloads}
+      </div>
+    </div>
 
-  {downloads}
+    <div class="card" style="margin-top:16px;">
+      {table}
+    </div>
 
-  {table}
+    <div class="card" style="margin-top:16px;">
+      {accuracy}
+    </div>
 
-  {accuracy}
+    <div class="card" style="margin-top:16px;">
+      {clv_roi}
+    </div>
 
-  {clv_roi}
-
-  <p class="small">Generated automatically via GitHub Actions.</p>
+    <p class="small">Generated automatically via GitHub Actions.</p>
+  </div>
 </body>
 </html>
 """
