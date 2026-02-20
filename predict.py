@@ -104,18 +104,13 @@ def norm_team(name: str) -> str:
 # Regions (must use SHORT names only)
 # ----------------------------
 TEAM_REGION = {
-teams = ALL_TEAMS
     "Broncos": "QLD",
     "Cowboys": "QLD",
     "Dolphins": "QLD",
     "Titans": "QLD",
-
     "Storm": "VIC",
-
     "Raiders": "ACT",
-
     "Warriors": "NZ",
-
     "Roosters": "NSW",
     "Rabbitohs": "NSW",
     "Sea Eagles": "NSW",
@@ -127,6 +122,8 @@ teams = ALL_TEAMS
     "Knights": "NSW",
     "Panthers": "NSW",
 }
+
+ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
 
 def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, float]:
     """
