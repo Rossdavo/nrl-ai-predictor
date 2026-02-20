@@ -597,7 +597,7 @@ def build_predictions():
             fixtures = fetch_upcoming_fixtures(days_ahead=14)
 
         # 3) If still nothing, fall back to hardcoded trials
-        if not fixtures:
+    if not fixtures:
             print("[warn] No upcoming fixtures found from odds or feed — falling back to FIXTURES")
             fixtures = FIXTURES
     else:
