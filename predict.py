@@ -93,6 +93,7 @@ TEAM_NAME_NORMALISE = {
     "Sea Eagles": "Sea Eagles",
     "Raiders": "Raiders",
     "Rabbitohs": "Rabbitohs",
+    "Wests Tigers": "Wests Tigers",
 }
 
 def norm_team(name: str) -> str:
