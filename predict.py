@@ -500,9 +500,13 @@ def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, fl
             away = str(r.get("away", "")).strip()
             if not date or not home or not away:
                 continue
+
+            home_odds = pd.to_numeric(pd.Series([r.get("home_odds")]), errors="coerce").iloc[0]
+            away_odds = pd.to_numeric(pd.Series([r.get("away_odds")]), errors="coerce").iloc[0]
+
             out[(date, home, away)] = {
-                "home_odds": float(r.get("home_odds")),
-                "away_odds": float(r.get("away_odds")),
+                "home_odds": float(home_odds) if home_odds == home_odds else float("nan"),
+                "away_odds": float(away_odds) if away_odds == away_odds else float("nan"),
             }
         return out
     except Exception:
