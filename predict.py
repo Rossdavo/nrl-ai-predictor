@@ -648,6 +648,7 @@ def build_predictions():
         fixtures = FIXTURES
 
     teams = ALL_TEAMS
+    
     ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
 
     # Load saved ratings first (so we can still run if results fetch is empty/slow)
