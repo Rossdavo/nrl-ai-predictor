@@ -628,7 +628,7 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 def build_predictions():
 
     # --- Fixture selection ---
-   if MODE == "AUTO":
+    if MODE == "AUTO":
         # 1) Prefer odds.csv (best for auto-switching to Round 1 once markets appear)
         fixtures = fixtures_from_odds_csv("odds.csv")
 
@@ -637,11 +637,11 @@ def build_predictions():
             fixtures = fetch_upcoming_fixtures(days_ahead=14)
 
         # 3) If still nothing, fall back to hardcoded trials
-    if not fixtures:
+        if not fixtures:
             print("[warn] No upcoming fixtures found from odds or feed — falling back to FIXTURES")
             fixtures = FIXTURES
     else:
-        fixtures = FIXTURES 
+        fixtures = FIXTURES
 
     teams = ALL_TEAMS
 
