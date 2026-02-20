@@ -17,7 +17,7 @@ import os
 # "TRIALS" = use hardcoded fixtures
 # "AUTO"   = pull upcoming fixtures automatically
 # ----------------------------
-MODE = "TRIALS"
+MODE = "AUTO"
 
 # ----------------------------
 # Team lists (trials page) – optional
@@ -550,7 +550,7 @@ def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
 # ----------------------------
 def build_predictions() -> pd.DataFrame:
     if MODE == "AUTO":
-        fixtures = fetch_upcoming_fixtures(days_ahead=7)
+        fixtures = fetch_upcoming_fixtures(days_ahead=14)
     else:
         fixtures = FIXTURES
 
