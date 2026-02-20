@@ -552,9 +552,9 @@ def build_predictions() -> pd.DataFrame:
     if MODE == "AUTO":
         fixtures = fetch_upcoming_fixtures(days_ahead=14)
         if not fixtures:
-        print("[warn] No upcoming fixtures found from feed — falling back to hardcoded FIXTURES")
-        fixtures = FIXTURES
-else:
+           print("[warn] No upcoming fixtures found from feed — falling back to hardcoded FIXTURES")
+           fixtures = FIXTURES
+   else:
     fixtures = FIXTURES
 
     teams = ALL_TEAMS
