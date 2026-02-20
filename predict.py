@@ -166,6 +166,7 @@ def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, f
         home_delta += 0.1
 
     return home_delta, away_delta
+    
 def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
     now = datetime.now(SYDNEY_TZ)
     end = now + pd.Timedelta(days=days_ahead)
