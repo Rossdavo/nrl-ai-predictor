@@ -1,56 +1,56 @@
 import os
 import pandas as pd
-from pandas.errors import EmptyDataError
 
 def main():
-    src = "data/results_2025.csv"  # FORCE data folder
+    # your repo has results_2025.csv at ROOT (not /data), so try both safely
+    candidates = ["results_2025.csv", "data/results_2025.csv"]
+    src = None
+    for c in candidates:
+        if os.path.exists(c):
+            src = c
+            break
 
-    print("PWD:", os.getcwd())
-    print("Reading:", src)
-
-    if not os.path.exists(src):
-        print(f"ERROR: {src} not found")
+    if src is None:
+        print("Could not find results_2025.csv (tried root + data/)")
+        # write an empty cache so downstream never crashes
         pd.DataFrame(columns=["date","home","away","home_pts","away_pts"]).to_csv("results_cache.csv", index=False)
         return
 
-    size = os.path.getsize(src)
-    print("File size:", size, "bytes")
-    if size == 0:
-        print("ERROR: results_2025.csv is EMPTY (0 bytes)")
-        pd.DataFrame(columns=["date","home","away","home_pts","away_pts"]).to_csv("results_cache.csv", index=False)
+    print(f"Reading: {src}")
+
+    # IMPORTANT: your pasted data is TAB separated
+    # and has a header line like: date,home,away,home_pts,away_pts
+    # followed by tabbed rows.
+    df = pd.read_csv(src, sep=None, engine="python")  # auto-detect delimiter
+
+    # Normalize column names if needed
+    df.columns = [c.strip().lower() for c in df.columns]
+
+    # Expected columns
+    needed = ["date", "home", "away", "home_pts", "away_pts"]
+    if not set(needed).issubset(df.columns):
+        print("File columns found:", df.columns.tolist())
+        print("Expected:", needed)
+        pd.DataFrame(columns=needed).to_csv("results_cache.csv", index=False)
         return
 
-    try:
-        df = pd.read_csv(src)
-    except EmptyDataError:
-        print("ERROR: CSV has no columns (empty or broken file)")
-        pd.DataFrame(columns=["date","home","away","home_pts","away_pts"]).to_csv("results_cache.csv", index=False)
-        return
+    df = df[needed].copy()
 
-    # If your file already has correct headers, keep it simple:
-    expected = {"date","home","away","home_pts","away_pts"}
-    if expected.issubset(set(df.columns)):
-        df = df[["date","home","away","home_pts","away_pts"]]
-    else:
-        # fallback rename mapping (only used if your headers differ)
-        df = df.rename(columns={
-            "Date": "date",
-            "Home": "home",
-            "Away": "away",
-            "Homescore": "home_pts",
-            "Awayscore": "away_pts",
-        })
-        df = df[["date","home","away","home_pts","away_pts"]]
+    # Convert date to ISO YYYY-MM-DD (Australian format in your file is D/M/YYYY)
+    df["date"] = pd.to_datetime(df["date"], dayfirst=True, errors="coerce").dt.strftime("%Y-%m-%d")
 
-    # Append to results_cache.csv
-    if os.path.exists("results_cache.csv") and os.path.getsize("results_cache.csv") > 0:
-        try:
-            existing = pd.read_csv("results_cache.csv")
-            df = pd.concat([existing, df], ignore_index=True)
-        except Exception:
-            pass
+    # Ensure scores are numeric
+    df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
+    df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
 
-    df = df.drop_duplicates(subset=["date","home","away"])
+    df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+
+    # Append to results_cache.csv if exists
+    if os.path.exists("results_cache.csv"):
+        existing = pd.read_csv("results_cache.csv")
+        df = pd.concat([existing, df], ignore_index=True)
+
+    df = df.drop_duplicates(subset=["date", "home", "away"]).sort_values(["date","home"])
     df.to_csv("results_cache.csv", index=False)
 
     print(f"Loaded {len(df)} total results into results_cache.csv")
