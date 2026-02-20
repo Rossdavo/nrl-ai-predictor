@@ -549,12 +549,12 @@ def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
 # BUILD OUTPUT
 # ----------------------------
 def build_predictions() -> pd.DataFrame:
-    if MODE == "AUTO":
-        fixtures = fetch_upcoming_fixtures(days_ahead=14)
-        if not fixtures:
-           print("[warn] No upcoming fixtures found from feed — falling back to hardcoded FIXTURES")
-           fixtures = FIXTURES
-   else:
+if MODE == "AUTO":
+    fixtures = fetch_upcoming_fixtures(days_ahead=14)
+    if not fixtures:
+       print("[warn] No upcoming fixtures found from feed — falling back to hardcoded FIXTURES")
+       fixtures = FIXTURES
+else:
     fixtures = FIXTURES
 
     teams = ALL_TEAMS
