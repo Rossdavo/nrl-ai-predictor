@@ -19,6 +19,8 @@ HTML_TEMPLATE = """<!doctype html>
     th {{ background: #f6f6f6; text-align: left; }}
     .small {{ font-size: 12px; color: #666; }}
     .value {{ font-weight: bold; }}
+    .positive-edge { background-color: #e6ffe6; }
+    .negative-edge { background-color: #ffe6e6; }
     ul {{ margin-top: 10px; }}
   </style>
 </head>
