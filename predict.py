@@ -599,6 +599,7 @@ def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
 def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     if not os.path.exists(path):
         return []
+
     try:
         o = pd.read_csv(path)
     except Exception:
@@ -617,19 +618,16 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
         if not date or not home or not away:
             continue
 
-        fixtures.append(
-            Match(
-                date=date,
-                kickoff_local="00:00",
-                home=home,
-                away=away,
-                venue=""
-            )
-        )
+        fixtures.append(Match(
+            date=date,
+            kickoff_local="",   # unknown from odds file
+            home=home,
+            away=away,
+            venue=""            # unknown from odds file
+        ))
 
     fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
     return fixtures
-
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
