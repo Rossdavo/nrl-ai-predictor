@@ -104,6 +104,7 @@ def norm_team(name: str) -> str:
 # Regions (must use SHORT names only)
 # ----------------------------
 TEAM_REGION = {
+ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
     "Broncos": "QLD",
     "Cowboys": "QLD",
     "Dolphins": "QLD",
@@ -184,6 +185,7 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
         dt_str = item.get("date") or item.get("Date") or item.get("startDate") or item.get("StartDate")
         if not dt_str:
             continue
+
         try:
             dt = pd.to_datetime(dt_str, utc=True).tz_convert(SYDNEY_TZ)
         except Exception:
@@ -198,6 +200,9 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
 
         if not home or not away:
             continue
+
+        home = norm_team(home)
+        away = norm_team(away)
 
         matches.append(
             Match(
@@ -615,13 +620,15 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
         if not date or not home or not away:
             continue
 
-        fixtures.append(Match(
-            date=date,
-            kickoff_local="",
-            home=home,
-            away=away,
-            venue=""
-        ))
+        fixtures.append(
+            Match(
+                date=date,
+                kickoff_local="00:00",
+                home=home,
+                away=away,
+                venue=""
+            )
+        )
 
     fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
     return fixtures
@@ -630,19 +637,24 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 # BUILD OUTPUT
 # ----------------------------
 def build_predictions():
+
     # --- Fixture selection ---
     if MODE == "AUTO":
-        # 1) Prefer odds.csv (best for auto-switching to Round 1 once markets appear)
+        # 1) Prefer odds.csv (best for auto-switching once markets appear)
         fixtures = fixtures_from_odds_csv("odds.csv")
+
         # 2) If no odds fixtures yet, try the feed
         if not fixtures:
             fixtures = fetch_upcoming_fixtures(days_ahead=14)
+
         # 3) If still nothing, fall back to hardcoded trials
         if not fixtures:
             print("[warn] No upcoming fixtures found from odds or feed — falling back to FIXTURES")
             fixtures = FIXTURES
     else:
         fixtures = FIXTURES
+
+    teams = ALL_TEAMS
     # --- Team selection ---
     teams = sorted(list(TEAM_REGION.keys()))  # Define teams directly; avoids shadowing issues
     # Load saved ratings first (so we can still run if results fetch is empty/slow)
