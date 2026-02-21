@@ -960,19 +960,15 @@ def build_predictions():
             df = build_predictions()
             df.to_csv("predictions.csv", index=False)
 
-            # ✅ Tiny debug that won't spam logs
-            cols = list(df.columns)
-            print(f"[info] predictions.csv columns: {cols}")
+            # Debug: confirm structure + bets
+            print(f"[info] predictions.csv columns: {list(df.columns)}")
 
        if "stake" in df.columns:
-           stake_num = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
-           bet_count = int((stake_num > 0).sum())
+           stake_series = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
+           bet_count = int((stake_series > 0).sum())
            print(f"[info] bets in predictions.csv: {bet_count}")
-       if bet_count > 0:
-           print("[info] sample bets:")
-           print(df.loc[stake_num > 0, ["date", "home", "away", "pick", "edge", "stake", "confidence"]].head(10).to_string(index=False))
        else:
-           print("[warn] NO 'stake' column found in predictions output")
+           print("[warn] stake column missing in predictions.csv")
 
 
             print(df.to_string(index=False))
