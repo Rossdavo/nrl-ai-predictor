@@ -822,7 +822,6 @@ def build_predictions():
 
     print(f"[debug] combined results rows={len(results)} (deduped)")
 
-    print(f"[debug] combined results rows={len(results)}")
 
     fresh_model = fit_attack_defence(results, teams)
 
