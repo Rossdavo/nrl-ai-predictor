@@ -668,6 +668,23 @@ def build_predictions():
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
     odds = load_odds()
+    odds = load_odds()
+
+    # -----------------------------------------
+    # STOP EARLY IF ODDS MISSING (novice-safe)
+    # -----------------------------------------
+    missing_keys = []
+    for m in fixtures:
+        key = (m.date, m.home, m.away)
+        o = odds.get(key)
+        if not o or math.isnan(o.get("home_odds", float("nan"))) or math.isnan(o.get("away_odds", float("nan"))):
+            missing_keys.append(key)
+
+    if missing_keys:
+        print("⚠️ Missing odds for these fixtures (date, home, away):")
+        for k in missing_keys:
+            print("  ", k)
+        raise SystemExit("Stopping because odds are missing. Update odds.csv (or wait until Tuesday) then rerun.")
     rows = []
     for m in fixtures:
         if ad_model:
