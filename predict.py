@@ -785,7 +785,7 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 # ----------------------------
 def build_predictions():
 
-   # --- Fixture selection ---
+    # --- Fixture selection ---
     fixtures: List[Match] = []
 
     if MODE == "AUTO":
@@ -800,21 +800,22 @@ def build_predictions():
         if not fixtures:
             raise SystemExit("[stop] No upcoming fixtures found from odds.csv or the fixture feed. Not showing trial games.")
     else:
-        raise SystemExit("[stop] MODE is not AUTO. Not publishing trial fixtures.") 
+        raise SystemExit("[stop] MODE is not AUTO. Not publishing trial fixtures.")
 
-    teams = ALL_TEAMS
     # --- Team selection ---
-    teams = sorted(list(TEAM_REGION.keys()))  # Define teams directly; avoids shadowing issues
-    # Load saved ratings first (so we can still run if results fetch is empty/slow)
+    teams = sorted(list(TEAM_REGION.keys()))  # avoids shadowing issues
+
+    # --- Ratings / results ---
     saved_model = load_saved_ratings()
+
     results_2026 = fetch_completed_results()
     results_2025 = load_results_csv("data/results_2025.csv")
-
     results = pd.concat([results_2025, results_2026], ignore_index=True)
 
     print(f"[debug] combined results rows={len(results)}")
 
     fresh_model = fit_attack_defence(results, teams)
+
     # Prefer freshly fitted ratings; otherwise fall back to saved ratings
     if fresh_model:
         ad_model = fresh_model
@@ -823,6 +824,8 @@ def build_predictions():
         ad_model = saved_model
     else:
         ad_model = None
+
+    # --- Extras ---
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
     odds = load_odds()
@@ -834,7 +837,9 @@ def build_predictions():
     for m in fixtures:
         key = (m.date, m.home, m.away)
         o = odds.get(key)
-        if not o or math.isnan(o.get("home_odds", float("nan"))) or math.isnan(o.get("away_odds", float("nan"))):
+        if (not o
+            or math.isnan(o.get("home_odds", float("nan")))
+            or math.isnan(o.get("away_odds", float("nan")))):
             missing_keys.append(key)
 
     if missing_keys:
@@ -842,8 +847,17 @@ def build_predictions():
         for k in missing_keys:
             print("  ", k)
         raise SystemExit("Stopping because odds are missing. Update odds.csv (or wait until Tuesday) then rerun.")
+
+    # --- Build rows ---
     rows = []
+
+    # Bet thresholds (global for this run)
+    MIN_EDGE = 0.05    # 5% edge
+    MIN_CONF = 0.60    # confidence threshold
+
     for m in fixtures:
+
+        # --- Model prediction ---
         if ad_model:
             win_prob, exp_margin, exp_total, conf = simulate_match_ad(
                 ad_model, m.home, m.away, m.venue, adj
@@ -856,94 +870,69 @@ def build_predictions():
             exp_home_pts = exp_total / 2.0
             exp_away_pts = exp_total / 2.0
             rating_mode = "FALLBACK"
+
+        # --- Try scorers ---
         home_named = _try_probs_named(starters_by_team.get(m.home, {}), exp_home_pts)
         away_named = _try_probs_named(starters_by_team.get(m.away, {}), exp_away_pts)
         if not home_named:
             home_named = _try_profiles_fallback(exp_home_pts)
         if not away_named:
             away_named = _try_profiles_fallback(exp_away_pts)
-        # Odds + value detection
+
+        # --- Odds lookup ---
         key = (m.date, m.home, m.away)
         o = odds.get(key, {})
         home_odds = o.get("home_odds", float("nan"))
         away_odds = o.get("away_odds", float("nan"))
+
+        # ----------------------------
         # VALUE + BET GENERATION
-# ----------------------------
+        # ----------------------------
+        home_edge = float("nan")
+        away_edge = float("nan")
+        value_flag = ""
+        pick = ""          # "HOME" or "AWAY"
+        edge = float("nan")
+        stake = 0.0
 
-# Defaults (no bet)
-home_edge = float("nan")
-away_edge = float("nan")
-value_flag = ""
-pick = ""          # "HOME" or "AWAY"
-edge = float("nan")
-stake = 0.0
+        if rating_mode != "ATTACK_DEFENCE":
+            value_flag = "MODEL OFF (FALLBACK)"
+        else:
+            # Calculate edges if odds exist
+            if not math.isnan(home_odds):
+                home_edge = value_edge(win_prob, home_odds)
+            if not math.isnan(away_odds):
+                away_edge = value_edge(1 - win_prob, away_odds)
 
-# Thresholds (edit these later if you want more/less bets)
-MIN_EDGE = 0.05    # 5% edge
-MIN_CONF = 0.60    # confidence threshold
+            # Value flag (informational)
+            if not math.isnan(home_edge) and home_edge >= 0.03:
+                value_flag = f"HOME VALUE +{home_edge:.0%}"
+            elif not math.isnan(away_edge) and away_edge >= 0.03:
+                value_flag = f"AWAY VALUE +{away_edge:.0%}"
 
-# ✅ If we're in FALLBACK mode, do NOT calculate value or bets
-if rating_mode != "ATTACK_DEFENCE":
-    value_flag = "MODEL OFF (FALLBACK)"
-else:
-    # Calculate edges if odds exist
-    if not math.isnan(home_odds):
-        home_edge = value_edge(win_prob, home_odds)
-    if not math.isnan(away_odds):
-        away_edge = value_edge(1 - win_prob, away_odds)
+            # Bet generator (stricter thresholds)
+            best_side = ""
+            best_edge = float("-inf")
 
-    # Create value flag (3% informational flag)
-    if not math.isnan(home_edge) and home_edge >= 0.03:
-        value_flag = f"HOME VALUE +{home_edge:.0%}"
-    elif not math.isnan(away_edge) and away_edge >= 0.03:
-        value_flag = f"AWAY VALUE +{away_edge:.0%}"
+            if not math.isnan(home_edge) and home_edge > best_edge:
+                best_side = "HOME"
+                best_edge = home_edge
+            if not math.isnan(away_edge) and away_edge > best_edge:
+                best_side = "AWAY"
+                best_edge = away_edge
 
-    # --- Bet generator (uses stricter thresholds) ---
-    best_side = ""
-    best_edge = float("-inf")
+            if best_side and best_edge >= MIN_EDGE and conf >= MIN_CONF:
+                pick = best_side
+                edge = best_edge
 
-    if not math.isnan(home_edge) and home_edge > best_edge:
-        best_side = "HOME"
-        best_edge = home_edge
+                # Simple novice staking
+                stake = 1.0
+                if edge >= 0.10:
+                    stake = 2.0
+                if edge >= 0.15:
+                    stake = 3.0
 
-    if not math.isnan(away_edge) and away_edge > best_edge:
-        best_side = "AWAY"
-        best_edge = away_edge
-
-    # Place bet only if thresholds met
-    if best_side and best_edge >= MIN_EDGE and conf >= MIN_CONF:
-        pick = best_side
-        edge = best_edge
-
-        # Simple novice staking: 1 unit by default, scale slightly with edge
-        # (keeps it predictable; adjust later)
-        stake = 1.0
-        if edge >= 0.10:
-            stake = 2.0
-        if edge >= 0.15:
-            stake = 3.0
-            "pick": pick,
-            "edge": round(edge, 3) if not math.isnan(edge) else "",
-            "stake": stake if stake > 0 else "",
-
-        # ✅ If we're in FALLBACK mode, do NOT calculate value
-if rating_mode != "ATTACK_DEFENCE":
-    home_edge = float("nan")
-    away_edge = float("nan")
-    value_flag = "MODEL OFF (FALLBACK)"
-else:
-    home_edge = value_edge(win_prob, home_odds) if not math.isnan(home_odds) else float("nan")
-    away_edge = value_edge(1 - win_prob, away_odds) if not math.isnan(away_odds) else float("nan")
-
-    value_flag = ""
-    if not math.isnan(home_edge) and home_edge >= 0.03:
-        value_flag = f"HOME VALUE +{home_edge:.0%}"
-    elif not math.isnan(away_edge) and away_edge >= 0.03:
-        value_flag = f"AWAY VALUE +{away_edge:.0%}"
-        if not math.isnan(home_edge) and home_edge >= 0.03:
-            value_flag = f"HOME VALUE +{home_edge:.0%}"
-        elif not math.isnan(away_edge) and away_edge >= 0.03:
-            value_flag = f"AWAY VALUE +{away_edge:.0%}"
+        # --- Output row ---
         rows.append({
             "mode": MODE,
             "rating_mode": rating_mode,
@@ -959,14 +948,14 @@ else:
             "home_odds": home_odds,
             "away_odds": away_odds,
             "value_flag": value_flag,
+            "pick": pick,
+            "edge": round(edge, 3) if not math.isnan(edge) else "",
+            "stake": stake if stake > 0 else "",
             "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
             "away_top_try": " | ".join([f"{n} {p:.0%}" for n, p in away_named]),
             "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
+
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
-if __name__ == "__main__":
-    df = build_predictions()
-    df.to_csv("predictions.csv", index=False)
-    print(df.to_string(index=False))
