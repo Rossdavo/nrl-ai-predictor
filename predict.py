@@ -956,6 +956,18 @@ def build_predictions():
             "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
+        if __name__ == "__main__":
+             df = build_predictions()
+            df.to_csv("predictions.csv", index=False)
+
+            # ✅ debug: how many bets did we generate?
+            if "stake" in df.columns:
+            bet_count = int((pd.to_numeric(df["stake"], errors="coerce").fillna(0) > 0).sum())
+            print(f"[info] bets in predictions.csv: {bet_count}")
+     else:
+         print("[warn] predictions.csv has no 'stake' column")
+
+     print(df.to_string(index=False))
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
