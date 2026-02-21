@@ -964,15 +964,15 @@ def build_predictions():
             cols = list(df.columns)
             print(f"[info] predictions.csv columns: {cols}")
 
-      if "stake" in df.columns:
-          stake_num = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
-          bet_count = int((stake_num > 0).sum())
-          print(f"[info] bets in predictions.csv: {bet_count}")
-      if bet_count > 0:
-          print("[info] sample bets:")
-          print(df.loc[stake_num > 0, ["date", "home", "away", "pick", "edge", "stake", "confidence"]].head(10).to_string(index=False))
-      else:
-          print("[warn] NO 'stake' column found in predictions output")
+       if "stake" in df.columns:
+           stake_num = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
+           bet_count = int((stake_num > 0).sum())
+           print(f"[info] bets in predictions.csv: {bet_count}")
+       if bet_count > 0:
+           print("[info] sample bets:")
+           print(df.loc[stake_num > 0, ["date", "home", "away", "pick", "edge", "stake", "confidence"]].head(10).to_string(index=False))
+       else:
+           print("[warn] NO 'stake' column found in predictions output")
 
 
             print(df.to_string(index=False))
