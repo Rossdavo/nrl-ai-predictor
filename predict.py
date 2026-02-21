@@ -852,8 +852,8 @@ def build_predictions():
     rows = []
 
     # Bet thresholds (global for this run)
-    MIN_EDGE = 0.05    # 5% edge
-    MIN_CONF = 0.60    # confidence threshold
+    MIN_EDGE = 0.03    # 5% edge
+    MIN_CONF = 0.55    # confidence threshold
 
     for m in fixtures:
 
