@@ -804,7 +804,13 @@ def build_predictions():
     teams = sorted(list(TEAM_REGION.keys()))  # Define teams directly; avoids shadowing issues
     # Load saved ratings first (so we can still run if results fetch is empty/slow)
     saved_model = load_saved_ratings()
-    results = fetch_completed_results()
+    results_2026 = fetch_completed_results()
+    results_2025 = load_results_csv("results_2025.csv")
+
+    results = pd.concat([results_2025, results_2026], ignore_index=True)
+
+    print(f"[debug] combined results rows={len(results)}")
+
     fresh_model = fit_attack_defence(results, teams)
     # Prefer freshly fitted ratings; otherwise fall back to saved ratings
     if fresh_model:
