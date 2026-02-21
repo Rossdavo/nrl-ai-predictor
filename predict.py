@@ -261,31 +261,26 @@ def fetch_completed_results() -> pd.DataFrame:
     Returns dataframe with columns: date, home, away, home_pts, away_pts
 
     Behaviour:
-    - Always try local cache FIRST (results_cache.csv)
-    - If cache missing/invalid, then try web
+    - Try local cache FIRST (results_cache.csv) if it looks valid
+    - Else fetch from RESULTS_URL and parse (supports multiple table formats)
     - If web fails, return empty
     """
-    # 1) Local cache first
+    # 1) Local cache first (optional, only if it has real rows)
     if os.path.exists(RESULTS_CACHE_PATH):
         try:
             cached = pd.read_csv(RESULTS_CACHE_PATH)
-
-            # Ensure required columns exist
             needed = {"date", "home", "away", "home_pts", "away_pts"}
-            if needed.issubset(set(cached.columns)) and len(cached) > 20:
+            if needed.issubset(set(cached.columns)) and len(cached) >= 4:
                 cached["home"] = cached["home"].apply(norm_team)
                 cached["away"] = cached["away"].apply(norm_team)
-
                 print(f"[info] Using cached results: {RESULTS_CACHE_PATH} ({len(cached)} rows)")
-                print(f"[debug] cache cols={list(cached.columns)}")
-                print(cached.head(5).to_string(index=False))
                 return cached
             else:
                 print(f"[warn] Cache exists but is invalid/too small. cols={list(cached.columns)} rows={len(cached)}")
         except Exception as e:
             print(f"[warn] Could not read cached results: {e}")
 
-    # 2) If no valid cache, try web fetch
+    # 2) Web fetch
     headers = {"User-Agent": "Mozilla/5.0"}
     html = None
     last_err = None
@@ -304,7 +299,7 @@ def fetch_completed_results() -> pd.DataFrame:
         print(f"[warn] results fetch failed: {last_err} — no cache available")
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
-    # Parse tables from HTML
+    # Parse HTML tables
     try:
         tables = pd.read_html(StringIO(html))
     except Exception as e:
@@ -316,29 +311,47 @@ def fetch_completed_results() -> pd.DataFrame:
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     df = tables[0].copy()
+    cols = set(df.columns)
 
-    # Validate expected columns
-    required = {"Home", "Away", "HomeScore", "AwayScore"}
-    if not required.issubset(set(df.columns)):
+    # ---------- FORMAT A (old): Home/Away/HomeScore/AwayScore ----------
+    if {"Home", "Away", "HomeScore", "AwayScore"}.issubset(cols):
+        date_series = pd.to_datetime(df["Date"], errors="coerce") if "Date" in cols else pd.Series([pd.Timestamp.utcnow()] * len(df))
+        out = pd.DataFrame({
+            "date": date_series.dt.strftime("%Y-%m-%d"),
+            "home": df["Home"].astype(str).apply(norm_team),
+            "away": df["Away"].astype(str).apply(norm_team),
+            "home_pts": pd.to_numeric(df["HomeScore"], errors="coerce"),
+            "away_pts": pd.to_numeric(df["AwayScore"], errors="coerce"),
+        }).dropna(subset=["home_pts", "away_pts", "home", "away"])
+
+    # ---------- FORMAT B (new): Home Team/Away Team/Result ----------
+    elif {"Home Team", "Away Team", "Result"}.issubset(cols):
+        # Result examples we handle: "24 - 16", "24–16", "24-16", "W 24-16", etc.
+        def extract_scores(x: object) -> Tuple[float, float]:
+            s = str(x)
+            m = re.search(r"(\d+)\s*[-–]\s*(\d+)", s)
+            if not m:
+                return (np.nan, np.nan)
+            return (float(m.group(1)), float(m.group(2)))
+
+        date_series = pd.to_datetime(df["Date"], errors="coerce") if "Date" in cols else pd.Series([pd.Timestamp.utcnow()] * len(df))
+        scores = df["Result"].apply(extract_scores)
+
+        out = pd.DataFrame({
+            "date": date_series.dt.strftime("%Y-%m-%d"),
+            "home": df["Home Team"].astype(str).apply(norm_team),
+            "away": df["Away Team"].astype(str).apply(norm_team),
+            "home_pts": scores.apply(lambda t: t[0]),
+            "away_pts": scores.apply(lambda t: t[1]),
+        }).dropna(subset=["home_pts", "away_pts", "home", "away"])
+
+    else:
         print(f"[warn] Results table missing required columns. Found cols={list(df.columns)}")
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
-    # Date handling: use Date column if present, otherwise use "today" (not ideal, but safe)
-    if "Date" in df.columns:
-        date_series = pd.to_datetime(df["Date"], errors="coerce")
-    else:
-        date_series = pd.Series([pd.Timestamp.utcnow()] * len(df))
-
-    out = pd.DataFrame({
-        "date": date_series.dt.strftime("%Y-%m-%d"),
-        "home": df["Home"].astype(str).apply(norm_team),
-        "away": df["Away"].astype(str).apply(norm_team),
-        "home_pts": pd.to_numeric(df["HomeScore"], errors="coerce"),
-        "away_pts": pd.to_numeric(df["AwayScore"], errors="coerce"),
-    }).dropna(subset=["home_pts", "away_pts", "home", "away"])
-
     print(f"[info] Web fetched results rows={len(out)}")
-    print(out.head(5).to_string(index=False))
+    if len(out):
+        print(out.head(5).to_string(index=False))
 
     # Save cache for next run
     try:
