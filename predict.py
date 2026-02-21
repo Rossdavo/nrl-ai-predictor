@@ -1,3 +1,4 @@
+print("[predict] predict.py loaded")
 import math
 import random
 import re
