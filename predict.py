@@ -708,9 +708,21 @@ def build_predictions():
         o = odds.get(key, {})
         home_odds = o.get("home_odds", float("nan"))
         away_odds = o.get("away_odds", float("nan"))
-        home_edge = value_edge(win_prob, home_odds) if not math.isnan(home_odds) else float("nan")
-        away_edge = value_edge(1 - win_prob, away_odds) if not math.isnan(away_odds) else float("nan")
-        value_flag = ""
+
+        # ✅ If we're in FALLBACK mode, do NOT calculate value
+        if rating_mode != "ATTACK_DEFENCE":
+            home_edge = float("nan")
+            away_edge = float("nan")
+            value_flag = "MODEL OFF (FALLBACK)"
+        else:
+            home_edge = value_edge(win_prob, home_odds) if not math.isnan(home_odds) else float("nan")
+            away_edge = value_edge(1 - win_prob, away_odds) if not math.isnan(away_odds) else float("nan")
+
+            value_flag = ""
+            if not math.isnan(home_edge) and home_edge >= 0.03:
+                value_flag = f"HOME VALUE +{home_edge:.0%}"
+            elif not math.isnan(away_edge) and away_edge >= 0.03:
+                value_flag = f"AWAY VALUE +{away_edge:.0%}"
         if not math.isnan(home_edge) and home_edge >= 0.03:
             value_flag = f"HOME VALUE +{home_edge:.0%}"
         elif not math.isnan(away_edge) and away_edge >= 0.03:
