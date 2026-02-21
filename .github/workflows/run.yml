@@ -35,16 +35,37 @@ jobs:
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
-          python odds_fetch.py
-          python predict.py
-          python staking.py
-          python tracker.py
-          python archive.py
-          python performance.py
-          python bankroll_tracker.py
-          python closing_odds.py
-          python clv_tracker.py
-          python report.py
+          set -e
+
+          echo "=== RUN: odds_fetch.py ==="
+          python -u odds_fetch.py
+
+          echo "=== RUN: predict.py ==="
+          python -u predict.py
+
+          echo "=== RUN: staking.py ==="
+          python -u staking.py
+
+          echo "=== RUN: tracker.py ==="
+          python -u tracker.py
+
+          echo "=== RUN: archive.py ==="
+          python -u archive.py
+
+          echo "=== RUN: performance.py ==="
+          python -u performance.py
+
+          echo "=== RUN: bankroll_tracker.py ==="
+          python -u bankroll_tracker.py
+
+          echo "=== RUN: closing_odds.py ==="
+          python -u closing_odds.py
+
+          echo "=== RUN: clv_tracker.py ==="
+          python -u clv_tracker.py
+
+          echo "=== RUN: report.py ==="
+          python -u report.py
 
       # OPTIONAL but recommended: save updated CSVs back into the repo
       - name: Commit generated data back to repo
