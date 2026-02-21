@@ -357,8 +357,11 @@ def fetch_completed_results() -> pd.DataFrame:
     print(f"[info] Web fetched results rows={len(out)}")
 
     try:
-        out.to_csv(RESULTS_CACHE_PATH, index=False)
-        print(f"[info] Saved fetched results to {RESULTS_CACHE_PATH}")
+        if len(out) > 0:
+            out.to_csv(RESULTS_CACHE_PATH, index=False)
+            print(f"[info] Saved fetched results to {RESULTS_CACHE_PATH}")
+        else:
+            print("[info] Not saving empty web results to cache")
     except Exception:
         pass
 
