@@ -805,7 +805,7 @@ def build_predictions():
     # Load saved ratings first (so we can still run if results fetch is empty/slow)
     saved_model = load_saved_ratings()
     results_2026 = fetch_completed_results()
-    results_2025 = load_results_csv("results_2025.csv")
+    results_2025 = load_results_csv("data/results_2025.csv")
 
     results = pd.concat([results_2025, results_2026], ignore_index=True)
 
