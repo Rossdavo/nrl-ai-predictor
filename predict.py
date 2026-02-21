@@ -932,8 +932,7 @@ def build_predictions():
                     stake = 2.0
                 if edge >= 0.15:
                     stake = 3.0
-
-        # --- Output row ---
+ # --- Output row ---
         rows.append({
             "mode": MODE,
             "rating_mode": rating_mode,
@@ -958,29 +957,18 @@ def build_predictions():
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
 
+    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
+    return df
+        
+
 if __name__ == "__main__":
     df = build_predictions()
     df.to_csv("predictions.csv", index=False)
 
-    # Always print a quick summary for Actions logs
+    # Debug summary for GitHub Actions
     if "stake" in df.columns:
         stake_series = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
         bet_count = int((stake_series > 0).sum())
         print(f"[predict] rows={len(df)} bets={bet_count} max_stake={stake_series.max()}")
     else:
         print(f"[predict] rows={len(df)} (no stake column)")
-
-            print(df.to_string(index=False))
-
-    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
-
-    # --- Debug summary (always prints in Actions) ---
-    if "stake" in df.columns:
-        stake_series = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
-        bet_count = int((stake_series > 0).sum())
-        print(f"[predict] rows={len(df)} bets={bet_count} max_stake={stake_series.max()}")
-    else:
-        print(f"[predict] rows={len(df)} (no stake column)")
-        print("[predict] build_predictions finished")
-    return df
-    
