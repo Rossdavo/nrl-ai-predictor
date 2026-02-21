@@ -867,6 +867,64 @@ def build_predictions():
         o = odds.get(key, {})
         home_odds = o.get("home_odds", float("nan"))
         away_odds = o.get("away_odds", float("nan"))
+        # VALUE + BET GENERATION
+# ----------------------------
+
+# Defaults (no bet)
+home_edge = float("nan")
+away_edge = float("nan")
+value_flag = ""
+pick = ""          # "HOME" or "AWAY"
+edge = float("nan")
+stake = 0.0
+
+# Thresholds (edit these later if you want more/less bets)
+MIN_EDGE = 0.05    # 5% edge
+MIN_CONF = 0.60    # confidence threshold
+
+# ✅ If we're in FALLBACK mode, do NOT calculate value or bets
+if rating_mode != "ATTACK_DEFENCE":
+    value_flag = "MODEL OFF (FALLBACK)"
+else:
+    # Calculate edges if odds exist
+    if not math.isnan(home_odds):
+        home_edge = value_edge(win_prob, home_odds)
+    if not math.isnan(away_odds):
+        away_edge = value_edge(1 - win_prob, away_odds)
+
+    # Create value flag (3% informational flag)
+    if not math.isnan(home_edge) and home_edge >= 0.03:
+        value_flag = f"HOME VALUE +{home_edge:.0%}"
+    elif not math.isnan(away_edge) and away_edge >= 0.03:
+        value_flag = f"AWAY VALUE +{away_edge:.0%}"
+
+    # --- Bet generator (uses stricter thresholds) ---
+    best_side = ""
+    best_edge = float("-inf")
+
+    if not math.isnan(home_edge) and home_edge > best_edge:
+        best_side = "HOME"
+        best_edge = home_edge
+
+    if not math.isnan(away_edge) and away_edge > best_edge:
+        best_side = "AWAY"
+        best_edge = away_edge
+
+    # Place bet only if thresholds met
+    if best_side and best_edge >= MIN_EDGE and conf >= MIN_CONF:
+        pick = best_side
+        edge = best_edge
+
+        # Simple novice staking: 1 unit by default, scale slightly with edge
+        # (keeps it predictable; adjust later)
+        stake = 1.0
+        if edge >= 0.10:
+            stake = 2.0
+        if edge >= 0.15:
+            stake = 3.0
+            "pick": pick,
+            "edge": round(edge, 3) if not math.isnan(edge) else "",
+            "stake": stake if stake > 0 else "",
 
         # ✅ If we're in FALLBACK mode, do NOT calculate value
 if rating_mode != "ATTACK_DEFENCE":
