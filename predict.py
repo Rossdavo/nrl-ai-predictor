@@ -256,32 +256,36 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 # ----------------------------
 # RESULTS INGEST (for Attack/Defence fitting)
 # ----------------------------
-def fetch_completed_results() -> pd.DataFrame:
+ef fetch_completed_results() -> pd.DataFrame:
     """
     Returns dataframe with columns: date, home, away, home_pts, away_pts
 
-    New behaviour:
+    Behaviour:
     - Always try local cache FIRST (results_cache.csv)
     - If cache missing/invalid, then try web
     - If web fails, return empty
     """
+    # 1) Local cache first
     if os.path.exists(RESULTS_CACHE_PATH):
         try:
             cached = pd.read_csv(RESULTS_CACHE_PATH)
-            cached["home"] = cached["home"].apply(norm_team)
-            cached["away"] = cached["away"].apply(norm_team)
 
+            # Ensure required columns exist
             needed = {"date", "home", "away", "home_pts", "away_pts"}
             if needed.issubset(set(cached.columns)) and len(cached) > 20:
+                cached["home"] = cached["home"].apply(norm_team)
+                cached["away"] = cached["away"].apply(norm_team)
+
                 print(f"[info] Using cached results: {RESULTS_CACHE_PATH} ({len(cached)} rows)")
                 print(f"[debug] cache cols={list(cached.columns)}")
                 print(cached.head(5).to_string(index=False))
                 return cached
-
+            else:
+                print(f"[warn] Cache exists but is invalid/too small. cols={list(cached.columns)} rows={len(cached)}")
         except Exception as e:
             print(f"[warn] Could not read cached results: {e}")
 
-    # 2) If no cache, try web fetch
+    # 2) If no valid cache, try web fetch
     headers = {"User-Agent": "Mozilla/5.0"}
     html = None
     last_err = None
@@ -303,32 +307,45 @@ def fetch_completed_results() -> pd.DataFrame:
     # Parse tables from HTML
     try:
         tables = pd.read_html(StringIO(html))
-    except Exception:
+    except Exception as e:
+        print(f"[warn] pd.read_html failed: {e}")
         tables = []
 
     if not tables:
+        print("[warn] No tables found on results page")
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     df = tables[0].copy()
 
+    # Validate expected columns
     required = {"Home", "Away", "HomeScore", "AwayScore"}
     if not required.issubset(set(df.columns)):
+        print(f"[warn] Results table missing required columns. Found cols={list(df.columns)}")
         return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
+    # Date handling: use Date column if present, otherwise use "today" (not ideal, but safe)
+    if "Date" in df.columns:
+        date_series = pd.to_datetime(df["Date"], errors="coerce")
+    else:
+        date_series = pd.Series([pd.Timestamp.utcnow()] * len(df))
+
     out = pd.DataFrame({
-        "date": pd.to_datetime(df.get("Date", pd.Timestamp.utcnow()), errors="coerce").dt.strftime("%Y-%m-%d"),
-        "home": df["Home"].astype(str),
-        "away": df["Away"].astype(str),
+        "date": date_series.dt.strftime("%Y-%m-%d"),
+        "home": df["Home"].astype(str).apply(norm_team),
+        "away": df["Away"].astype(str).apply(norm_team),
         "home_pts": pd.to_numeric(df["HomeScore"], errors="coerce"),
         "away_pts": pd.to_numeric(df["AwayScore"], errors="coerce"),
-    }).dropna(subset=["home_pts", "away_pts"])
+    }).dropna(subset=["home_pts", "away_pts", "home", "away"])
+
+    print(f"[info] Web fetched results rows={len(out)}")
+    print(out.head(5).to_string(index=False))
 
     # Save cache for next run
     try:
         out.to_csv(RESULTS_CACHE_PATH, index=False)
         print(f"[info] Saved fetched results to {RESULTS_CACHE_PATH} ({len(out)} rows)")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[warn] Could not save cache: {e}")
 
     return out
 def fit_attack_defence(
