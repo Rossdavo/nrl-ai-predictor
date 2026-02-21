@@ -957,20 +957,18 @@ def build_predictions():
             "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
-        if __name__ == "__main__":
-            df = build_predictions()
-            df.to_csv("predictions.csv", index=False)
 
-            # Debug: confirm structure + bets
-            print(f"[info] predictions.csv columns: {list(df.columns)}")
+if __name__ == "__main__":
+    df = build_predictions()
+    df.to_csv("predictions.csv", index=False)
 
-            if "stake" in df.columns:
-                stake_series = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
-                bet_count = int((stake_series > 0).sum())
-                print(f"[info] bets in predictions.csv: {bet_count}")
-            else:
-                print("[warn] stake column missing in predictions.csv")
-
+    # Always print a quick summary for Actions logs
+    if "stake" in df.columns:
+        stake_series = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
+        bet_count = int((stake_series > 0).sum())
+        print(f"[predict] rows={len(df)} bets={bet_count} max_stake={stake_series.max()}")
+    else:
+        print(f"[predict] rows={len(df)} (no stake column)")
 
             print(df.to_string(index=False))
 
@@ -983,6 +981,6 @@ def build_predictions():
         print(f"[predict] rows={len(df)} bets={bet_count} max_stake={stake_series.max()}")
     else:
         print(f"[predict] rows={len(df)} (no stake column)")
-
+        print("[predict] build_predictions finished")
     return df
     
