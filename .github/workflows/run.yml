@@ -40,6 +40,9 @@ jobs:
           echo "=== RUN: odds_fetch.py ==="
           python -u odds_fetch.py
 
+          echo "=== SHOW: predict.py header ==="
+          head -n 40 predict.py
+
           echo "=== RUN: predict.py ==="
           python -u predict.py
 
