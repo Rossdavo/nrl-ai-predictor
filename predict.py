@@ -260,21 +260,24 @@ def fetch_completed_results() -> pd.DataFrame:
     """
     Returns dataframe with columns: date, home, away, home_pts, away_pts
 
-    New behaviour (preferred for your setup):
+    New behaviour:
     - Always try local cache FIRST (results_cache.csv)
     - If cache missing/invalid, then try web
     - If web fails, return empty
     """
-    # 1) Local cache first (this is what you want)
     if os.path.exists(RESULTS_CACHE_PATH):
         try:
             cached = pd.read_csv(RESULTS_CACHE_PATH)
             cached["home"] = cached["home"].apply(norm_team)
             cached["away"] = cached["away"].apply(norm_team)
+
             needed = {"date", "home", "away", "home_pts", "away_pts"}
             if needed.issubset(set(cached.columns)) and len(cached) > 20:
                 print(f"[info] Using cached results: {RESULTS_CACHE_PATH} ({len(cached)} rows)")
+                print(f"[debug] cache cols={list(cached.columns)}")
+                print(cached.head(5).to_string(index=False))
                 return cached
+
         except Exception as e:
             print(f"[warn] Could not read cached results: {e}")
 
