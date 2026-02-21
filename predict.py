@@ -974,4 +974,14 @@ def build_predictions():
             print(df.to_string(index=False))
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
+
+    # --- Debug summary (always prints in Actions) ---
+    if "stake" in df.columns:
+        stake_series = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
+        bet_count = int((stake_series > 0).sum())
+        print(f"[predict] rows={len(df)} bets={bet_count} max_stake={stake_series.max()}")
+    else:
+        print(f"[predict] rows={len(df)} (no stake column)")
+
     return df
+    
