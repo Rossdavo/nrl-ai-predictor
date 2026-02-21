@@ -256,7 +256,7 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 # ----------------------------
 # RESULTS INGEST (for Attack/Defence fitting)
 # ----------------------------
-ef fetch_completed_results() -> pd.DataFrame:
+def fetch_completed_results() -> pd.DataFrame:
     """
     Returns dataframe with columns: date, home, away, home_pts, away_pts
 
