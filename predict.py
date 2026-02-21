@@ -647,7 +647,7 @@ def build_predictions():
         if not fixtures:
             raise SystemExit("[stop] No upcoming fixtures found from odds.csv or the fixture feed. Not showing trial games.")
     else:
-        fixtures = FIXTURES 
+        raise SystemExit("[stop] MODE is not AUTO. Not publishing trial fixtures.") 
 
     teams = ALL_TEAMS
     # --- Team selection ---
