@@ -963,12 +963,12 @@ def build_predictions():
             # Debug: confirm structure + bets
             print(f"[info] predictions.csv columns: {list(df.columns)}")
 
-       if "stake" in df.columns:
-           stake_series = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
-           bet_count = int((stake_series > 0).sum())
-           print(f"[info] bets in predictions.csv: {bet_count}")
-       else:
-           print("[warn] stake column missing in predictions.csv")
+            if "stake" in df.columns:
+                stake_series = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
+                bet_count = int((stake_series > 0).sum())
+                print(f"[info] bets in predictions.csv: {bet_count}")
+            else:
+                print("[warn] stake column missing in predictions.csv")
 
 
             print(df.to_string(index=False))
