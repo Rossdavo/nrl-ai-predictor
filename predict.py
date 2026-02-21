@@ -667,7 +667,6 @@ def build_predictions():
     starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
     adj = load_adjustments()
     odds = load_odds()
-    odds = load_odds()
 
     # -----------------------------------------
     # STOP EARLY IF ODDS MISSING (novice-safe)
