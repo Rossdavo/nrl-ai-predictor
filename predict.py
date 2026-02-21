@@ -813,6 +813,15 @@ def build_predictions():
     results_2025 = load_results_csv("data/results_2025.csv")
     results = pd.concat([results_2025, results_2026], ignore_index=True)
 
+    # Remove duplicate matches (important!)
+    results = (
+        results
+        .drop_duplicates(subset=["date", "home", "away"], keep="last")
+        .reset_index(drop=True)
+    )
+
+    print(f"[debug] combined results rows={len(results)} (deduped)")
+
     print(f"[debug] combined results rows={len(results)}")
 
     fresh_model = fit_attack_defence(results, teams)
