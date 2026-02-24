@@ -711,6 +711,12 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
         out.append((name, p))
     out.sort(key=lambda x: x[1], reverse=True)
     return out[:3]
+
+
+def _has_valid_named_teamlist(starters_by_team: Dict[str, Dict[int, str]], team: str) -> bool:
+    # Require enough named starters to trust it (prevents partial/wrong scrapes)
+    players = starters_by_team.get(team, {})
+    return isinstance(players, dict) and len(players) >= 10
 def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
     try:
         df = pd.read_csv(path)
