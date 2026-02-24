@@ -54,91 +54,106 @@
     <div class="card">
       <h1>NRL AI Predictions</h1>
       <p class="note">Automated predictions with model probabilities, odds comparison, value detection, and staking suggestions.</p>
+
       <div class="downloads">
-        <h2>Downloads</h2><ul><li><a href='predictions.csv' target='_blank' rel='noopener'>Predictions CSV</a></li><li><a href='odds.csv' target='_blank' rel='noopener'>Odds CSV</a></li><li><a href='bet_log.csv' target='_blank' rel='noopener'>Bet Log CSV</a></li><li><a href='accuracy.csv' target='_blank' rel='noopener'>Accuracy CSV</a></li><li><a href='performance.csv' target='_blank' rel='noopener'>Performance CSV</a></li><li><a href='closing_odds.csv' target='_blank' rel='noopener'>Closing Odds CSV</a></li><li><a href='bankroll_status.csv' target='_blank' rel='noopener'>Bankroll Status CSV</a></li><li><a href='predictions_history.csv' target='_blank' rel='noopener'>Predictions History CSV</a></li><li><a href='odds_history.csv' target='_blank' rel='noopener'>Odds History CSV</a></li><li><a href='results_cache.csv' target='_blank' rel='noopener'>Results Cache CSV</a></li><li><a href='ratings.json' target='_blank' rel='noopener'>Ratings JSON</a></li></ul>
+        <h2>Downloads</h2>
+        <ul>
+          <li><a href="predictions.csv" target="_blank" rel="noopener">Predictions CSV</a></li>
+          <li><a href="odds.csv" target="_blank" rel="noopener">Odds CSV</a></li>
+          <li><a href="bet_log.csv" target="_blank" rel="noopener">Bet Log CSV</a></li>
+          <li><a href="accuracy.csv" target="_blank" rel="noopener">Accuracy CSV</a></li>
+          <li><a href="performance.csv" target="_blank" rel="noopener">Performance CSV</a></li>
+          <li><a href="closing_odds.csv" target="_blank" rel="noopener">Closing Odds CSV</a></li>
+          <li><a href="bankroll_status.csv" target="_blank" rel="noopener">Bankroll Status CSV</a></li>
+          <li><a href="predictions_history.csv" target="_blank" rel="noopener">Predictions History CSV</a></li>
+          <li><a href="odds_history.csv" target="_blank" rel="noopener">Odds History CSV</a></li>
+          <li><a href="results_cache.csv" target="_blank" rel="noopener">Results Cache CSV</a></li>
+          <li><a href="ratings.json" target="_blank" rel="noopener">Ratings JSON</a></li>
+        </ul>
       </div>
     </div>
 
-  <div class="card" style="margin-top:16px;">
-  <table border="1" class="dataframe">
-    ...
-  </table>
-  </div> 
-
+    <!-- LIVE predictions table (loads from predictions.csv) -->
     <div class="card" style="margin-top:16px;">
-      <p class='note'><b>Results &amp; Accuracy:</b> No completed matches scored yet.</p>
+      <div id="pred-table" class="muted">Loading predictions…</div>
     </div>
 
     <div class="card" style="margin-top:16px;">
-      <p class='note'><b>CLV &amp; ROI:</b> Nothing to report yet.</p>
+      <p class="note"><b>Results &amp; Accuracy:</b> No completed matches scored yet.</p>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <p class="note"><b>CLV &amp; ROI:</b> Nothing to report yet.</p>
     </div>
 
     <p class="small">Generated automatically via GitHub Actions.</p>
   </div>
-  script>
-async function loadCSV(path) {
-  // cache-bust so you always see latest
-  const res = await fetch(path + "?v=" + Date.now());
-  if (!res.ok) throw new Error("Failed to load " + path);
-  return await res.text();
-}
 
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0].split(",").map(h => h.trim());
-  const rows = lines.slice(1).map(line => {
-    const cols = line.split(","); // OK for your simple CSV (no commas inside fields)
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = (cols[i] ?? "").trim());
-    return obj;
-  });
-  return { headers, rows };
-}
+  <script>
+    async function loadCSV(path) {
+      // Cache-bust so you always see the newest deployed file
+      const res = await fetch(path + "?v=" + Date.now());
+      if (!res.ok) throw new Error("Failed to load " + path);
+      return await res.text();
+    }
 
-function renderTable(headers, rows) {
-  const keep = [
-    "date","kickoff_local","home","away","home_win_prob","confidence",
-    "home_odds","away_odds","value_flag","pick","edge","stake",
-    "home_top_try","away_top_try"
-  ].filter(h => headers.includes(h));
+    // Simple CSV parser (works for your current files: no commas inside fields)
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      const headers = lines[0].split(",").map(h => h.trim());
+      const rows = lines.slice(1).map(line => {
+        const cols = line.split(",");
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = (cols[i] ?? "").trim());
+        return obj;
+      });
+      return { headers, rows };
+    }
 
-  const html = `
-    <table>
-      <thead>
-        <tr>${keep.map(h => `<th>${h}</th>`).join("")}</tr>
-      </thead>
-      <tbody>
-        ${rows.map(r => `
-          <tr>
-            ${keep.map(h => `<td>${(r[h] ?? "")}</td>`).join("")}
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  `;
-  return html;
-}
+    function renderTable(headers, rows) {
+      const preferred = [
+        "date","kickoff_local","home","away","home_win_prob","confidence",
+        "home_odds","away_odds","value_flag","pick","edge","stake",
+        "home_top_try","away_top_try"
+      ];
+      const keep = preferred.filter(h => headers.includes(h));
 
-(async () => {
-  const el = document.getElementById("pred-table");
-  try {
-    const csv = await loadCSV("predictions.csv");
-    const { headers, rows } = parseCSV(csv);
+      return `
+        <table>
+          <thead>
+            <tr>${keep.map(h => `<th>${h}</th>`).join("")}</tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                ${keep.map(h => `<td>${(r[h] ?? "")}</td>`).join("")}
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
 
-    // Optional: hide old games (keeps it clean)
-    const today = new Date(); today.setHours(0,0,0,0);
-    const filtered = rows.filter(r => {
-      const d = new Date((r.date || "") + "T00:00:00");
-      return !isNaN(d) && d >= today;
-    });
+    (async () => {
+      const el = document.getElementById("pred-table");
+      try {
+        const csv = await loadCSV("predictions.csv");
+        const { headers, rows } = parseCSV(csv);
 
-    el.classList.remove("muted");
-    el.innerHTML = renderTable(headers, filtered.length ? filtered : rows);
-  } catch (e) {
-    el.innerHTML = "Could not load predictions.csv";
-    console.error(e);
-  }
-})();
-</script>
+        // Hide past dates (keeps trials out forever)
+        const today = new Date(); today.setHours(0,0,0,0);
+        const filtered = rows.filter(r => {
+          const d = new Date((r.date || "") + "T00:00:00");
+          return !isNaN(d) && d >= today;
+        });
+
+        el.classList.remove("muted");
+        el.innerHTML = renderTable(headers, filtered.length ? filtered : rows);
+      } catch (e) {
+        el.innerHTML = "Could not load predictions.csv";
+        console.error(e);
+      }
+    })();
+  </script>
 </body>
 </html>
