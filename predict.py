@@ -226,32 +226,54 @@ def _strip_html_to_text(html: str) -> str:
     return text
 
 def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
+    """
+    Attempts to scrape named starters from an NRL team list article.
+    Returns: { "TeamShortName": {1:"Name", 2:"Name", ... 13:"Name"} }
+
+    IMPORTANT: This is best-effort. If the page isn't the correct round,
+    we deliberately fall back later.
+    """
     try:
         r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
         text = _strip_html_to_text(r.text)
 
-        pat = re.compile(r"for ([A-Za-z \-']+?) is number (\d{1,2}) ([A-Za-z \-'.]+)")
-        starters: Dict[str, Dict[int, str]] = {}
+        # Regex matches: "for <TEAM> is number <NUM> <PLAYER NAME>"
+        pat = re.compile(r"for ([A-Za-z \-']+?) is number (\d{1,2}) ([A-Za-z \-'.]+)", re.IGNORECASE)
 
+        starters: Dict[str, Dict[int, str]] = {}
         for team, num_s, name in pat.findall(text):
-            team = team.strip()
+            team = norm_team(team.strip())  # normalize team name here
             num = int(num_s)
             name = name.strip()
+
             if not (1 <= num <= 13):
                 continue
+
+            # remove any trailing role text if present
             name = re.sub(
-                r"\b(Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|2nd Row|Lock)\b.*$",
+                r"\b(Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)\b.*$",
                 "",
                 name,
+                flags=re.IGNORECASE
             ).strip()
+
             if not name:
                 continue
+
             starters.setdefault(team, {})
-            starters[team].setdefault(num, name)
+            starters[team][num] = name
+
+        # simple debug: show how many starters per team were found
+        if starters:
+            sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:5]
+            print("[info] teamlist scrape sample:", ", ".join([f"{t}:{len(p)}" for t, p in sample]))
+        else:
+            print("[warn] teamlist scrape returned 0 teams")
 
         return starters
-    except Exception:
+    except Exception as e:
+        print(f"[warn] teamlist scrape failed: {e}")
         return {}
 
 # ----------------------------
