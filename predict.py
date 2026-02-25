@@ -869,6 +869,19 @@ def build_predictions() -> pd.DataFrame:
 
     starters_by_team = fetch_starters_by_team(teamlist_url) if teamlist_url else {}
 
+    # Load manual teamlists (if any)
+    load_manual_teamlists(TEAMLISTS_CSV_PATH)
+    manual_by_date = getattr(load_manual_teamlists, "_by_date", {})
+
+    # Manual overrides per fixture date
+    for m in fixtures:
+        manual_for_date = manual_by_date.get(m.date, {})
+        if manual_for_date:
+            if m.home in manual_for_date:
+                starters_by_team.setdefault(m.home, {}).update(manual_for_date[m.home])
+            if m.away in manual_for_date:
+                starters_by_team.setdefault(m.away, {}).update(manual_for_date[m.away])
+
     adj = load_adjustments()
     odds = load_odds()
 
