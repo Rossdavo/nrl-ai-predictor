@@ -716,7 +716,7 @@ def fetch_latest_teamlist_url() -> str:
 
     except Exception as e:
         print(f"[warn] Could not auto-find TEAMLIST_URL: {e}")
-        return "
+        return ""
 
 # ----------------------------
 # BUILD OUTPUT
