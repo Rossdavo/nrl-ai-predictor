@@ -23,10 +23,10 @@ import os
 MODE = "AUTO"
 
 # ----------------------------
-# Team lists (trials page) – optional
+# Team lists (optional; may fallback)
 # ----------------------------
-
-FORCE_TRY_FALLBACK = False  # set to False once Round 1 team lists are live
+FORCE_TRY_FALLBACK = False  # set to True to force try-scorer fallback profiles
+TEAMLISTS_CSV_PATH = "teamlists.csv"  # optional manual override file (date/team/num/name)
 
 # ----------------------------
 # Results source for ratings (Attack/Defence)
@@ -267,6 +267,50 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         return {}
 
 # ----------------------------
+# MANUAL TEAMLIST OVERRIDES
+# ----------------------------
+def load_manual_teamlists(path: str = TEAMLISTS_CSV_PATH) -> Dict[str, Dict[str, Dict[int, str]]]:
+    """
+    Loads manual team lists from CSV:
+      date, team, num, name
+
+    Returns:
+      manual_by_date[date][team][num] = name
+    """
+    if not os.path.exists(path):
+        return {}
+
+    try:
+        df = pd.read_csv(path)
+    except Exception as e:
+        print(f"[warn] could not read {path}: {e}")
+        return {}
+
+    required = {"date", "team", "num", "name"}
+    if not required.issubset(set(df.columns)):
+        print(f"[warn] {path} missing columns. Need {sorted(required)}")
+        return {}
+
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    df["team"] = df["team"].astype(str).apply(norm_team)
+    df["num"] = pd.to_numeric(df["num"], errors="coerce")
+    df["name"] = df["name"].astype(str).str.strip()
+
+    df = df.dropna(subset=["date", "team", "num", "name"])
+    df = df[(df["num"] >= 1) & (df["num"] <= 17)]
+
+    manual_by_date: Dict[str, Dict[str, Dict[int, str]]] = {}
+    for _, r in df.iterrows():
+        d = str(r["date"])
+        t = str(r["team"])
+        n = int(r["num"])
+        nm = str(r["name"])
+        manual_by_date.setdefault(d, {}).setdefault(t, {})[n] = nm
+
+    print(f"[info] Loaded manual teamlists: {path} (dates={len(manual_by_date)})")
+    return manual_by_date
+
+# ----------------------------
 # RESULTS INGEST (for Attack/Defence fitting)
 # ----------------------------
 def fetch_completed_results() -> pd.DataFrame:
@@ -432,7 +476,6 @@ def fit_attack_defence(
     y_vals = []
     w_vals = []
 
-    # ensure we index weights correctly in results order
     weights_by_pos = list(weights)
 
     for pos, (_, rrow) in enumerate(results.iterrows()):
@@ -445,7 +488,6 @@ def fit_attack_defence(
         hi = team_to_i[h]
         ai = team_to_i[a]
 
-        # Home points equation
         row = np.zeros(p)
         row[0] = 1.0
         row[1] = 1.0
@@ -453,7 +495,6 @@ def fit_attack_defence(
         row[2 + n_teams + ai] = -1.0
         X_rows.append(row); y_vals.append(float(rrow["home_pts"])); w_vals.append(w)
 
-        # Away points equation
         row = np.zeros(p)
         row[0] = 1.0
         row[1] = 0.0
@@ -494,8 +535,6 @@ def fit_attack_defence(
 def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float]]:
     """
     Returns: {team: {"atk": float, "def": float, "notes": str}}
-    atk_delta_pts: added to team expected points scored
-    def_delta_pts: added to opponent expected points scored (i.e., worse defence => +ve)
     """
     try:
         df = pd.read_csv(path)
@@ -512,56 +551,6 @@ def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float
         return out
     except Exception:
         return {}
-        TEAMLISTS_CSV_PATH = "teamlists.csv"
-
-def load_manual_teamlists(path: str = TEAMLISTS_CSV_PATH) -> Dict[str, Dict[int, str]]:
-    """
-    Loads manual team lists from CSV:
-      date, team, num, name
-
-    Returns a starters_by_team dict:
-      { "Bulldogs": {1:"...", 2:"...", ...}, ... }
-
-    IMPORTANT: This loader does NOT pick a date itself.
-    We'll filter by fixture date in build_predictions().
-    """
-    if not os.path.exists(path):
-        return {}
-
-    try:
-        df = pd.read_csv(path)
-    except Exception:
-        return {}
-
-    required = {"date", "team", "num", "name"}
-    if not required.issubset(set(df.columns)):
-        print(f"[warn] {path} missing columns. Need {sorted(required)}")
-        return {}
-
-    # Clean / normalise
-    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    df["team"] = df["team"].astype(str).apply(norm_team)
-    df["num"] = pd.to_numeric(df["num"], errors="coerce")
-    df["name"] = df["name"].astype(str).str.strip()
-
-    df = df.dropna(subset=["date", "team", "num", "name"])
-    df = df[(df["num"] >= 1) & (df["num"] <= 17)]  # allow 1–17 in case you expand later
-
-    # We'll return raw rows; filter by date later
-    # Store it as: manual_by_date[date][team][num] = name
-    manual_by_date: Dict[str, Dict[str, Dict[int, str]]] = {}
-    for _, r in df.iterrows():
-        d = str(r["date"])
-        t = str(r["team"])
-        n = int(r["num"])
-        nm = str(r["name"])
-        manual_by_date.setdefault(d, {}).setdefault(t, {})[n] = nm
-
-    # stash on function attribute for retrieval (simple + avoids globals)
-    load_manual_teamlists._by_date = manual_by_date  # type: ignore[attr-defined]
-    print(f"[info] Loaded manual teamlists: {path} (dates={len(manual_by_date)})")
-
-    return {}  # actual per-date selection happens elsewhere
 
 def expected_points(model: Dict[str, object], home: str, away: str, venue: str, adj: Dict[str, Dict[str, float]]) -> Tuple[float, float]:
     mu = model["mu"]
@@ -576,7 +565,6 @@ def expected_points(model: Dict[str, object], home: str, away: str, venue: str, 
     home_pts += h_adj
     away_pts += a_adj
 
-    # player availability adjustments
     home_pts += adj.get(home, {}).get("atk", 0.0)
     away_pts += adj.get(away, {}).get("atk", 0.0)
 
@@ -745,8 +733,6 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
     return fixtures
 
-
-
 SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
 
 def fetch_latest_teamlist_url() -> str:
@@ -778,11 +764,9 @@ def fetch_latest_teamlist_url() -> str:
         best_lastmod = ""
         hits = 0
 
-        # Scan ALL child sitemaps (only 9, so it's cheap)
         for sm_url in sitemap_locs:
             try:
                 sm_xml = fetch_xml(sm_url)
-
                 sm_low = sm_xml.lower()
                 if "team-lists" not in sm_low:
                     continue
@@ -791,6 +775,7 @@ def fetch_latest_teamlist_url() -> str:
                     m_loc = re.search(r"<loc>\s*([^<]+)\s*</loc>", blk, flags=re.IGNORECASE)
                     if not m_loc:
                         continue
+
                     loc = m_loc.group(1).strip()
                     loc_low = loc.lower()
 
@@ -869,18 +854,17 @@ def build_predictions() -> pd.DataFrame:
 
     starters_by_team = fetch_starters_by_team(teamlist_url) if teamlist_url else {}
 
-    # Load manual teamlists (if any)
-    load_manual_teamlists(TEAMLISTS_CSV_PATH)
-    manual_by_date = getattr(load_manual_teamlists, "_by_date", {})
-
-    # Manual overrides per fixture date
+    # Manual overrides per fixture date (optional)
+    manual_by_date = load_manual_teamlists(TEAMLISTS_CSV_PATH)
     for m in fixtures:
         manual_for_date = manual_by_date.get(m.date, {})
-        if manual_for_date:
-            if m.home in manual_for_date:
-                starters_by_team.setdefault(m.home, {}).update(manual_for_date[m.home])
-            if m.away in manual_for_date:
-                starters_by_team.setdefault(m.away, {}).update(manual_for_date[m.away])
+        if not manual_for_date:
+            continue
+
+        if m.home in manual_for_date:
+            starters_by_team.setdefault(m.home, {}).update(manual_for_date[m.home])
+        if m.away in manual_for_date:
+            starters_by_team.setdefault(m.away, {}).update(manual_for_date[m.away])
 
     adj = load_adjustments()
     odds = load_odds()
@@ -980,7 +964,6 @@ def build_predictions() -> pd.DataFrame:
                 if edge >= 0.15:
                     stake = 3.0
 
-        # Output row (ALWAYS appended once per fixture)
         rows.append({
             "mode": MODE,
             "rating_mode": rating_mode,
