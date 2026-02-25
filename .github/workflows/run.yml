@@ -82,6 +82,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir -p site
+          git checkout -- index.html
           cp index.html site/index.html
           cp predictions.csv site/predictions.csv
           if [ -f odds.csv ]; then cp odds.csv site/odds.csv; fi
