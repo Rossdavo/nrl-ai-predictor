@@ -710,19 +710,27 @@ def fetch_latest_teamlist_url() -> str:
     }
 
     try:
+        print(f"[debug] fetching sitemap: {SITEMAP_CURRENT_GZ}")
         r = requests.get(SITEMAP_CURRENT_GZ, timeout=30, headers=headers)
         r.raise_for_status()
+
+        print(f"[debug] sitemap http={r.status_code} bytes={len(r.content)}")
 
         # current.xml.gz is gzip compressed XML
         xml_bytes = gzip.decompress(r.content)
         xml = xml_bytes.decode("utf-8", errors="ignore")
 
+        print(f"[debug] sitemap xml chars={len(xml)}")
+        print(f"[debug] sitemap contains '/news/': {'/news/' in xml}")
+        print(f"[debug] sitemap contains 'nrl-team-lists-': {'nrl-team-lists-' in xml}")
+
         # Extract <url> blocks containing a team lists article
-        # We keep it regex-based to avoid XML namespace headaches.
         url_blocks = re.findall(r"<url>.*?</url>", xml, flags=re.DOTALL | re.IGNORECASE)
+        print(f"[debug] sitemap url_blocks={len(url_blocks)}")
 
         best_url = ""
         best_lastmod = ""
+        hits = 0
 
         for blk in url_blocks:
             m_loc = re.search(r"<loc>\s*([^<]+)\s*</loc>", blk, flags=re.IGNORECASE)
@@ -739,6 +747,7 @@ def fetch_latest_teamlist_url() -> str:
             if "nrl-team-lists-" not in loc:
                 continue
 
+            hits += 1
             lastmod = (m_mod.group(1).strip() if m_mod else "")
 
             # Pick the newest by lastmod (ISO strings compare lexicographically well)
@@ -746,11 +755,14 @@ def fetch_latest_teamlist_url() -> str:
                 best_lastmod = lastmod
                 best_url = loc
 
-        if best_url:
-            return best_url
+        print(f"[debug] teamlist sitemap hits={hits}")
+        print(f"[debug] best_teamlist_url={best_url!r} lastmod={best_lastmod!r}")
 
+        return best_url or ""
+
+    except Exception as e:
+        print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap: {e}")
         return ""
-
     except Exception as e:
         print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap: {e}")
         return ""
