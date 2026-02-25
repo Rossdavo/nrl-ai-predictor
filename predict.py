@@ -25,7 +25,7 @@ MODE = "AUTO"
 # ----------------------------
 # Team lists (trials page) – optional
 # ----------------------------
-TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists"
+
 FORCE_TRY_FALLBACK = False  # set to False once Round 1 team lists are live
 
 # ----------------------------
@@ -695,7 +695,7 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
     return fixtures
 
-TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists"
+
 
 SITEMAP_CURRENT_GZ = "https://www.nrl.com/sitemap/current.xml.gz"
 
