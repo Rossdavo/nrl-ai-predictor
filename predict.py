@@ -697,7 +697,7 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 
 
 
-SITEMAP_INDEX = "https://www.nrl.com/sitemap.xml"
+SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
 
 def fetch_latest_teamlist_url() -> str:
     """
