@@ -704,7 +704,10 @@ def fetch_latest_teamlist_url() -> str:
         r.raise_for_status()
         html = r.text
 
-        m = re.search(r'href="(/news/\d{4}/\d{2}/\d{2}/nrl-team-lists-[^"]+/)"', html)
+       m = re.search(
+    r'href=[\'"](/news/\d{4}/\d{2}/\d{2}/nrl-team-lists-[^\'"]+/)[\'"]',
+    html
+)
         if not m:
             return ""
 
