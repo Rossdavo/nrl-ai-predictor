@@ -864,13 +864,14 @@ def build_predictions():
         ad_model = None
 
     # --- Extras ---
-teamlist_url = fetch_latest_teamlist_url()
-if teamlist_url:
-    print(f"[info] Using team lists from: {teamlist_url}")
-else:
-    print("[warn] No team list article found yet — using try-scorer fallback profiles.")
+    teamlist_url = fetch_latest_teamlist_url()
+    if teamlist_url:
+        print(f"[info] Using team lists from: {teamlist_url}")
+    else:
+        print("[warn] No team list article found yet — using try-scorer fallback profiles.")
 
-starters_by_team = fetch_starters_by_team(teamlist_url) if teamlist_url else {}
+    starters_by_team = fetch_starters_by_team(teamlist_url) if teamlist_url else {}
+
     adj = load_adjustments()
     odds = load_odds()
 
