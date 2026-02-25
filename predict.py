@@ -1021,23 +1021,7 @@ def build_predictions():
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
- TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists%3A%20Round"
-
-def fetch_latest_teamlist_url() -> str:
-    """
-    Finds the latest NRL Team Lists article URL by scraping NRL search results.
-    Returns "" if not found.
-    """
-    headers = {"User-Agent": "Mozilla/5.0"}
-    try:
-        r = requests.get(TEAMLIST_SEARCH_URL, timeout=30, headers=headers)
-        r.raise_for_status()
-        html = r.text
-
-        # Look for links like /news/YYYY/MM/DD/nrl-team-lists-round-<num>/
-        m = re.search(r'href="(/news/\d{4}/\d{2}/\d{2}/nrl-team-lists-round-\d+/)"', html)
-        if not m:
-            return ""
+ 
 
         return "https://www.nrl.com" + m.group(1)
     except Exception as e:
