@@ -512,6 +512,56 @@ def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float
         return out
     except Exception:
         return {}
+        TEAMLISTS_CSV_PATH = "teamlists.csv"
+
+def load_manual_teamlists(path: str = TEAMLISTS_CSV_PATH) -> Dict[str, Dict[int, str]]:
+    """
+    Loads manual team lists from CSV:
+      date, team, num, name
+
+    Returns a starters_by_team dict:
+      { "Bulldogs": {1:"...", 2:"...", ...}, ... }
+
+    IMPORTANT: This loader does NOT pick a date itself.
+    We'll filter by fixture date in build_predictions().
+    """
+    if not os.path.exists(path):
+        return {}
+
+    try:
+        df = pd.read_csv(path)
+    except Exception:
+        return {}
+
+    required = {"date", "team", "num", "name"}
+    if not required.issubset(set(df.columns)):
+        print(f"[warn] {path} missing columns. Need {sorted(required)}")
+        return {}
+
+    # Clean / normalise
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    df["team"] = df["team"].astype(str).apply(norm_team)
+    df["num"] = pd.to_numeric(df["num"], errors="coerce")
+    df["name"] = df["name"].astype(str).str.strip()
+
+    df = df.dropna(subset=["date", "team", "num", "name"])
+    df = df[(df["num"] >= 1) & (df["num"] <= 17)]  # allow 1–17 in case you expand later
+
+    # We'll return raw rows; filter by date later
+    # Store it as: manual_by_date[date][team][num] = name
+    manual_by_date: Dict[str, Dict[str, Dict[int, str]]] = {}
+    for _, r in df.iterrows():
+        d = str(r["date"])
+        t = str(r["team"])
+        n = int(r["num"])
+        nm = str(r["name"])
+        manual_by_date.setdefault(d, {}).setdefault(t, {})[n] = nm
+
+    # stash on function attribute for retrieval (simple + avoids globals)
+    load_manual_teamlists._by_date = manual_by_date  # type: ignore[attr-defined]
+    print(f"[info] Loaded manual teamlists: {path} (dates={len(manual_by_date)})")
+
+    return {}  # actual per-date selection happens elsewhere
 
 def expected_points(model: Dict[str, object], home: str, away: str, venue: str, adj: Dict[str, Dict[str, float]]) -> Tuple[float, float]:
     mu = model["mu"]
