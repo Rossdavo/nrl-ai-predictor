@@ -810,6 +810,32 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 
     fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
     return fixtures
+
+RESULTS_CACHE_PATH = "results_cache.csv"
+
+
+TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists%3A%20Round"
+
+def fetch_latest_teamlist_url() -> str:
+    headers = {"User-Agent": "Mozilla/5.0"}
+    try:
+        r = requests.get(TEAMLIST_SEARCH_URL, timeout=30, headers=headers)
+        r.raise_for_status()
+        html = r.text
+
+        m = re.search(r'href="(/news/\d{4}/\d{2}/\d{2}/nrl-team-lists-round-\d+/)"', html)
+        if not m:
+            return ""
+
+        return "https://www.nrl.com" + m.group(1)
+
+    except Exception as e:
+        print(f"[warn] Could not auto-find TEAMLIST_URL: {e}")
+        return ""
+
+
+@dataclass
+class Match:
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
