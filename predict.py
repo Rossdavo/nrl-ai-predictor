@@ -919,21 +919,21 @@ def build_predictions():
             away_named = _try_profiles_fallback(exp_away_pts)
             try_mode = "FALLBACK_FORCED"
 
-      else:
-          home_has_list = _has_valid_named_teamlist(starters_by_team, m.home)
-          away_has_list = _has_valid_named_teamlist(starters_by_team, m.away)
+        else:
+            home_has_list = _has_valid_named_teamlist(starters_by_team, m.home)
+            away_has_list = _has_valid_named_teamlist(starters_by_team, m.away)
 
-          if home_has_list:
-              home_named = _try_probs_named(starters_by_team.get(m.home, {}), exp_home_pts)
-          if away_has_list:
-              away_named = _try_probs_named(starters_by_team.get(m.away, {}), exp_away_pts)
+            if home_has_list:
+                home_named = _try_probs_named(starters_by_team.get(m.home, {}), exp_home_pts)
+            if away_has_list:
+                away_named = _try_probs_named(starters_by_team.get(m.away, {}), exp_away_pts)
 
-          if not home_named:
-              home_named = _try_profiles_fallback(exp_home_pts)
-          if not away_named:
-              away_named = _try_profiles_fallback(exp_away_pts)
+            if not home_named:
+                home_named = _try_profiles_fallback(exp_home_pts)
+            if not away_named:
+                away_named = _try_profiles_fallback(exp_away_pts)
 
-          try_mode = "NAMED" if (home_has_list and away_has_list) else "FALLBACK"
+            try_mode = "NAMED" if (home_has_list and away_has_list) else "FALLBACK"
 
         # --- Odds lookup ---
         key = (m.date, m.home, m.away)
