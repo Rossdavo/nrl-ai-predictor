@@ -23,8 +23,8 @@ MODE = "AUTO"
 # ----------------------------
 # Team lists (trials page) – optional
 # ----------------------------
-TEAMLIST_URL = "https://www.nrl.com/news/2026/02/xx/nrl-team-lists-round-1/"
-FORCE_TRY_FALLBACK = True  # set to False once Round 1 team lists are live
+TEAMLIST_URL = ""  # auto-detected each run
+FORCE_TRY_FALLBACK = False  # set to False once Round 1 team lists are live
 
 # ----------------------------
 # Results source for ratings (Attack/Defence)
