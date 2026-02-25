@@ -1,5 +1,5 @@
 print("[predict] predict.py loaded")
-
+import gzip
 import math
 import random
 import re
@@ -697,26 +697,62 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 
 TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists"
 
+SITEMAP_CURRENT_GZ = "https://www.nrl.com/sitemap/current.xml.gz"
+
 def fetch_latest_teamlist_url() -> str:
-    headers = {"User-Agent": "Mozilla/5.0"}
+    """
+    Robust: pull the latest nrl-team-lists article from NRL's current sitemap.
+    Avoids JS-rendered topic/search pages that requests can't see.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/xml,text/xml;q=0.9,*/*;q=0.8",
+    }
+
     try:
-        r = requests.get(TEAMLIST_SEARCH_URL, timeout=30, headers=headers)
+        r = requests.get(SITEMAP_CURRENT_GZ, timeout=30, headers=headers)
         r.raise_for_status()
-        html = r.text
-        print("[debug] teamlist html has nrl-team-lists:", "nrl-team-lists-" in html)
 
-        m = re.search(
-            r'href=[\'"](/news/\d{4}/\d{2}/\d{2}/nrl-team-lists-[^\'"]+/)[\'"]',
-            html
-        )
+        # current.xml.gz is gzip compressed XML
+        xml_bytes = gzip.decompress(r.content)
+        xml = xml_bytes.decode("utf-8", errors="ignore")
 
-        if not m:
-            return ""
+        # Extract <url> blocks containing a team lists article
+        # We keep it regex-based to avoid XML namespace headaches.
+        url_blocks = re.findall(r"<url>.*?</url>", xml, flags=re.DOTALL | re.IGNORECASE)
 
-        return "https://www.nrl.com" + m.group(1)
+        best_url = ""
+        best_lastmod = ""
+
+        for blk in url_blocks:
+            m_loc = re.search(r"<loc>\s*([^<]+)\s*</loc>", blk, flags=re.IGNORECASE)
+            m_mod = re.search(r"<lastmod>\s*([^<]+)\s*</lastmod>", blk, flags=re.IGNORECASE)
+
+            if not m_loc:
+                continue
+
+            loc = m_loc.group(1).strip()
+
+            # Only team list articles
+            if "/news/" not in loc:
+                continue
+            if "nrl-team-lists-" not in loc:
+                continue
+
+            lastmod = (m_mod.group(1).strip() if m_mod else "")
+
+            # Pick the newest by lastmod (ISO strings compare lexicographically well)
+            if lastmod > best_lastmod:
+                best_lastmod = lastmod
+                best_url = loc
+
+        if best_url:
+            return best_url
+
+        return ""
 
     except Exception as e:
-        print(f"[warn] Could not auto-find TEAMLIST_URL: {e}")
+        print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap: {e}")
         return ""
 
 # ----------------------------
