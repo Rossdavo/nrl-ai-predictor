@@ -695,7 +695,7 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
     return fixtures
 
-TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists%3A%20Round"
+TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists"
 
 def fetch_latest_teamlist_url() -> str:
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -703,6 +703,7 @@ def fetch_latest_teamlist_url() -> str:
         r = requests.get(TEAMLIST_SEARCH_URL, timeout=30, headers=headers)
         r.raise_for_status()
         html = r.text
+        print("[debug] teamlist html has nrl-team-lists:", "nrl-team-lists-" in html)
 
         m = re.search(
             r'href=[\'"](/news/\d{4}/\d{2}/\d{2}/nrl-team-lists-[^\'"]+/)[\'"]',
