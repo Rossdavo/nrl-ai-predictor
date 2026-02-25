@@ -701,8 +701,7 @@ SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
 
 def fetch_latest_teamlist_url() -> str:
     """
-    Robust: find the latest nrl-team-lists-* article by walking the sitemap index.
-    current.xml.gz is too small and doesn't include news/team-list articles.
+    Find the latest team lists article by walking NRL's sitemap index.
     """
     headers = {
         "User-Agent": "Mozilla/5.0",
@@ -725,22 +724,17 @@ def fetch_latest_teamlist_url() -> str:
         if not sitemap_locs:
             return ""
 
-        # Prefer likely news/post sitemaps first (faster)
-        preferred = [u for u in sitemap_locs if any(k in u.lower() for k in ["news", "post", "article"])]
-        scan_list = preferred if preferred else sitemap_locs
-
         best_url = ""
         best_lastmod = ""
         hits = 0
 
-        # Scan first N sitemaps to keep runtime sane in Actions
-        MAX_SITEMAPS = 25
-
-        for sm_url in scan_list[:MAX_SITEMAPS]:
+        # Scan ALL child sitemaps (only 9, so it's cheap)
+        for sm_url in sitemap_locs:
             try:
                 sm_xml = fetch_xml(sm_url)
-                # Quick skip if not present at all
-                if "team-lists" not in sm_xml.lower():
+
+                sm_low = sm_xml.lower()
+                if "team-lists" not in sm_low:
                     continue
 
                 for blk in re.findall(r"<url>.*?</url>", sm_xml, flags=re.DOTALL | re.IGNORECASE):
@@ -748,11 +742,11 @@ def fetch_latest_teamlist_url() -> str:
                     if not m_loc:
                         continue
                     loc = m_loc.group(1).strip()
+                    loc_low = loc.lower()
 
-                    if "/news/" not in loc:
+                    if "/news/" not in loc_low:
                         continue
-                    loc_lower = loc.lower()
-                    if "team-lists" not in loc_lower:
+                    if "team-lists" not in loc_low:
                         continue
 
                     hits += 1
