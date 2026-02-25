@@ -24,7 +24,7 @@ MODE = "AUTO"
 # Team lists (trials page) – optional
 # ----------------------------
 TEAMLIST_URL = ""  # auto-detected each run
-FORCE_TRY_FALLBACK = False  # set to False once Round 1 team lists are live
+FORCE_TRY_FALLBACK = True  # set to False once Round 1 team lists are live
 
 # ----------------------------
 # Results source for ratings (Attack/Defence)
