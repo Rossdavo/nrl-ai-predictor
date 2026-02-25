@@ -740,7 +740,7 @@ def fetch_latest_teamlist_url() -> str:
             try:
                 sm_xml = fetch_xml(sm_url)
                 # Quick skip if not present at all
-                if "nrl-team-lists-" not in sm_xml:
+                if "team-lists" not in sm_xml.lower():
                     continue
 
                 for blk in re.findall(r"<url>.*?</url>", sm_xml, flags=re.DOTALL | re.IGNORECASE):
@@ -751,7 +751,8 @@ def fetch_latest_teamlist_url() -> str:
 
                     if "/news/" not in loc:
                         continue
-                    if "nrl-team-lists-" not in loc:
+                    loc_lower = loc.lower()
+                    if "team-lists" not in loc_lower:
                         continue
 
                     hits += 1
