@@ -25,7 +25,7 @@ MODE = "AUTO"
 # ----------------------------
 # Team lists (trials page) – optional
 # ----------------------------
-TEAMLIST_SEARCH_URL = "https://www.nrl.com/news/topic/team-lists/"
+TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists"
 FORCE_TRY_FALLBACK = False  # set to False once Round 1 team lists are live
 
 # ----------------------------
