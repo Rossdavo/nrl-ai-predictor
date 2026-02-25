@@ -836,6 +836,11 @@ def fetch_latest_teamlist_url() -> str:
 
 @dataclass
 class Match:
+    date: str
+    kickoff_local: str
+    home: str
+    away: str
+    venue: str
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
