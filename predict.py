@@ -24,6 +24,7 @@ MODE = "AUTO"
 # Team lists (trials page) – optional
 # ----------------------------
 TEAMLIST_URL = "https://www.nrl.com/news/2026/02/10/witzer-pre-season-challenge-team-lists-round-2/"
+FORCE_TRY_FALLBACK = True  # set to False once Round 1 team lists are live
 
 # ----------------------------
 # Results source for ratings (Attack/Defence)
