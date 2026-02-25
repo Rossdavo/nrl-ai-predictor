@@ -864,7 +864,13 @@ def build_predictions():
         ad_model = None
 
     # --- Extras ---
-    starters_by_team = fetch_starters_by_team(TEAMLIST_URL)
+teamlist_url = fetch_latest_teamlist_url()
+if teamlist_url:
+    print(f"[info] Using team lists from: {teamlist_url}")
+else:
+    print("[warn] No team list article found yet — using try-scorer fallback profiles.")
+
+starters_by_team = fetch_starters_by_team(teamlist_url) if teamlist_url else {}
     adj = load_adjustments()
     odds = load_odds()
 
@@ -1008,13 +1014,34 @@ def build_predictions():
             "stake": float(stake),
             "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
             "away_top_try": " | ".join([f"{n} {p:.0%}" for n, p in away_named]),
-            "teamlist_source": TEAMLIST_URL if starters_by_team else "fallback (no scrape)",
+            "teamlist_source": teamlist_url if starters_by_team else "fallback (no scrape)",
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
-        
+ TEAMLIST_SEARCH_URL = "https://www.nrl.com/search/?query=NRL%20Team%20Lists%3A%20Round"
+
+def fetch_latest_teamlist_url() -> str:
+    """
+    Finds the latest NRL Team Lists article URL by scraping NRL search results.
+    Returns "" if not found.
+    """
+    headers = {"User-Agent": "Mozilla/5.0"}
+    try:
+        r = requests.get(TEAMLIST_SEARCH_URL, timeout=30, headers=headers)
+        r.raise_for_status()
+        html = r.text
+
+        # Look for links like /news/YYYY/MM/DD/nrl-team-lists-round-<num>/
+        m = re.search(r'href="(/news/\d{4}/\d{2}/\d{2}/nrl-team-lists-round-\d+/)"', html)
+        if not m:
+            return ""
+
+        return "https://www.nrl.com" + m.group(1)
+    except Exception as e:
+        print(f"[warn] Could not auto-find TEAMLIST_URL: {e}")
+        return ""       
 
 if __name__ == "__main__":
     df = build_predictions()
