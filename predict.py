@@ -735,7 +735,7 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 
 SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
 
-ef fetch_latest_teamlist_url() -> str:
+def fetch_latest_teamlist_url() -> str:
     """
     Find the latest team lists article by walking NRL's sitemap index.
     Handles .xml.gz child sitemaps properly (gzip decompress).
