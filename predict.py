@@ -735,9 +735,10 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 
 SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
 
-def fetch_latest_teamlist_url() -> str:
+ef fetch_latest_teamlist_url() -> str:
     """
     Find the latest team lists article by walking NRL's sitemap index.
+    Handles .xml.gz child sitemaps properly (gzip decompress).
     """
     headers = {
         "User-Agent": "Mozilla/5.0",
@@ -747,7 +748,22 @@ def fetch_latest_teamlist_url() -> str:
     def fetch_xml(url: str) -> str:
         r = requests.get(url, timeout=30, headers=headers)
         r.raise_for_status()
-        return r.text
+
+        content = r.content
+        # Some sitemap endpoints are .xml.gz but served as raw gzip bytes (not Content-Encoding)
+        is_gz = url.lower().endswith(".gz") or content[:2] == b"\x1f\x8b"
+
+        if is_gz:
+            try:
+                content = gzip.decompress(content)
+            except Exception as e:
+                print(f"[warn] gzip decompress failed for {url}: {e}")
+                return ""
+
+        try:
+            return content.decode("utf-8", errors="ignore")
+        except Exception:
+            return content.decode(errors="ignore")
 
     try:
         print(f"[debug] fetching sitemap index: {SITEMAP_INDEX}")
@@ -766,9 +782,13 @@ def fetch_latest_teamlist_url() -> str:
 
         for sm_url in sitemap_locs:
             try:
+                print(f"[debug] scanning child sitemap: {sm_url}")
                 sm_xml = fetch_xml(sm_url)
                 sm_low = sm_xml.lower()
-                if "team-lists" not in sm_low:
+                print(f"[debug] child chars={len(sm_xml)} has_team_terms={('team-lists' in sm_low) or ('team list' in sm_low)}")
+
+                # quick skip if nothing remotely relevant
+                if ("team-lists" not in sm_low) and ("nrl-team-lists" not in sm_low):
                     continue
 
                 for blk in re.findall(r"<url>.*?</url>", sm_xml, flags=re.DOTALL | re.IGNORECASE):
@@ -781,13 +801,16 @@ def fetch_latest_teamlist_url() -> str:
 
                     if "/news/" not in loc_low:
                         continue
-                    if "team-lists" not in loc_low:
+
+                    # Accept both styles of slugs
+                    if ("team-lists" not in loc_low) and ("nrl-team-lists" not in loc_low):
                         continue
 
                     hits += 1
                     m_mod = re.search(r"<lastmod>\s*([^<]+)\s*</lastmod>", blk, flags=re.IGNORECASE)
                     lastmod = m_mod.group(1).strip() if m_mod else ""
 
+                    # Pick newest by lastmod (ISO strings compare lexicographically)
                     if lastmod > best_lastmod:
                         best_lastmod = lastmod
                         best_url = loc
