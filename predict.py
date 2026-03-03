@@ -317,26 +317,34 @@ def fetch_completed_results() -> pd.DataFrame:
     """
     Returns dataframe with columns: date, home, away, home_pts, away_pts
 
-    Behaviour:
-    - Try local cache FIRST (results_cache.csv) if it looks valid
-    - Else fetch from RESULTS_URL and parse (supports multiple table formats)
-    - If web fails, return empty
+    Fixed behaviour:
+    - Load cache if present (even if valid)
+    - ALWAYS attempt web fetch from RESULTS_URL
+    - Merge + dedupe (keeps latest) and write back to RESULTS_CACHE_PATH
+    - If web fails, return cache (or empty if no cache)
     """
+    needed = {"date", "home", "away", "home_pts", "away_pts"}
+
+    # 1) Load cache (if any)
+    cache = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
     if os.path.exists(RESULTS_CACHE_PATH):
         try:
             cached = pd.read_csv(RESULTS_CACHE_PATH)
-            needed = {"date", "home", "away", "home_pts", "away_pts"}
-
-            if needed.issubset(set(cached.columns)) and len(cached) >= 4:
-                cached["home"] = cached["home"].apply(norm_team)
-                cached["away"] = cached["away"].apply(norm_team)
-                print(f"[info] Using cached results: {RESULTS_CACHE_PATH} ({len(cached)} rows)")
-                return cached
+            if needed.issubset(set(cached.columns)) and len(cached) > 0:
+                cache = cached.copy()
+                cache["date"] = pd.to_datetime(cache["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+                cache["home"] = cache["home"].astype(str).apply(norm_team)
+                cache["away"] = cache["away"].astype(str).apply(norm_team)
+                cache["home_pts"] = pd.to_numeric(cache["home_pts"], errors="coerce")
+                cache["away_pts"] = pd.to_numeric(cache["away_pts"], errors="coerce")
+                cache = cache.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+                print(f"[info] Loaded cached results: {RESULTS_CACHE_PATH} ({len(cache)} rows)")
             else:
-                print(f"[warn] Cache exists but invalid/too small. cols={list(cached.columns)} rows={len(cached)}")
+                print(f"[warn] Cache exists but invalid. cols={list(cached.columns)} rows={len(cached)}")
         except Exception as e:
             print(f"[warn] Could not read cached results: {e}")
 
+    # 2) Fetch web results (always try)
     headers = {"User-Agent": "Mozilla/5.0"}
     html = None
     last_err = None
@@ -352,32 +360,43 @@ def fetch_completed_results() -> pd.DataFrame:
             time.sleep(2 * (attempt + 1))
 
     if html is None:
-        print(f"[warn] results fetch failed: {last_err}")
-        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+        print(f"[warn] results fetch failed: {last_err} -> using cache only")
+        return cache.reset_index(drop=True)
 
+    # 3) Parse tables
     try:
         tables = pd.read_html(StringIO(html))
     except Exception as e:
-        print(f"[warn] pd.read_html failed: {e}")
-        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+        print(f"[warn] pd.read_html failed: {e} -> using cache only")
+        return cache.reset_index(drop=True)
 
     if not tables:
-        print("[warn] No tables found on results page")
-        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+        print("[warn] No tables found on results page -> using cache only")
+        return cache.reset_index(drop=True)
 
     df = tables[0].copy()
     cols = set(df.columns)
 
+    out = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+    # Format A (most common on fixturedownload)
+    # Columns often: Date, Home, Away, HomeScore, AwayScore
     if {"Home", "Away", "HomeScore", "AwayScore"}.issubset(cols):
-        date_series = pd.to_datetime(df["Date"], errors="coerce") if "Date" in cols else pd.Series([pd.Timestamp.utcnow()] * len(df))
+        if "Date" in cols:
+            date_series = pd.to_datetime(df["Date"], errors="coerce")
+        else:
+            date_series = pd.Series([pd.NaT] * len(df))
+
         out = pd.DataFrame({
             "date": date_series.dt.strftime("%Y-%m-%d"),
             "home": df["Home"].astype(str).apply(norm_team),
             "away": df["Away"].astype(str).apply(norm_team),
             "home_pts": pd.to_numeric(df["HomeScore"], errors="coerce"),
             "away_pts": pd.to_numeric(df["AwayScore"], errors="coerce"),
-        }).dropna()
+        })
 
+    # Format B
+    # Columns sometimes: Date, Home Team, Away Team, Result (e.g. "28-18")
     elif {"Home Team", "Away Team", "Result"}.issubset(cols):
         def extract_scores(x: object) -> Tuple[float, float]:
             s = str(x)
@@ -387,7 +406,11 @@ def fetch_completed_results() -> pd.DataFrame:
             return (float(m.group(1)), float(m.group(2)))
 
         scores = df["Result"].apply(extract_scores)
-        date_series = pd.to_datetime(df["Date"], errors="coerce") if "Date" in cols else pd.Series([pd.Timestamp.utcnow()] * len(df))
+
+        if "Date" in cols:
+            date_series = pd.to_datetime(df["Date"], errors="coerce")
+        else:
+            date_series = pd.Series([pd.NaT] * len(df))
 
         out = pd.DataFrame({
             "date": date_series.dt.strftime("%Y-%m-%d"),
@@ -395,49 +418,39 @@ def fetch_completed_results() -> pd.DataFrame:
             "away": df["Away Team"].astype(str).apply(norm_team),
             "home_pts": scores.apply(lambda t: t[0]),
             "away_pts": scores.apply(lambda t: t[1]),
-        }).dropna()
+        })
 
     else:
-        print(f"[warn] Results table missing required columns. Found cols={list(df.columns)}")
-        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+        print(f"[warn] Results table missing required columns. Found cols={list(df.columns)} -> using cache only")
+        return cache.reset_index(drop=True)
+
+    out = out.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
+    out["date"] = pd.to_datetime(out["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    out["home_pts"] = pd.to_numeric(out["home_pts"], errors="coerce")
+    out["away_pts"] = pd.to_numeric(out["away_pts"], errors="coerce")
+    out = out.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
 
     print(f"[info] Web fetched results rows={len(out)}")
+
+    # 4) Merge + dedupe + save back
+    merged = pd.concat([cache, out], ignore_index=True)
+    merged["date"] = pd.to_datetime(merged["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    merged["home"] = merged["home"].astype(str).apply(norm_team)
+    merged["away"] = merged["away"].astype(str).apply(norm_team)
+    merged["home_pts"] = pd.to_numeric(merged["home_pts"], errors="coerce")
+    merged["away_pts"] = pd.to_numeric(merged["away_pts"], errors="coerce")
+    merged = merged.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+
+    # Keep last occurrence for same match key
+    merged = merged.drop_duplicates(subset=["date", "home", "away"], keep="last").reset_index(drop=True)
+
     try:
-        if len(out) > 0:
-            out.to_csv(RESULTS_CACHE_PATH, index=False)
-            print(f"[info] Saved fetched results to {RESULTS_CACHE_PATH}")
-    except Exception:
-        pass
+        merged.to_csv(RESULTS_CACHE_PATH, index=False)
+        print(f"[info] Cache updated: {RESULTS_CACHE_PATH} ({len(merged)} rows)")
+    except Exception as e:
+        print(f"[warn] Could not write cache: {e}")
 
-    return out
-
-def load_results_csv(path: str) -> pd.DataFrame:
-    """
-    Loads results from a manual CSV like:
-    date,home,away,home_pts,away_pts
-    """
-    if not os.path.exists(path):
-        print(f"[warn] results file not found: {path}")
-        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
-
-    df = pd.read_csv(path)
-
-    needed = {"date", "home", "away", "home_pts", "away_pts"}
-    if not needed.issubset(set(df.columns)):
-        print(f"[warn] {path} missing required columns.")
-        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
-
-    df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True).dt.strftime("%Y-%m-%d")
-    df["home"] = df["home"].astype(str).apply(norm_team)
-    df["away"] = df["away"].astype(str).apply(norm_team)
-    df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
-    df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
-
-    df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
-
-    print(f"[info] Loaded {path}: {len(df)} rows")
-    return df[["date", "home", "away", "home_pts", "away_pts"]]
-
+    return merged
 def fit_attack_defence(
     results: pd.DataFrame,
     teams: List[str],
