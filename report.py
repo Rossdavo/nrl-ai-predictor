@@ -68,41 +68,52 @@ def main():
     candidates = ["results_2025.csv", "data/results_2025.csv"]
     src = next((c for c in candidates if os.path.exists(c)), None)
 
-    if not src:
-        print("Could not find results_2025.csv (tried root + data/)")
-        pd.DataFrame(columns=EXPECTED).to_csv("results_cache.csv", index=False)
-        return
-
-    print(f"Reading: {src}")
-    df = read_results_file(src)
-
-    if df.empty:
-        print("Parsed 0 rows from results_2025.csv (file format still not readable).")
-        pd.DataFrame(columns=EXPECTED).to_csv("results_cache.csv", index=False)
-        return
-
-    # Date normalization (your file is day-first)
-    df["date"] = pd.to_datetime(df["date"], dayfirst=True, errors="coerce").dt.strftime("%Y-%m-%d")
-
-    df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
-    df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
-
-    df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
-
-    # Append to existing cache if it exists
+    # Always load existing cache FIRST (so we never wipe 2026)
+    existing = pd.DataFrame(columns=EXPECTED)
     if os.path.exists("results_cache.csv"):
         try:
             existing = pd.read_csv("results_cache.csv")
-            if set(EXPECTED).issubset(existing.columns):
-                df = pd.concat([existing[EXPECTED], df], ignore_index=True)
+            existing.columns = [c.strip().lower() for c in existing.columns]
+            if not set(EXPECTED).issubset(existing.columns):
+                existing = pd.DataFrame(columns=EXPECTED)
+            else:
+                existing = existing[EXPECTED].copy()
         except Exception:
-            pass
+            existing = pd.DataFrame(columns=EXPECTED)
 
-    df = df.drop_duplicates(subset=["date", "home", "away"]).sort_values(["date", "home"])
-    df.to_csv("results_cache.csv", index=False)
+    if not src:
+        print("Could not find results_2025.csv (tried root + data/). Keeping existing results_cache.csv.")
+        # Keep existing cache unchanged
+        if not os.path.exists("results_cache.csv"):
+            existing.to_csv("results_cache.csv", index=False)
+        return
 
-    print(f"Loaded {len(df)} total results into results_cache.csv")
+    print(f"Reading: {src}")
+    df_2025 = read_results_file(src)
 
+    if df_2025.empty:
+        print("Parsed 0 rows from results_2025.csv. Keeping existing results_cache.csv (not overwriting).")
+        # Keep existing cache unchanged
+        if not os.path.exists("results_cache.csv"):
+            existing.to_csv("results_cache.csv", index=False)
+        return
+
+    # Date normalization (your file is day-first)
+    df_2025["date"] = pd.to_datetime(df_2025["date"], dayfirst=True, errors="coerce").dt.strftime("%Y-%m-%d")
+    df_2025["home_pts"] = pd.to_numeric(df_2025["home_pts"], errors="coerce")
+    df_2025["away_pts"] = pd.to_numeric(df_2025["away_pts"], errors="coerce")
+    df_2025 = df_2025.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+
+    # Merge cache + 2025, then dedupe
+    combined = pd.concat([existing, df_2025[EXPECTED]], ignore_index=True)
+    combined = (
+        combined.drop_duplicates(subset=["date", "home", "away"], keep="last")
+                .sort_values(["date", "home"])
+                .reset_index(drop=True)
+    )
+
+    combined.to_csv("results_cache.csv", index=False)
+    print(f"Loaded {len(combined)} total results into results_cache.csv")
 
 if __name__ == "__main__":
     main()
