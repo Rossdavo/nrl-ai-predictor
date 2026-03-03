@@ -934,6 +934,9 @@ def build_predictions() -> pd.DataFrame:
         print("[warn] No team list article found yet — using try-scorer fallback profiles.")
 
     starters_by_team = fetch_starters_by_team(teamlist_url) if teamlist_url else {}
+    print("[debug] starters_by_team keys sample:", list(sorted(starters_by_team.keys()))[:30])
+    for m in fixtures:
+        print(f"[debug] {m.home} home_len={len(starters_by_team.get(m.home, {}))} | {m.away} away_len={len(starters_by_team.get(m.away, {}))}")
 
     # Manual overrides per fixture date (optional)
     manual_by_date = load_manual_teamlists(TEAMLISTS_CSV_PATH)
