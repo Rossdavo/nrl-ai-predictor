@@ -656,7 +656,7 @@ def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
 
 def _has_valid_named_teamlist(starters_by_team: Dict[str, Dict[int, str]], team: str) -> bool:
     players = starters_by_team.get(team, {})
-    return isinstance(players, dict) and len(players) >= 10
+    return isinstance(players, dict) and len(players) >= 7
 
 def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
     try:
