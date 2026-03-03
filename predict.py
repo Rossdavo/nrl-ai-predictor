@@ -231,23 +231,32 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         r.raise_for_status()
         text = _strip_html_to_text(r.text)
 
+        # NRL articles often look like:
+        # "Fullback for Storm is number 1 Sualauvi Faalogo Winger for Storm is number 2 Will Warbrick ..."
+        # We MUST stop the name before the next "Position for ..." chunk.
+        positions = r"(?:Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)"
         pat = re.compile(
-            r"(?:Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|2nd Row|Second Row|Lock|Interchange|Reserve)\s+for\s+([A-Za-z \-']+?)\s+is\s+number\s+(\d{1,2})\s+([A-Za-z \-'.]+)",
+            rf"{positions}\s+for\s+([A-Za-z \-']+?)\s+is\s+number\s+(\d{{1,2}})\s+"
+            rf"([A-Za-z][A-Za-z \-'.]+?)"
+            rf"(?=\s+{positions}\s+for\s+|\s*$)",
             re.IGNORECASE
         )
 
         starters: Dict[str, Dict[int, str]] = {}
+
         for team, num_s, name in pat.findall(text):
             team = norm_team(team.strip())
-            num = int(num_s)
-            name = name.strip()
-
-            if not (1 <= num <= 13):
+            try:
+                num = int(num_s)
+            except Exception:
                 continue
 
-            
-
+            name = name.strip()
             if not name:
+                continue
+
+            # Only named starters 1–13 (as per your try model)
+            if not (1 <= num <= 13):
                 continue
 
             starters.setdefault(team, {})
@@ -260,6 +269,7 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
             print("[warn] teamlist scrape returned 0 teams")
 
         return starters
+
     except Exception as e:
         print(f"[warn] teamlist scrape failed: {e}")
         return {}
