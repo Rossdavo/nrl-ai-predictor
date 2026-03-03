@@ -758,9 +758,9 @@ SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
 
 def fetch_latest_teamlist_url() -> str:
     """
-    Find the best (most relevant) team lists article by walking NRL's sitemap index.
-    Prefers round-based team list articles (e.g. 'nrl-team-lists-round-1') and
-    de-prioritises evergreen/special pages like 'las-vegas'.
+    Find the best team lists article by walking NRL's sitemap index.
+    Strongly prefers current-season round-based team list articles (e.g. 2026/..../nrl-team-lists-round-1).
+    Avoids old seasons (e.g. 2025 round-27) even if they have "round-" in the slug.
     Handles .xml.gz child sitemaps properly (gzip decompress).
     """
     headers = {
@@ -773,9 +773,7 @@ def fetch_latest_teamlist_url() -> str:
         r.raise_for_status()
 
         content = r.content
-        # Some sitemap endpoints are .xml.gz but served as raw gzip bytes (not Content-Encoding)
         is_gz = url.lower().endswith(".gz") or content[:2] == b"\x1f\x8b"
-
         if is_gz:
             try:
                 content = gzip.decompress(content)
@@ -788,13 +786,20 @@ def fetch_latest_teamlist_url() -> str:
         except Exception:
             return content.decode(errors="ignore")
 
-    def score_url(loc_low: str) -> int:
+    def extract_year_from_news_url(loc_low: str) -> int:
+        m = re.search(r"/news/(\d{4})/", loc_low)
+        return int(m.group(1)) if m else 0
+
+    def parse_lastmod_iso(lastmod: str) -> str:
+        # ISO strings compare lexicographically if same format; keep as string
+        return lastmod or ""
+
+    def score_url(loc_low: str, year: int) -> int:
         """
-        Higher is better. We want round-based team lists first.
+        Higher is better. We want current-year round pages first.
         """
         score = 0
 
-        # Must be team list-ish
         if ("team-lists" in loc_low) or ("nrl-team-lists" in loc_low):
             score += 10
 
@@ -804,13 +809,22 @@ def fetch_latest_teamlist_url() -> str:
         elif "round-" in loc_low:
             score += 80
 
-        # Penalise special/evergreen pages that can have newer lastmod
+        # Avoid specials/evergreen pages that can have misleading lastmod
         if "las-vegas" in loc_low:
             score -= 120
 
-        # Small preference for NRL-specific slug style
+        # Prefer NRL-specific slug style
         if "nrl-team-lists" in loc_low:
             score += 20
+
+        # Current season year preference
+        current_year = datetime.now(SYDNEY_TZ).year
+        if year == current_year:
+            score += 300
+        elif year == current_year - 1:
+            score -= 200
+        elif year and year < current_year - 1:
+            score -= 500
 
         return score
 
@@ -830,6 +844,8 @@ def fetch_latest_teamlist_url() -> str:
         best_score = -10_000
         hits = 0
 
+        current_year = datetime.now(SYDNEY_TZ).year
+
         for sm_url in sitemap_locs:
             try:
                 print(f"[debug] scanning child sitemap: {sm_url}")
@@ -837,7 +853,6 @@ def fetch_latest_teamlist_url() -> str:
                 sm_low = sm_xml.lower()
                 print(f"[debug] child chars={len(sm_xml)} has_team_terms={('team-lists' in sm_low) or ('team list' in sm_low)}")
 
-                # quick skip if nothing remotely relevant
                 if ("team-lists" not in sm_low) and ("nrl-team-lists" not in sm_low):
                     continue
 
@@ -851,18 +866,23 @@ def fetch_latest_teamlist_url() -> str:
 
                     if "/news/" not in loc_low:
                         continue
-
-                    # Accept both styles of slugs
                     if ("team-lists" not in loc_low) and ("nrl-team-lists" not in loc_low):
                         continue
 
                     hits += 1
+
+                    year = extract_year_from_news_url(loc_low)
+
+                    # HARD FILTER: ignore old seasons completely
+                    if year and year != current_year:
+                        continue
+
                     m_mod = re.search(r"<lastmod>\s*([^<]+)\s*</lastmod>", blk, flags=re.IGNORECASE)
-                    lastmod = m_mod.group(1).strip() if m_mod else ""
+                    lastmod = parse_lastmod_iso(m_mod.group(1).strip() if m_mod else "")
 
-                    s = score_url(loc_low)
+                    s = score_url(loc_low, year)
 
-                    # Pick best by score, then newest by lastmod
+                    # Pick best by score; tie-break by newest lastmod
                     if (s > best_score) or (s == best_score and lastmod > best_lastmod):
                         best_score = s
                         best_lastmod = lastmod
@@ -879,7 +899,6 @@ def fetch_latest_teamlist_url() -> str:
     except Exception as e:
         print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap index: {e}")
         return ""
-
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
