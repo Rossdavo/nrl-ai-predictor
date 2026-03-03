@@ -756,57 +756,135 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
 
 SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
 
-def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
+def fetch_latest_teamlist_url() -> str:
     """
-    Attempts to scrape named starters from an NRL team list article.
-    Returns: { "TeamShortName": {1:"Name", 2:"Name", ... 13:"Name"} }
+    Find the best team lists article by walking NRL's sitemap index.
+    Strongly prefers current-season round-based team list articles.
+    Handles .xml.gz child sitemaps properly (gzip decompress).
     """
-    try:
-        r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/xml,text/xml;q=0.9,*/*;q=0.8",
+    }
+
+    def fetch_xml(url: str) -> str:
+        r = requests.get(url, timeout=30, headers=headers)
         r.raise_for_status()
-        text = _strip_html_to_text(r.text)
 
-        positions = r"(?:Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)"
-        # Stop condition must handle the standalone jersey number that appears between teams:
-        # "... Storm is number 1 Name 1 Fullback for Eels is number 1 Name ..."
-        stop = rf"(?=\s+(?:\d{{1,2}}\s+)?{positions}\s+for\s+|\s*$)"
-
-        pat = re.compile(
-            rf"{positions}\s+for\s+([A-Za-z \-']+?)\s+is\s+number\s+(\d{{1,2}})\s+"
-            rf"([A-Za-z][A-Za-z \-'.]+?)"
-            rf"{stop}",
-            re.IGNORECASE
-        )
-
-        starters: Dict[str, Dict[int, str]] = {}
-        for team, num_s, name in pat.findall(text):
-            team = norm_team(team.strip())
+        content = r.content
+        is_gz = url.lower().endswith(".gz") or content[:2] == b"\x1f\x8b"
+        if is_gz:
             try:
-                num = int(num_s)
-            except Exception:
-                continue
+                content = gzip.decompress(content)
+            except Exception as e:
+                print(f"[warn] gzip decompress failed for {url}: {e}")
+                return ""
 
-            name = name.strip()
-            if not name:
-                continue
+        try:
+            return content.decode("utf-8", errors="ignore")
+        except Exception:
+            return content.decode(errors="ignore")
 
-            # Starters only
-            if not (1 <= num <= 13):
-                continue
+    def extract_year_from_news_url(loc_low: str) -> int:
+        m = re.search(r"/news/(\d{4})/", loc_low)
+        return int(m.group(1)) if m else 0
 
-            starters.setdefault(team, {})
-            starters[team][num] = name
+    def score_url(loc_low: str, year: int) -> int:
+        score = 0
+        if ("team-lists" in loc_low) or ("nrl-team-lists" in loc_low):
+            score += 10
 
-        if starters:
-            sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:8]
-            print("[info] teamlist scrape sample:", ", ".join([f"{t}:{len(p)}" for t, p in sample]))
-        else:
-            print("[warn] teamlist scrape returned 0 teams")
+        if "nrl-team-lists-round-" in loc_low or "team-lists-round-" in loc_low:
+            score += 200
+        elif "round-" in loc_low:
+            score += 80
 
-        return starters
+        if "las-vegas" in loc_low:
+            score -= 120
+
+        if "nrl-team-lists" in loc_low:
+            score += 20
+
+        current_year = datetime.now(SYDNEY_TZ).year
+        if year == current_year:
+            score += 300
+        elif year == current_year - 1:
+            score -= 200
+        elif year and year < current_year - 1:
+            score -= 500
+
+        return score
+
+    try:
+        print(f"[debug] fetching sitemap index: {SITEMAP_INDEX}")
+        idx_xml = fetch_xml(SITEMAP_INDEX)
+        print(f"[debug] sitemap index chars={len(idx_xml)}")
+
+        sitemap_locs = re.findall(r"<loc>\s*([^<]+)\s*</loc>", idx_xml, flags=re.IGNORECASE)
+        print(f"[debug] sitemap index locs={len(sitemap_locs)}")
+
+        if not sitemap_locs:
+            return ""
+
+        best_url = ""
+        best_lastmod = ""
+        best_score = -10_000
+        hits = 0
+
+        current_year = datetime.now(SYDNEY_TZ).year
+
+        for sm_url in sitemap_locs:
+            try:
+                print(f"[debug] scanning child sitemap: {sm_url}")
+                sm_xml = fetch_xml(sm_url)
+                sm_low = sm_xml.lower()
+                print(f"[debug] child chars={len(sm_xml)} has_team_terms={('team-lists' in sm_low) or ('team list' in sm_low)}")
+
+                if ("team-lists" not in sm_low) and ("nrl-team-lists" not in sm_low):
+                    continue
+
+                for blk in re.findall(r"<url>.*?</url>", sm_xml, flags=re.DOTALL | re.IGNORECASE):
+                    m_loc = re.search(r"<loc>\s*([^<]+)\s*</loc>", blk, flags=re.IGNORECASE)
+                    if not m_loc:
+                        continue
+
+                    loc = m_loc.group(1).strip()
+                    loc_low = loc.lower()
+
+                    if "/news/" not in loc_low:
+                        continue
+                    if ("team-lists" not in loc_low) and ("nrl-team-lists" not in loc_low):
+                        continue
+
+                    hits += 1
+
+                    year = extract_year_from_news_url(loc_low)
+
+                    # hard filter: ignore old seasons
+                    if year and year != current_year:
+                        continue
+
+                    m_mod = re.search(r"<lastmod>\s*([^<]+)\s*</lastmod>", blk, flags=re.IGNORECASE)
+                    lastmod = m_mod.group(1).strip() if m_mod else ""
+
+                    s = score_url(loc_low, year)
+
+                    if (s > best_score) or (s == best_score and lastmod > best_lastmod):
+                        best_score = s
+                        best_lastmod = lastmod
+                        best_url = loc
+
+            except Exception as e:
+                print(f"[warn] sitemap child fetch failed: {sm_url} err={e}")
+
+        print(f"[debug] teamlist hits={hits}")
+        print(f"[debug] best_teamlist_url={best_url!r} score={best_score} lastmod={best_lastmod!r}")
+
+        return best_url or ""
+
     except Exception as e:
-        print(f"[warn] teamlist scrape failed: {e}")
-        return {}
+        print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap index: {e}")
+        return ""
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
