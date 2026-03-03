@@ -1027,6 +1027,37 @@ def build_predictions() -> pd.DataFrame:
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
     return df
 
+def load_results_csv(path: str) -> pd.DataFrame:
+    """
+    Loads results from a manual CSV like:
+    date,home,away,home_pts,away_pts
+    """
+    if not os.path.exists(path):
+        print(f"[warn] results file not found: {path}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+    try:
+        df = pd.read_csv(path)
+    except Exception as e:
+        print(f"[warn] could not read {path}: {e}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+    needed = {"date", "home", "away", "home_pts", "away_pts"}
+    if not needed.issubset(set(df.columns)):
+        print(f"[warn] {path} missing required columns. Need {sorted(needed)}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+    df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True).dt.strftime("%Y-%m-%d")
+    df["home"] = df["home"].astype(str).apply(norm_team)
+    df["away"] = df["away"].astype(str).apply(norm_team)
+    df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
+    df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
+
+    df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+
+    print(f"[info] Loaded {path}: {len(df)} rows")
+    return df[["date", "home", "away", "home_pts", "away_pts"]]
+
 if __name__ == "__main__":
     df = build_predictions()
     df.to_csv("predictions.csv", index=False)
