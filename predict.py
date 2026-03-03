@@ -758,7 +758,9 @@ SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
 
 def fetch_latest_teamlist_url() -> str:
     """
-    Find the latest team lists article by walking NRL's sitemap index.
+    Find the best (most relevant) team lists article by walking NRL's sitemap index.
+    Prefers round-based team list articles (e.g. 'nrl-team-lists-round-1') and
+    de-prioritises evergreen/special pages like 'las-vegas'.
     Handles .xml.gz child sitemaps properly (gzip decompress).
     """
     headers = {
@@ -786,6 +788,32 @@ def fetch_latest_teamlist_url() -> str:
         except Exception:
             return content.decode(errors="ignore")
 
+    def score_url(loc_low: str) -> int:
+        """
+        Higher is better. We want round-based team lists first.
+        """
+        score = 0
+
+        # Must be team list-ish
+        if ("team-lists" in loc_low) or ("nrl-team-lists" in loc_low):
+            score += 10
+
+        # Strongly prefer round pages
+        if "nrl-team-lists-round-" in loc_low or "team-lists-round-" in loc_low:
+            score += 200
+        elif "round-" in loc_low:
+            score += 80
+
+        # Penalise special/evergreen pages that can have newer lastmod
+        if "las-vegas" in loc_low:
+            score -= 120
+
+        # Small preference for NRL-specific slug style
+        if "nrl-team-lists" in loc_low:
+            score += 20
+
+        return score
+
     try:
         print(f"[debug] fetching sitemap index: {SITEMAP_INDEX}")
         idx_xml = fetch_xml(SITEMAP_INDEX)
@@ -799,6 +827,7 @@ def fetch_latest_teamlist_url() -> str:
 
         best_url = ""
         best_lastmod = ""
+        best_score = -10_000
         hits = 0
 
         for sm_url in sitemap_locs:
@@ -831,8 +860,11 @@ def fetch_latest_teamlist_url() -> str:
                     m_mod = re.search(r"<lastmod>\s*([^<]+)\s*</lastmod>", blk, flags=re.IGNORECASE)
                     lastmod = m_mod.group(1).strip() if m_mod else ""
 
-                    # Pick newest by lastmod (ISO strings compare lexicographically)
-                    if lastmod > best_lastmod:
+                    s = score_url(loc_low)
+
+                    # Pick best by score, then newest by lastmod
+                    if (s > best_score) or (s == best_score and lastmod > best_lastmod):
+                        best_score = s
                         best_lastmod = lastmod
                         best_url = loc
 
@@ -840,7 +872,7 @@ def fetch_latest_teamlist_url() -> str:
                 print(f"[warn] sitemap child fetch failed: {sm_url} err={e}")
 
         print(f"[debug] teamlist hits={hits}")
-        print(f"[debug] best_teamlist_url={best_url!r} lastmod={best_lastmod!r}")
+        print(f"[debug] best_teamlist_url={best_url!r} score={best_score} lastmod={best_lastmod!r}")
 
         return best_url or ""
 
