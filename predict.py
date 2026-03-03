@@ -861,9 +861,9 @@ def build_predictions() -> pd.DataFrame:
 
     saved_model = load_saved_ratings()
 
-    results_2026 = fetch_completed_results()
-    results_2025 = load_results_csv("data/results_2025.csv")
-    results = pd.concat([results_2025, results_2026], ignore_index=True)
+    results = fetch_completed_results()
+    
+    
 
     results = (
         results
