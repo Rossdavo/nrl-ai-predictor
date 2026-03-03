@@ -231,7 +231,10 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         r.raise_for_status()
         text = _strip_html_to_text(r.text)
 
-        pat = re.compile(r"for ([A-Za-z \-']+?) is number (\d{1,2}) ([A-Za-z \-'.]+)", re.IGNORECASE)
+        pat = re.compile(
+            r"(?:Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|2nd Row|Second Row|Lock|Interchange|Reserve)\s+for\s+([A-Za-z \-']+?)\s+is\s+number\s+(\d{1,2})\s+([A-Za-z \-'.]+)",
+            re.IGNORECASE
+        )
 
         starters: Dict[str, Dict[int, str]] = {}
         for team, num_s, name in pat.findall(text):
@@ -242,12 +245,7 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
             if not (1 <= num <= 13):
                 continue
 
-            name = re.sub(
-                r"\b(Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)\b.*$",
-                "",
-                name,
-                flags=re.IGNORECASE,
-            ).strip()
+            
 
             if not name:
                 continue
