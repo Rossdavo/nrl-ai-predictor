@@ -231,39 +231,47 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         r.raise_for_status()
         text = _strip_html_to_text(r.text)
 
-        # NRL articles often look like:
-        # "Fullback for Storm is number 1 Sualauvi Faalogo Winger for Storm is number 2 Will Warbrick ..."
-        # We MUST stop the name before the next "Position for ..." chunk.
         positions = r"(?:Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)"
+        # Allow an optional standalone number before next position block (NRL page sometimes injects jersey number lines)
+        stop = rf"(?=\s+(?:\d{{1,2}}\s+)?{positions}\s+for\s+|\s*$)"
+
         pat = re.compile(
-            rf"{positions}\s+for\s+([A-Za-z \-']+?)\s+is\s+number\s+(\d{{1,2}})\s+"
-            rf"([A-Za-z][A-Za-z \-'.]+?)"
-            rf"(?=\s+{positions}\s+for\s+|\s*$)",
+            rf"{positions}\s+for\s+(.+?)\s+is\s+number\s+(\d{{1,2}})\s+"
+            rf"(.+?)"
+            rf"{stop}",
             re.IGNORECASE
         )
 
         starters: Dict[str, Dict[int, str]] = {}
 
-        for team, num_s, name in pat.findall(text):
-            team = norm_team(team.strip())
+        for team_raw, num_s, name_raw in pat.findall(text):
+            # --- CLEAN TEAM ---
+            team_raw = str(team_raw).strip()
+            # remove bullets/asterisks/odd chars but keep letters, spaces, hyphens, apostrophes
+            team_clean = re.sub(r"[^A-Za-z \-']", " ", team_raw)
+            team_clean = re.sub(r"\s+", " ", team_clean).strip()
+            team = norm_team(team_clean)
+
+            # --- CLEAN NUM ---
             try:
                 num = int(num_s)
             except Exception:
                 continue
-
-            name = name.strip()
-            if not name:
-                continue
-
-            # Only named starters 1–13 (as per your try model)
             if not (1 <= num <= 13):
                 continue
 
+            # --- CLEAN NAME ---
+            name_raw = str(name_raw).strip()
+            name_clean = re.sub(r"[^A-Za-z \-'.]", " ", name_raw)
+            name_clean = re.sub(r"\s+", " ", name_clean).strip()
+            if not name_clean:
+                continue
+
             starters.setdefault(team, {})
-            starters[team][num] = name
+            starters[team][num] = name_clean
 
         if starters:
-            sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:5]
+            sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:8]
             print("[info] teamlist scrape sample:", ", ".join([f"{t}:{len(p)}" for t, p in sample]))
         else:
             print("[warn] teamlist scrape returned 0 teams")
