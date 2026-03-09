@@ -26,11 +26,9 @@ def _load_prediction_file(path: str) -> pd.DataFrame:
 
     need_pred = {"date", "home", "away", "home_win_prob"}
 
-    # Try normal read first
     try:
         df = pd.read_csv(path)
     except Exception:
-        # Fallback: tolerate bad lines / mixed-width history rows
         try:
             df = pd.read_csv(path, on_bad_lines="skip", engine="python")
             print(f"[warn] Loaded {path} with bad lines skipped.")
@@ -42,22 +40,21 @@ def _load_prediction_file(path: str) -> pd.DataFrame:
         print(f"[warn] {path} missing required columns.")
         return pd.DataFrame()
 
-    # Keep only the columns we actually need, ignore schema drift
     keep_cols = ["date", "home", "away", "home_win_prob", "exp_margin_home", "generated_at"]
     for c in keep_cols:
         if c not in df.columns:
             df[c] = pd.NA
 
     df = df[keep_cols].copy()
-
-    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["home"] = df["home"].map(_norm)
     df["away"] = df["away"].map(_norm)
     df["home_win_prob"] = pd.to_numeric(df["home_win_prob"], errors="coerce")
     df["exp_margin_home"] = pd.to_numeric(df["exp_margin_home"], errors="coerce")
     df["generated_at"] = df["generated_at"].astype(str).str.strip()
 
-    df = df.dropna(subset=["date", "home", "away", "home_win_prob"])
+    df = df.dropna(subset=["date", "home", "away", "home_win_prob"]).copy()
+    df["date"] = df["date"].dt.normalize()
 
     print(f"[info] Loaded predictions from {path}: {len(df)} rows")
     return df
@@ -78,16 +75,84 @@ def _load_results_file(path: str) -> pd.DataFrame:
         print(f"[warn] {path} missing required columns.")
         return pd.DataFrame()
 
-    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["home"] = df["home"].map(_norm)
     df["away"] = df["away"].map(_norm)
     df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
     df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
 
-    df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+    df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
+    df["date"] = df["date"].dt.normalize()
 
     print(f"[info] Loaded results from {path}: {len(df)} rows")
     return df
+
+
+def _match_predictions_to_results(pred: pd.DataFrame, res: pd.DataFrame) -> pd.DataFrame:
+    """
+    Match results to predictions using:
+      1) exact date match
+      2) prediction date - 1 day
+      3) prediction date + 1 day
+
+    Team orientation must remain the same (home vs away).
+    """
+    pred = pred.copy()
+    res = res.copy()
+
+    pred["match_key"] = pred["home"] + "||" + pred["away"]
+    res["match_key"] = res["home"] + "||" + res["away"]
+
+    pred["pred_row_id"] = range(len(pred))
+
+    matched_parts = []
+    matched_pred_ids = set()
+
+    exact_count = 0
+    minus1_count = 0
+    plus1_count = 0
+
+    for delta, label in [(0, "exact"), (-1, "minus1"), (1, "plus1")]:
+        still_unmatched = pred.loc[~pred["pred_row_id"].isin(matched_pred_ids)].copy()
+        if still_unmatched.empty:
+            continue
+
+        still_unmatched["match_date"] = still_unmatched["date"] + pd.to_timedelta(delta, unit="D")
+        res_tmp = res.copy().rename(columns={"date": "match_date"})
+
+        j = still_unmatched.merge(
+            res_tmp,
+            on=["match_date", "home", "away", "match_key"],
+            how="inner",
+            suffixes=("_pred", "_res")
+        )
+
+        if j.empty:
+            continue
+
+        # If duplicates somehow exist, keep first result per prediction row
+        j = j.sort_values(["pred_row_id"]).drop_duplicates(subset=["pred_row_id"], keep="first").copy()
+        j["match_type"] = label
+
+        matched_parts.append(j)
+        newly_matched = set(j["pred_row_id"].tolist())
+        matched_pred_ids.update(newly_matched)
+
+        if label == "exact":
+            exact_count += len(j)
+        elif label == "minus1":
+            minus1_count += len(j)
+        elif label == "plus1":
+            plus1_count += len(j)
+
+    if matched_parts:
+        out = pd.concat(matched_parts, ignore_index=True)
+    else:
+        out = pd.DataFrame()
+
+    print(f"[info] Matches found — exact: {exact_count}, -1 day: {minus1_count}, +1 day: {plus1_count}")
+    return out
 
 
 def main():
@@ -123,23 +188,27 @@ def main():
         print("No usable results found.")
         return
 
-    # Match completed results to predictions
-    j = pred.merge(res, on=["date", "home", "away"], how="inner")
+    j = _match_predictions_to_results(pred, res)
 
     if j.empty:
         _empty_accuracy().to_csv(OUT_PATH, index=False)
         print("No matching completed matches to score yet.")
         return
 
+    # Use prediction date in final output, not shifted match_date
+    j["date"] = j["date_pred"].dt.strftime("%Y-%m-%d")
     j["actual_margin"] = j["home_pts"] - j["away_pts"]
+
     j["pred_winner"] = j.apply(
         lambda r: r["home"] if r["home_win_prob"] >= 0.5 else r["away"],
         axis=1
     )
+
     j["actual_winner"] = j.apply(
         lambda r: r["home"] if r["home_pts"] > r["away_pts"] else r["away"],
         axis=1
     )
+
     j["winner_correct"] = (j["pred_winner"] == j["actual_winner"]).astype(int)
 
     actual_home_win = (j["home_pts"] > j["away_pts"]).astype(int)
