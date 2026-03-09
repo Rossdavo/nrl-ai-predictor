@@ -5,26 +5,78 @@ PRED_PATH = "predictions.csv"
 RESULTS_CACHE_PATH = "results_cache.csv"
 OUT_PATH = "accuracy.csv"
 
+# Add likely archive file locations here
+ARCHIVE_CANDIDATES = [
+    "predictions_archive.csv",
+    "archive/predictions_archive.csv",
+    "archived_predictions.csv",
+    "archive/predictions.csv",
+]
+
 
 def _norm(s: str) -> str:
     return str(s).strip()
 
 
+def _load_prediction_file(path: str) -> pd.DataFrame:
+    if not os.path.exists(path):
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_csv(path)
+    except Exception as e:
+        print(f"[warn] Could not read {path}: {e}")
+        return pd.DataFrame()
+
+    need_pred = {"date", "home", "away", "home_win_prob"}
+    if not need_pred.issubset(set(df.columns)):
+        print(f"[warn] {path} missing required columns.")
+        return pd.DataFrame()
+
+    df["date"] = df["date"].astype(str).str.slice(0, 10).str.strip()
+    df["home"] = df["home"].map(_norm)
+    df["away"] = df["away"].map(_norm)
+    df["home_win_prob"] = pd.to_numeric(df["home_win_prob"], errors="coerce")
+
+    if "exp_margin_home" in df.columns:
+        df["exp_margin_home"] = pd.to_numeric(df["exp_margin_home"], errors="coerce")
+
+    if "generated_at" in df.columns:
+        df["generated_at"] = df["generated_at"].astype(str).str.strip()
+    else:
+        df["generated_at"] = ""
+
+    df = df.dropna(subset=["home_win_prob"])
+    print(f"[info] Loaded predictions from {path}: {len(df)} rows")
+    return df
+
+
 def main():
-    if not os.path.exists(PRED_PATH):
+    pred_frames = []
+
+    # Current predictions
+    current_pred = _load_prediction_file(PRED_PATH)
+    if not current_pred.empty:
+        pred_frames.append(current_pred)
+
+    # Archived predictions
+    for path in ARCHIVE_CANDIDATES:
+        arc = _load_prediction_file(path)
+        if not arc.empty:
+            pred_frames.append(arc)
+
+    if not pred_frames:
         pd.DataFrame().to_csv(OUT_PATH, index=False)
-        print("No predictions.csv found.")
+        print("No usable prediction files found.")
         return
 
-    pred = pd.read_csv(PRED_PATH)
-    need_pred = {"date", "home", "away", "home_win_prob"}
-    if not need_pred.issubset(set(pred.columns)):
-        pd.DataFrame().to_csv(OUT_PATH, index=False)
-        print("predictions.csv missing required columns.")
-        return
+    pred = pd.concat(pred_frames, ignore_index=True)
+
+    # Keep latest version for each match if duplicated
+    pred = pred.sort_values(["date", "home", "away", "generated_at"])
+    pred = pred.drop_duplicates(subset=["date", "home", "away"], keep="last").reset_index(drop=True)
 
     if not os.path.exists(RESULTS_CACHE_PATH):
-        # No results yet — still write an empty accuracy file
         pd.DataFrame(columns=[
             "date", "home", "away", "home_win_prob",
             "home_pts", "away_pts", "actual_margin",
@@ -41,25 +93,17 @@ def main():
         print("results_cache.csv missing required columns.")
         return
 
-    pred["date"] = pred["date"].astype(str).str.strip()
-    pred["home"] = pred["home"].map(_norm)
-    pred["away"] = pred["away"].map(_norm)
-    pred["home_win_prob"] = pd.to_numeric(pred["home_win_prob"], errors="coerce")
-
     res["date"] = res["date"].astype(str).str.slice(0, 10).str.strip()
     res["home"] = res["home"].map(_norm)
     res["away"] = res["away"].map(_norm)
     res["home_pts"] = pd.to_numeric(res["home_pts"], errors="coerce")
     res["away_pts"] = pd.to_numeric(res["away_pts"], errors="coerce")
-
-    pred = pred.dropna(subset=["home_win_prob"])
     res = res.dropna(subset=["home_pts", "away_pts"])
 
-    # Join on date + home + away (same orientation)
+    # Match completed results to predictions
     j = pred.merge(res, on=["date", "home", "away"], how="inner")
 
     if j.empty:
-        # Still write empty file
         pd.DataFrame(columns=[
             "date", "home", "away", "home_win_prob",
             "home_pts", "away_pts", "actual_margin",
@@ -78,8 +122,7 @@ def main():
     j["brier"] = (j["home_win_prob"] - actual_home_win) ** 2
 
     if "exp_margin_home" in j.columns:
-        j["exp_margin_home"] = pd.to_numeric(j["exp_margin_home"], errors="coerce")
-        j["abs_margin_error"] = (j["exp_margin_home"] - j["actual_margin"]).abs()
+        j["abs_margin_error"] = (pd.to_numeric(j["exp_margin_home"], errors="coerce") - j["actual_margin"]).abs()
     else:
         j["abs_margin_error"] = pd.NA
 
@@ -90,6 +133,7 @@ def main():
         "pred_winner", "actual_winner", "winner_correct",
         "brier", "abs_margin_error"
     ]
+
     j[out_cols].sort_values(["date", "home"]).to_csv(OUT_PATH, index=False)
 
     scored = len(j)
