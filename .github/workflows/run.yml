@@ -30,7 +30,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: Run model + tracker + page
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
@@ -49,11 +48,11 @@ jobs:
           echo "=== RUN: staking.py ==="
           python -u staking.py
 
-          echo "=== RUN: tracker.py ==="
-          python -u tracker.py
-
           echo "=== RUN: archive.py ==="
           python -u archive.py
+
+          echo "=== RUN: tracker.py ==="
+          python -u tracker.py
 
           echo "=== RUN: performance.py ==="
           python -u performance.py
@@ -69,6 +68,7 @@ jobs:
 
           echo "=== RUN: report.py ==="
           python -u report.py
+      
 
       # OPTIONAL but recommended: save updated CSVs back into the repo
       - name: Commit generated data back to repo
