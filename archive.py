@@ -1,4 +1,5 @@
 import os
+import csv
 import pandas as pd
 from datetime import datetime, timezone
 
@@ -11,13 +12,15 @@ ODDS_HIST = "odds_history.csv"
 def append_csv(src: str, dst: str, run_id: str):
     if not os.path.exists(src):
         return
+
     df = pd.read_csv(src)
     df.insert(0, "run_id", run_id)
     df.insert(1, "run_utc", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+
     if os.path.exists(dst):
-        df.to_csv(dst, mode="a", header=False, index=False)
+        df.to_csv(dst, mode="a", header=False, index=False, quoting=csv.QUOTE_ALL)
     else:
-        df.to_csv(dst, index=False)
+        df.to_csv(dst, index=False, quoting=csv.QUOTE_ALL)
 
 def main():
     run_id = os.environ.get("GITHUB_RUN_ID", "")
