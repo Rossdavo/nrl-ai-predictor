@@ -24,31 +24,38 @@ def _load_prediction_file(path: str) -> pd.DataFrame:
     if not os.path.exists(path):
         return pd.DataFrame()
 
+    need_pred = {"date", "home", "away", "home_win_prob"}
+
+    # Try normal read first
     try:
         df = pd.read_csv(path)
-    except Exception as e:
-        print(f"[warn] Could not read {path}: {e}")
-        return pd.DataFrame()
+    except Exception:
+        # Fallback: tolerate bad lines / mixed-width history rows
+        try:
+            df = pd.read_csv(path, on_bad_lines="skip", engine="python")
+            print(f"[warn] Loaded {path} with bad lines skipped.")
+        except Exception as e:
+            print(f"[warn] Could not read {path}: {e}")
+            return pd.DataFrame()
 
-    need_pred = {"date", "home", "away", "home_win_prob"}
     if not need_pred.issubset(set(df.columns)):
         print(f"[warn] {path} missing required columns.")
         return pd.DataFrame()
+
+    # Keep only the columns we actually need, ignore schema drift
+    keep_cols = ["date", "home", "away", "home_win_prob", "exp_margin_home", "generated_at"]
+    for c in keep_cols:
+        if c not in df.columns:
+            df[c] = pd.NA
+
+    df = df[keep_cols].copy()
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
     df["home"] = df["home"].map(_norm)
     df["away"] = df["away"].map(_norm)
     df["home_win_prob"] = pd.to_numeric(df["home_win_prob"], errors="coerce")
-
-    if "exp_margin_home" in df.columns:
-        df["exp_margin_home"] = pd.to_numeric(df["exp_margin_home"], errors="coerce")
-    else:
-        df["exp_margin_home"] = pd.NA
-
-    if "generated_at" in df.columns:
-        df["generated_at"] = df["generated_at"].astype(str).str.strip()
-    else:
-        df["generated_at"] = ""
+    df["exp_margin_home"] = pd.to_numeric(df["exp_margin_home"], errors="coerce")
+    df["generated_at"] = df["generated_at"].astype(str).str.strip()
 
     df = df.dropna(subset=["date", "home", "away", "home_win_prob"])
 
