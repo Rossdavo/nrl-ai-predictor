@@ -1,51 +1,262 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>NRL AI Predictions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
     :root {
-      --bg: #ffffff;
+      --bg: #f8fafc;
       --text: #111827;
       --muted: #6b7280;
       --border: #e5e7eb;
       --header: #f9fafb;
-      --pos: #ecfdf5;
-      --neg: #fef2f2;
       --card: #ffffff;
-      --shadow: 0 6px 20px rgba(0,0,0,.06);
+      --shadow: 0 8px 24px rgba(0,0,0,.06);
+      --green-bg: #ecfdf5;
+      --green-text: #065f46;
+      --red-bg: #fef2f2;
+      --red-text: #991b1b;
+      --blue-bg: #eff6ff;
+      --blue-text: #1d4ed8;
+      --amber-bg: #fffbeb;
+      --amber-text: #92400e;
     }
 
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 28px; background: var(--bg); color: var(--text); }
-    h1 { margin: 0 0 6px 0; font-size: 28px; }
-    h2 { margin-top: 28px; font-size: 18px; }
-    .note { color: var(--muted); margin-top: 6px; }
-    .small { font-size: 12px; color: var(--muted); margin-top: 18px; }
+    * { box-sizing: border-box; }
 
-    .wrap { max-width: 1100px; margin: 0 auto; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
 
-    .downloads ul { display: flex; flex-wrap: wrap; gap: 10px; padding-left: 18px; }
-    .downloads a { text-decoration: none; border: 1px solid var(--border); padding: 8px 10px; border-radius: 10px; color: var(--text); background: var(--header); }
-    .downloads a:hover { filter: brightness(0.98); }
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-    table { border-collapse: separate; border-spacing: 0; width: 100%; margin-top: 14px; font-size: 14px; }
-    th, td { border-bottom: 1px solid var(--border); padding: 10px 12px; vertical-align: top; }
-    th { position: sticky; top: 0; background: var(--header); text-align: left; font-weight: 650; z-index: 2; border-top: 1px solid var(--border); }
-    tr:nth-child(even) td { background: #fcfcfd; }
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 30px;
+      line-height: 1.15;
+    }
 
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); background: var(--header); }
-    .badge-home { background: #eef2ff; }
-    .badge-away { background: #fff7ed; }
+    h2 {
+      margin: 0 0 14px 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
 
-    .row-pos td { background: var(--pos) !important; }
-    .row-neg td { background: var(--neg) !important; }
-    .muted { color: var(--muted); }
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
 
-    @media (max-width: 900px) {
-      body { margin: 14px; }
-      table { font-size: 13px; }
-      th, td { padding: 8px 10px; }
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .downloads ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-left: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .downloads a {
+      display: inline-block;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: var(--header);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .downloads a:hover {
+      filter: brightness(0.98);
+    }
+
+    .kpi {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .pill-green {
+      background: var(--green-bg);
+      color: var(--green-text);
+    }
+
+    .pill-red {
+      background: var(--red-bg);
+      color: var(--red-text);
+    }
+
+    .pill-blue {
+      background: var(--blue-bg);
+      color: var(--blue-text);
+    }
+
+    .pill-amber {
+      background: var(--amber-bg);
+      color: var(--amber-text);
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: var(--header);
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      white-space: nowrap;
+      z-index: 1;
+    }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fcfcfd;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 4px 0;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .nowrap {
+      white-space: nowrap;
+    }
+
+    .positive {
+      color: var(--green-text);
+      font-weight: 600;
+    }
+
+    .negative {
+      color: var(--red-text);
+      font-weight: 600;
+    }
+
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .grid-3, .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .wrap {
+        padding: 14px;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      table {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -53,19 +264,18 @@
   <div class="wrap">
     <div class="card">
       <h1>NRL AI Predictions</h1>
-      <p class="small">INDEX VERSION: LIVE CSV LOADER (2026-02-21)</p>
-      <p class="note">Automated predictions with model probabilities, odds comparison, value detection, and staking suggestions.</p>
+      <p class="small">INDEX VERSION: LIVE CSV LOADER</p>
+      <p class="lead">Automated predictions, staking, results tracking, and performance reporting from the latest generated CSV files.</p>
 
-      <div class="downloads">
+      <div class="downloads" style="margin-top:16px;">
         <h2>Downloads</h2>
         <ul>
           <li><a href="predictions.csv" target="_blank" rel="noopener">Predictions CSV</a></li>
           <li><a href="odds.csv" target="_blank" rel="noopener">Odds CSV</a></li>
-          <li><a href="bet_log.csv" target="_blank" rel="noopener">Bet Log CSV</a></li>
           <li><a href="accuracy.csv" target="_blank" rel="noopener">Accuracy CSV</a></li>
           <li><a href="performance.csv" target="_blank" rel="noopener">Performance CSV</a></li>
-          <li><a href="closing_odds.csv" target="_blank" rel="noopener">Closing Odds CSV</a></li>
           <li><a href="bankroll_status.csv" target="_blank" rel="noopener">Bankroll Status CSV</a></li>
+          <li><a href="closing_odds.csv" target="_blank" rel="noopener">Closing Odds CSV</a></li>
           <li><a href="predictions_history.csv" target="_blank" rel="noopener">Predictions History CSV</a></li>
           <li><a href="odds_history.csv" target="_blank" rel="noopener">Odds History CSV</a></li>
           <li><a href="results_cache.csv" target="_blank" rel="noopener">Results Cache CSV</a></li>
@@ -74,86 +284,428 @@
       </div>
     </div>
 
-    <!-- LIVE predictions table (loads from predictions.csv) -->
-    <div class="card" style="margin-top:16px;">
-      <div id="pred-table" class="muted">Loading predictions…</div>
+    <div class="grid grid-3" style="margin-top:16px;">
+      <div class="card">
+        <div class="kpi">
+          <div class="kpi-label">Upcoming Matches</div>
+          <div class="kpi-value" id="kpi-upcoming">—</div>
+          <div class="small" id="kpi-upcoming-sub">Loading…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="kpi">
+          <div class="kpi-label">Settled Matches</div>
+          <div class="kpi-value" id="kpi-settled">—</div>
+          <div class="small" id="kpi-settled-sub">Loading…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="kpi">
+          <div class="kpi-label">Winner Accuracy</div>
+          <div class="kpi-value" id="kpi-accuracy">—</div>
+          <div class="small" id="kpi-accuracy-sub">Loading…</div>
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-top:16px;">
-      <p class="note"><b>Results &amp; Accuracy:</b> No completed matches scored yet.</p>
+      <div class="section-title-row">
+        <h2>Upcoming Predictions</h2>
+        <span class="small" id="pred-meta">Loading…</span>
+      </div>
+      <div id="pred-table" class="empty">Loading predictions…</div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px;">
+      <div class="card">
+        <div class="section-title-row">
+          <h2>Results &amp; Accuracy</h2>
+          <span class="small" id="accuracy-meta">Loading…</span>
+        </div>
+        <div id="accuracy-summary" class="empty">Loading results…</div>
+        <div id="accuracy-table" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title-row">
+          <h2>Performance &amp; Bankroll</h2>
+          <span class="small" id="perf-meta">Loading…</span>
+        </div>
+        <div id="perf-summary" class="empty">Loading performance…</div>
+        <div id="perf-table" style="margin-top:12px;"></div>
+      </div>
     </div>
 
     <div class="card" style="margin-top:16px;">
-      <p class="note"><b>CLV &amp; ROI:</b> Nothing to report yet.</p>
+      <div class="section-title-row">
+        <h2>Latest Closed Results</h2>
+        <span class="small" id="results-meta">Loading…</span>
+      </div>
+      <div id="results-table" class="empty">Loading results cache…</div>
     </div>
 
-    <p class="small">Generated automatically via GitHub Actions.</p>
+    <p class="footer">Generated automatically via GitHub Actions and published to GitHub Pages.</p>
   </div>
 
   <script>
-    async function loadCSV(path) {
-      // Cache-bust so you always see the newest deployed file
-      const res = await fetch(path + "?v=" + Date.now());
-      if (!res.ok) throw new Error("Failed to load " + path);
+    function cacheBust(path) {
+      return path + "?v=" + Date.now();
+    }
+
+    async function loadText(path) {
+      const res = await fetch(cacheBust(path));
+      if (!res.ok) {
+        throw new Error(`Failed to load ${path} (${res.status})`);
+      }
       return await res.text();
     }
 
-    // Simple CSV parser (works for your current files: no commas inside fields)
     function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      const headers = lines[0].split(",").map(h => h.trim());
-      const rows = lines.slice(1).map(line => {
-        const cols = line.split(",");
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+
+        if (ch === '"') {
+          if (inQuotes && next === '"') {
+            cell += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === "," && !inQuotes) {
+          row.push(cell);
+          cell = "";
+        } else if ((ch === "\n" || ch === "\r") && !inQuotes) {
+          if (ch === "\r" && next === "\n") i++;
+          row.push(cell);
+          rows.push(row);
+          row = [];
+          cell = "";
+        } else {
+          cell += ch;
+        }
+      }
+
+      if (cell.length > 0 || row.length > 0) {
+        row.push(cell);
+        rows.push(row);
+      }
+
+      const cleanRows = rows.filter(r => r.some(v => String(v).trim() !== ""));
+      if (!cleanRows.length) return { headers: [], rows: [] };
+
+      const headers = cleanRows[0].map(h => String(h).trim());
+      const dataRows = cleanRows.slice(1).map(cols => {
         const obj = {};
-        headers.forEach((h, i) => obj[h] = (cols[i] ?? "").trim());
+        headers.forEach((h, i) => {
+          obj[h] = String(cols[i] ?? "").trim();
+        });
         return obj;
       });
-      return { headers, rows };
+
+      return { headers, rows: dataRows };
     }
 
-    function renderTable(headers, rows) {
-      const preferred = [
-        "date","kickoff_local","home","away","home_win_prob","confidence",
-        "home_odds","away_odds","value_flag","pick","edge","stake",
-        "home_top_try","away_top_try"
-      ];
-      const keep = preferred.filter(h => headers.includes(h));
+    function toNumber(v) {
+      const n = Number(String(v ?? "").replace(/[%,$]/g, "").trim());
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function formatPct(v, digits = 0) {
+      const n = toNumber(v);
+      if (n === null) return "";
+      if (n <= 1) return (n * 100).toFixed(digits) + "%";
+      return n.toFixed(digits) + "%";
+    }
+
+    function formatSigned(v, digits = 1) {
+      const n = toNumber(v);
+      if (n === null) return "";
+      return (n > 0 ? "+" : "") + n.toFixed(digits);
+    }
+
+    function formatFixed(v, digits = 2) {
+      const n = toNumber(v);
+      if (n === null) return "";
+      return n.toFixed(digits);
+    }
+
+    function isFutureOrToday(dateStr) {
+      const d = new Date((dateStr || "") + "T00:00:00");
+      if (isNaN(d)) return false;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return d >= today;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function makeTable(headers, rows, formatters = {}) {
+      if (!rows.length) {
+        return '<div class="empty">No data available.</div>';
+      }
 
       return `
-        <table>
-          <thead>
-            <tr>${keep.map(h => `<th>${h}</th>`).join("")}</tr>
-          </thead>
-          <tbody>
-            ${rows.map(r => `
-              <tr>
-                ${keep.map(h => `<td>${(r[h] ?? "")}</td>`).join("")}
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${rows.map(r => `
+                <tr>
+                  ${headers.map(h => {
+                    const raw = r[h] ?? "";
+                    const val = formatters[h] ? formatters[h](raw, r) : escapeHtml(raw);
+                    return `<td>${val}</td>`;
+                  }).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
       `;
     }
 
-    (async () => {
-      const el = document.getElementById("pred-table");
+    function renderPredictions(rows) {
+      const filtered = rows.filter(r => isFutureOrToday(r.date));
+      const useRows = filtered.length ? filtered : rows;
+
+      const headers = [
+        "date",
+        "home",
+        "away",
+        "home_win_prob",
+        "confidence",
+        "home_odds",
+        "away_odds",
+        "value_flag",
+        "pick",
+        "stake",
+        "exp_margin_home",
+        "home_top_try",
+        "away_top_try"
+      ].filter(h => useRows.some(r => h in r));
+
+      const formatters = {
+        home_win_prob: v => escapeHtml(formatPct(v, 1)),
+        confidence: v => escapeHtml(formatPct(v, 0)),
+        home_odds: v => escapeHtml(formatFixed(v, 2)),
+        away_odds: v => escapeHtml(formatFixed(v, 2)),
+        stake: v => escapeHtml(formatFixed(v, 1)),
+        exp_margin_home: v => escapeHtml(formatSigned(v, 1)),
+        pick: v => {
+          if (!v) return "";
+          const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
+          return `<span class="${klass}">${escapeHtml(v)}</span>`;
+        },
+        value_flag: v => {
+          if (!v) return "";
+          const klass = /VALUE/i.test(v) ? "pill pill-green" : "pill pill-amber";
+          return `<span class="${klass}">${escapeHtml(v)}</span>`;
+        }
+      };
+
+      document.getElementById("pred-meta").textContent = `${useRows.length} row${useRows.length === 1 ? "" : "s"}`;
+      document.getElementById("kpi-upcoming").textContent = String(useRows.length);
+      document.getElementById("kpi-upcoming-sub").textContent = filtered.length ? "Current and upcoming fixtures" : "Showing all predictions";
+      document.getElementById("pred-table").innerHTML = makeTable(headers, useRows, formatters);
+    }
+
+    function renderAccuracy(rows) {
+      const elSummary = document.getElementById("accuracy-summary");
+      const elTable = document.getElementById("accuracy-table");
+      const elMeta = document.getElementById("accuracy-meta");
+
+      if (!rows.length) {
+        elMeta.textContent = "0 settled matches";
+        elSummary.innerHTML = '<div class="empty">No completed matches scored yet.</div>';
+        elTable.innerHTML = "";
+        document.getElementById("kpi-settled").textContent = "0";
+        document.getElementById("kpi-settled-sub").textContent = "Awaiting completed matches";
+        document.getElementById("kpi-accuracy").textContent = "—";
+        document.getElementById("kpi-accuracy-sub").textContent = "No graded predictions yet";
+        return;
+      }
+
+      const settled = rows.length;
+      const wins = rows.filter(r => toNumber(r.winner_correct) === 1).length;
+      const acc = settled ? (wins / settled) : null;
+      const avgBrier = settled
+        ? rows.reduce((s, r) => s + (toNumber(r.brier) ?? 0), 0) / settled
+        : null;
+
+      elMeta.textContent = `${settled} settled match${settled === 1 ? "" : "es"}`;
+      elSummary.innerHTML = `
+        <div class="grid grid-3">
+          <div class="kpi">
+            <div class="kpi-label">Winner Accuracy</div>
+            <div class="kpi-value">${acc === null ? "—" : formatPct(acc, 0)}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Correct Tips</div>
+            <div class="kpi-value">${wins}/${settled}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Average Brier</div>
+            <div class="kpi-value">${avgBrier === null ? "—" : avgBrier.toFixed(3)}</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("kpi-settled").textContent = String(settled);
+      document.getElementById("kpi-settled-sub").textContent = `${wins} correct winners`;
+      document.getElementById("kpi-accuracy").textContent = acc === null ? "—" : formatPct(acc, 0);
+      document.getElementById("kpi-accuracy-sub").textContent = avgBrier === null ? "No Brier score yet" : `Brier ${avgBrier.toFixed(3)}`;
+
+      const headers = [
+        "date",
+        "home",
+        "away",
+        "home_pts",
+        "away_pts",
+        "actual_margin",
+        "pred_winner",
+        "actual_winner",
+        "winner_correct",
+        "brier",
+        "abs_margin_error"
+      ].filter(h => rows.some(r => h in r));
+
+      const tableRows = rows
+        .slice()
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+        .slice(0, 20);
+
+      const formatters = {
+        winner_correct: v => {
+          const ok = toNumber(v) === 1;
+          return `<span class="${ok ? "pill pill-green" : "pill pill-red"}">${ok ? "Correct" : "Wrong"}</span>`;
+        },
+        brier: v => escapeHtml(formatFixed(v, 3)),
+        actual_margin: v => escapeHtml(formatSigned(v, 1)),
+        abs_margin_error: v => escapeHtml(formatFixed(v, 1))
+      };
+
+      elTable.innerHTML = makeTable(headers, tableRows, formatters);
+    }
+
+    function renderPerformance(perfRows, bankRows) {
+      const elSummary = document.getElementById("perf-summary");
+      const elTable = document.getElementById("perf-table");
+      const elMeta = document.getElementById("perf-meta");
+
+      if (!perfRows.length && !bankRows.length) {
+        elMeta.textContent = "No settled betting data";
+        elSummary.innerHTML = '<div class="empty">Nothing to report yet.</div>';
+        elTable.innerHTML = "";
+        return;
+      }
+
+      const latestPerf = perfRows.length ? perfRows[perfRows.length - 1] : null;
+      const latestBank = bankRows.length ? bankRows[bankRows.length - 1] : null;
+
+      const roi = latestPerf?.roi_pct ?? latestPerf?.roi ?? "";
+      const strike = latestPerf?.strike_rate ?? latestPerf?.win_rate ?? "";
+      const profit = latestPerf?.profit_units ?? latestPerf?.profit ?? "";
+      const bankroll = latestBank?.bankroll ?? latestBank?.current_bankroll ?? "";
+
+      elMeta.textContent = `${perfRows.length} performance row${perfRows.length === 1 ? "" : "s"}`;
+
+      elSummary.innerHTML = `
+        <div class="grid grid-3">
+          <div class="kpi">
+            <div class="kpi-label">ROI</div>
+            <div class="kpi-value ${toNumber(roi) >= 0 ? "positive" : "negative"}">${roi ? formatPct(roi, 1) : "—"}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Profit</div>
+            <div class="kpi-value ${toNumber(profit) >= 0 ? "positive" : "negative"}">${profit ? formatSigned(profit, 2) : "—"}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Bankroll</div>
+            <div class="kpi-value">${bankroll ? formatFixed(bankroll, 2) : "—"}</div>
+          </div>
+        </div>
+        <div class="small" style="margin-top:12px;">
+          ${strike ? `Strike rate: ${formatPct(strike, 1)}` : "Strike rate unavailable"}
+        </div>
+      `;
+
+      const mergedRows = [];
+      if (latestPerf) mergedRows.push({ metric: "Latest ROI", value: roi ? formatPct(roi, 1) : "—" });
+      if (latestPerf) mergedRows.push({ metric: "Latest Profit", value: profit ? formatSigned(profit, 2) : "—" });
+      if (latestPerf) mergedRows.push({ metric: "Latest Strike Rate", value: strike ? formatPct(strike, 1) : "—" });
+      if (latestBank) mergedRows.push({ metric: "Latest Bankroll", value: bankroll ? formatFixed(bankroll, 2) : "—" });
+
+      elTable.innerHTML = makeTable(["metric", "value"], mergedRows, {});
+    }
+
+    function renderResultsCache(rows) {
+      const el = document.getElementById("results-table");
+      const meta = document.getElementById("results-meta");
+
+      if (!rows.length) {
+        meta.textContent = "0 rows";
+        el.innerHTML = '<div class="empty">No results cache available.</div>';
+        return;
+      }
+
+      meta.textContent = `${rows.length} total result row${rows.length === 1 ? "" : "s"}`;
+
+      const tableRows = rows
+        .slice()
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+        .slice(0, 20);
+
+      const headers = ["date", "home", "away", "home_pts", "away_pts"].filter(h => tableRows.some(r => h in r));
+      el.innerHTML = makeTable(headers, tableRows, {});
+    }
+
+    async function loadOptionalCSV(path) {
       try {
-        const csv = await loadCSV("predictions.csv");
-        const { headers, rows } = parseCSV(csv);
+        const text = await loadText(path);
+        return parseCSV(text).rows;
+      } catch {
+        return [];
+      }
+    }
 
-        // Hide past dates (keeps trials out forever)
-        const today = new Date(); today.setHours(0,0,0,0);
-        const filtered = rows.filter(r => {
-          const d = new Date((r.date || "") + "T00:00:00");
-          return !isNaN(d) && d >= today;
-        });
-
-        el.classList.remove("muted");
-        el.innerHTML = renderTable(headers, filtered.length ? filtered : rows);
+    (async () => {
+      try {
+        const predText = await loadText("predictions.csv");
+        const predRows = parseCSV(predText).rows;
+        renderPredictions(predRows);
       } catch (e) {
-        el.innerHTML = "Could not load predictions.csv";
+        document.getElementById("pred-meta").textContent = "Load failed";
+        document.getElementById("pred-table").innerHTML = '<div class="empty">Could not load predictions.csv</div>';
         console.error(e);
       }
+
+      const [accuracyRows, perfRows, bankRows, resultsRows] = await Promise.all([
+        loadOptionalCSV("accuracy.csv"),
+        loadOptionalCSV("performance.csv"),
+        loadOptionalCSV("bankroll_status.csv"),
+        loadOptionalCSV("results_cache.csv")
+      ]);
+
+      renderAccuracy(accuracyRows);
+      renderPerformance(perfRows, bankRows);
+      renderResultsCache(resultsRows);
     })();
   </script>
 </body>
