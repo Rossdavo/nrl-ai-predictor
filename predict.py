@@ -552,6 +552,11 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 
         text = _strip_html_to_text(r.text)
         lines = _html_to_lines(r.text)
+        print("[debug] relevant teamlist lines sample:")
+        for line in lines:
+            if "for " in line and " is number " in line:
+                print("   ", repr(line))
+                break
 
         candidates: List[Dict[str, Dict[int, str]]] = [
             _parse_match_centre_blocks(lines),
