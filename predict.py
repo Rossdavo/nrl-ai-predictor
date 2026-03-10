@@ -262,10 +262,7 @@ def _clean_text(s: str) -> str:
     s = s.replace("–", "-").replace("—", "-")
     s = s.replace("’", "'").replace("‘", "'")
     s = s.replace("“", '"').replace("”", '"')
-
-    # strip common bullet / list markers at start
     s = re.sub(r"^[\s\u2022\*\-\u25cf\u25e6]+", "", s)
-
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
@@ -273,7 +270,12 @@ def _strip_html_to_text(html: str) -> str:
     html = re.sub(r"<!--[\s\S]*?-->", " ", html)
     html = re.sub(r"<(script|style|noscript)[\s\S]*?</\1>", " ", html, flags=re.IGNORECASE)
     html = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
-    html = re.sub(r"</(p|div|section|article|header|footer|li|ul|ol|h1|h2|h3|h4|h5|h6|tr|td|th)>", "\n", html, flags=re.IGNORECASE)
+    html = re.sub(
+        r"</(p|div|section|article|header|footer|li|ul|ol|h1|h2|h3|h4|h5|h6|tr|td|th)>",
+        "\n",
+        html,
+        flags=re.IGNORECASE,
+    )
     html = re.sub(r"<[^>]+>", " ", html)
     text = ihtml.unescape(html)
     text = text.replace("\xa0", " ")
@@ -326,7 +328,11 @@ def _clean_player_name(name_raw: str) -> str:
     s = re.sub(r"[^A-Za-z \-'.]", " ", s)
     s = re.sub(r"\s+", " ", s).strip()
 
-    if re.search(r"^(Interchange|Reserves|Bench|Extended Bench|Team List|Player Partner|Coach|Match Details|Venue|Kick[- ]?off|Broadcast|Tickets|Officials|Related)$", s, re.I):
+    if re.search(
+        r"^(Interchange|Reserves|Bench|Extended Bench|Team List|Player Partner|Coach|Match Details|Venue|Kick[- ]?off|Broadcast|Tickets|Officials|Related)$",
+        s,
+        re.I,
+    ):
         return ""
 
     return s
@@ -346,10 +352,7 @@ def _parse_player_line(line: str) -> Optional[Tuple[int, str]]:
         return None
 
     name = _clean_player_name(m.group(2))
-    if not name:
-        return None
-
-    if len(name.split()) < 2:
+    if not name or len(name.split()) < 2:
         return None
 
     return num, name
@@ -399,14 +402,14 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
         r"^(?:[\u2022\*\-]\s*)?"
         r"(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
         r"\s+for\s+(.+?)\s+is\s+number\s+(\d{1,2})\s+(.+)$",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
 
     pat_prefix = re.compile(
         r"^(?:[\u2022\*\-]\s*)?"
         r"(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
         r"\s+for\s+(.+?)\s+is\s+number\s+(\d{1,2})$",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
 
     def looks_like_name(s: str) -> bool:
@@ -419,12 +422,10 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     while i < n:
         s = _clean_text(lines[i])
 
-        # skip standalone jersey-number lines like "1", "14", "20 19"
         if re.fullmatch(r"\d{1,2}(?:\s+\d{1,2})*", s):
             i += 1
             continue
 
-        # Case 1: everything on one line
         m = pat_full.match(s)
         if m:
             _pos, team_raw, num_s, name_raw = m.groups()
@@ -443,7 +444,6 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
             i += 1
             continue
 
-        # Case 2: name is on the next line
         m = pat_prefix.match(s)
         if m:
             _pos, team_raw, num_s = m.groups()
@@ -467,6 +467,65 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
 
     return out
 
+def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
+    """
+    Backup parser for article-style blocks like:
+      Broncos
+      1 Reece Walsh
+      2 Jesse Arthars
+      ...
+    """
+    out: Dict[str, Dict[int, str]] = {}
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = _clean_text(lines[i])
+        team = _resolve_team_name(line)
+
+        if not team or len(line.split()) > 6:
+            i += 1
+            continue
+
+        players: Dict[int, str] = {}
+        j = i + 1
+        non_player_run = 0
+
+        while j < n:
+            nxt = _clean_text(lines[j])
+            next_team = _resolve_team_name(nxt)
+
+            if next_team and next_team != team and len(players) >= 5 and len(nxt.split()) <= 6:
+                break
+
+            parsed = _parse_player_line(nxt)
+            if parsed:
+                num, name = parsed
+                players[num] = name
+                non_player_run = 0
+            else:
+                if re.match(
+                    r"^(Interchange:?|Reserves:?|Bench:?|Extended Bench:?|Team List:?|Player Partner:?|Coach:?|Match Details:?|Venue:?|Kick[- ]?off:?|Broadcast:?|Tickets:?|Officials:?|Related\b)",
+                    nxt,
+                    re.I,
+                ):
+                    pass
+                else:
+                    non_player_run += 1
+                    if len(players) >= 7 and non_player_run >= 4:
+                        break
+
+            j += 1
+
+        if len(players) >= 7:
+            existing = out.get(team, {})
+            if _score_team_candidate(players) > _score_team_candidate(existing):
+                out[team] = players
+
+        i += 1
+
+    return out
+
 def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
     """
     Backup parser for flattened team blocks.
@@ -484,7 +543,7 @@ def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
     for alias, short_team in sorted(TEAM_CANONICAL_PATTERNS, key=lambda x: len(x[0]), reverse=True):
         pat = re.compile(
             rf"{re.escape(alias)}(?P<body>.*?)(?={team_stop}\b|$)",
-            re.IGNORECASE | re.DOTALL
+            re.IGNORECASE | re.DOTALL,
         )
 
         for m in pat.finditer(text):
@@ -495,7 +554,7 @@ def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
             players: Dict[int, str] = {}
             for pm in re.finditer(
                 r"(\d{1,2})[\.\)]?\s+([A-Z][A-Za-z' .\-]+?)(?=\s+\d{1,2}[\.\)]?\s+|Interchange:?|Reserves:?|Bench:?|Extended Bench:?|$)",
-                body
+                body,
             ):
                 try:
                     num = int(pm.group(1))
@@ -529,6 +588,7 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 
         text = _strip_html_to_text(r.text)
         lines = _html_to_lines(r.text)
+
         print("[debug] relevant teamlist lines sample:")
         shown = 0
         for idx, line in enumerate(lines):
@@ -536,9 +596,9 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
                 print("   ", repr(line))
                 if idx + 1 < len(lines):
                     print("      next:", repr(lines[idx + 1]))
-            shown += 1
-            if shown >= 6:
-               break
+                shown += 1
+                if shown >= 6:
+                    break
 
         candidates: List[Dict[str, Dict[int, str]]] = [
             _parse_match_centre_blocks(lines),
@@ -637,7 +697,6 @@ def fetch_completed_results() -> pd.DataFrame:
     """
     needed = {"date", "home", "away", "home_pts", "away_pts"}
 
-    # 1) Load cache (if any)
     cache = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
     if os.path.exists(RESULTS_CACHE_PATH):
         try:
@@ -656,7 +715,6 @@ def fetch_completed_results() -> pd.DataFrame:
         except Exception as e:
             print(f"[warn] Could not read cached results: {e}")
 
-    # 2) Fetch web results (always try)
     headers = {"User-Agent": "Mozilla/5.0"}
     html = None
     last_err = None
@@ -675,7 +733,6 @@ def fetch_completed_results() -> pd.DataFrame:
         print(f"[warn] results fetch failed: {last_err} -> using cache only")
         return cache.reset_index(drop=True)
 
-    # 3) Parse tables
     try:
         tables = pd.read_html(StringIO(html))
     except Exception as e:
@@ -691,8 +748,6 @@ def fetch_completed_results() -> pd.DataFrame:
 
     out = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
-    # Format A (most common on fixturedownload)
-    # Columns often: Date, Home, Away, HomeScore, AwayScore
     if {"Home", "Away", "HomeScore", "AwayScore"}.issubset(cols):
         if "Date" in cols:
             date_series = pd.to_datetime(df["Date"], errors="coerce")
@@ -707,8 +762,6 @@ def fetch_completed_results() -> pd.DataFrame:
             "away_pts": pd.to_numeric(df["AwayScore"], errors="coerce"),
         })
 
-    # Format B
-    # Columns sometimes: Date, Home Team, Away Team, Result (e.g. "28-18")
     elif {"Home Team", "Away Team", "Result"}.issubset(cols):
         def extract_scores(x: object) -> Tuple[float, float]:
             s = str(x)
@@ -744,7 +797,6 @@ def fetch_completed_results() -> pd.DataFrame:
 
     print(f"[info] Web fetched results rows={len(out)}")
 
-    # 4) Merge + dedupe + save back
     merged = pd.concat([cache, out], ignore_index=True)
     merged["date"] = pd.to_datetime(merged["date"], errors="coerce").dt.strftime("%Y-%m-%d")
     merged["home"] = merged["home"].astype(str).apply(norm_team)
@@ -752,8 +804,6 @@ def fetch_completed_results() -> pd.DataFrame:
     merged["home_pts"] = pd.to_numeric(merged["home_pts"], errors="coerce")
     merged["away_pts"] = pd.to_numeric(merged["away_pts"], errors="coerce")
     merged = merged.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
-
-    # Keep last occurrence for same match key
     merged = merged.drop_duplicates(subset=["date", "home", "away"], keep="last").reset_index(drop=True)
 
     try:
@@ -796,7 +846,7 @@ def fit_attack_defence(
 
     team_to_i = {t: i for i, t in enumerate(teams)}
     n_teams = len(teams)
-    p = 2 + 2 * n_teams  # [mu, home_adv, atk..., def...]
+    p = 2 + 2 * n_teams
 
     X_rows = []
     y_vals = []
@@ -1170,8 +1220,6 @@ def fetch_latest_teamlist_url() -> str:
                     hits += 1
 
                     year = extract_year_from_news_url(loc_low)
-
-                    # hard filter: ignore old seasons
                     if year and year != current_year:
                         continue
 
@@ -1219,7 +1267,6 @@ def build_predictions() -> pd.DataFrame:
     saved_model = load_saved_ratings()
 
     results = fetch_completed_results()
-
     results = (
         results
         .drop_duplicates(subset=["date", "home", "away"], keep="last")
@@ -1248,7 +1295,6 @@ def build_predictions() -> pd.DataFrame:
     for m in fixtures:
         print(f"[debug] {m.home} home_len={len(starters_by_team.get(m.home, {}))} | {m.away} away_len={len(starters_by_team.get(m.away, {}))}")
 
-    # Manual overrides per fixture date (optional)
     manual_by_date = load_manual_teamlists(TEAMLISTS_CSV_PATH)
     for m in fixtures:
         manual_for_date = manual_by_date.get(m.date, {})
@@ -1263,7 +1309,6 @@ def build_predictions() -> pd.DataFrame:
     adj = load_adjustments()
     odds = load_odds()
 
-    # STOP EARLY IF ODDS MISSING (novice-safe)
     missing_keys = []
     for m in fixtures:
         key = (m.date, m.home, m.away)
@@ -1298,7 +1343,6 @@ def build_predictions() -> pd.DataFrame:
             exp_away_pts = exp_total / 2.0
             rating_mode = "FALLBACK"
 
-        # Try scorers
         if FORCE_TRY_FALLBACK:
             home_named = _try_profiles_fallback(exp_home_pts)
             away_named = _try_profiles_fallback(exp_away_pts)
@@ -1314,7 +1358,6 @@ def build_predictions() -> pd.DataFrame:
             if not away_named:
                 away_named = _try_profiles_fallback(exp_away_pts)
 
-        # Odds lookup
         key = (m.date, m.home, m.away)
         o = odds.get(key, {})
         home_odds = o.get("home_odds", float("nan"))
