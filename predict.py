@@ -642,14 +642,26 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
                 print("   ", repr(line))
                 if idx + 1 < len(lines):
                     print("      next:", repr(lines[idx + 1]))
+                if idx + 2 < len(lines):
+                    print("      next2:", repr(lines[idx + 2]))
                 shown += 1
                 if shown >= 6:
                     break
 
+        parsed_mc = _parse_match_centre_blocks(lines)
+        print(
+            "[debug] match-centre parsed teams:",
+            ", ".join(f"{t}:{len(p)}" for t, p in sorted(parsed_mc.items()))
+            if parsed_mc else "(none)"
+        )
+
+        parsed_heading = _parse_team_heading_blocks(lines)
+        parsed_compact = _parse_compact_team_runs(text)
+
         candidates: List[Dict[str, Dict[int, str]]] = [
-            _parse_match_centre_blocks(lines),
-            _parse_team_heading_blocks(lines),
-            _parse_compact_team_runs(text),
+            parsed_mc,
+            parsed_heading,
+            parsed_compact,
         ]
 
         starters: Dict[str, Dict[int, str]] = {}
