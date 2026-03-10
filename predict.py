@@ -393,8 +393,11 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     Parses line-by-line match-centre rows like:
       Fullback for Broncos is number 1
       Reece Walsh
-    or:
-      Fullback for Broncos is number 1 Reece Walsh
+
+    and also split-name variants like:
+      Fullback for Eels is number 1
+      Isaiah
+      Iongi
     """
     out: Dict[str, Dict[int, str]] = {}
 
@@ -412,9 +415,52 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
         re.IGNORECASE,
     )
 
-    def looks_like_name(s: str) -> bool:
-        s = _clean_player_name(s)
-        return bool(s) and len(s.split()) >= 2
+    def is_number_line(s: str) -> bool:
+        return bool(re.fullmatch(r"\d{1,2}(?:\s+\d{1,2})*", s))
+
+    def is_match_centre_prefix(s: str) -> bool:
+        return bool(pat_prefix.match(s) or pat_full.match(s))
+
+    def looks_like_name_piece(s: str) -> bool:
+        s2 = _clean_player_name(s)
+        if not s2:
+            return False
+        if is_number_line(s2):
+            return False
+        if is_match_centre_prefix(s2):
+            return False
+        if re.match(
+            r"^(Interchange|Reserves|Bench|Extended Bench|Team List|Player Partner|Coach|Match Details|Venue|Kick[- ]?off|Broadcast|Tickets|Officials|Related)\b",
+            s2,
+            re.I,
+        ):
+            return False
+        return True
+
+    def consume_name(start_idx: int) -> Tuple[str, int]:
+        """
+        Join up to 3 following lines into a player name.
+        Returns (name, next_index_after_name).
+        """
+        parts: List[str] = []
+        j = start_idx
+
+        while j < len(lines) and len(parts) < 3:
+            piece = _clean_text(lines[j])
+
+            if not looks_like_name_piece(piece):
+                break
+
+            parts.append(piece)
+
+            candidate = _clean_player_name(" ".join(parts))
+            if len(candidate.split()) >= 2:
+                return candidate, j + 1
+
+            j += 1
+
+        candidate = _clean_player_name(" ".join(parts))
+        return candidate, j
 
     i = 0
     n = len(lines)
@@ -422,10 +468,11 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     while i < n:
         s = _clean_text(lines[i])
 
-        if re.fullmatch(r"\d{1,2}(?:\s+\d{1,2})*", s):
+        if is_number_line(s):
             i += 1
             continue
 
+        # Case 1: everything on one line
         m = pat_full.match(s)
         if m:
             _pos, team_raw, num_s, name_raw = m.groups()
@@ -438,35 +485,34 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
 
                 if 1 <= num <= 13:
                     name = _clean_player_name(name_raw)
-                    if looks_like_name(name):
+                    if len(name.split()) >= 2:
                         out.setdefault(team, {})
                         out[team][num] = name
             i += 1
             continue
 
+        # Case 2: name is on following line(s)
         m = pat_prefix.match(s)
         if m:
             _pos, team_raw, num_s = m.groups()
             team = _resolve_team_name(team_raw)
 
-            next_line = _clean_text(lines[i + 1]) if i + 1 < n else ""
-            if team and looks_like_name(next_line):
-                try:
-                    num = int(num_s)
-                except Exception:
-                    num = 0
+            try:
+                num = int(num_s)
+            except Exception:
+                num = 0
 
-                if 1 <= num <= 13:
-                    name = _clean_player_name(next_line)
+            if team and 1 <= num <= 13:
+                name, next_i = consume_name(i + 1)
+                if len(name.split()) >= 2:
                     out.setdefault(team, {})
                     out[team][num] = name
-                    i += 2
+                    i = next_i
                     continue
 
         i += 1
 
     return out
-
 def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     """
     Backup parser for article-style blocks like:
