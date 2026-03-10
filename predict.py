@@ -388,103 +388,80 @@ def _merge_best_team_map(base: Dict[str, Dict[int, str]], incoming: Dict[str, Di
 def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     """
     Parses line-by-line match-centre rows like:
-      * Fullback for Broncos is number 1 Reece Walsh
-      Fullback for Eels is number 1 Isaiah Iongi
+      Fullback for Broncos is number 1
+      Reece Walsh
+    or:
+      Fullback for Broncos is number 1 Reece Walsh
     """
     out: Dict[str, Dict[int, str]] = {}
 
-    pat = re.compile(
+    pat_full = re.compile(
         r"^(?:[\u2022\*\-]\s*)?"
         r"(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
         r"\s+for\s+(.+?)\s+is\s+number\s+(\d{1,2})\s+(.+)$",
         re.IGNORECASE
     )
 
-    for line in lines:
-        s = _clean_text(line)
+    pat_prefix = re.compile(
+        r"^(?:[\u2022\*\-]\s*)?"
+        r"(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
+        r"\s+for\s+(.+?)\s+is\s+number\s+(\d{1,2})$",
+        re.IGNORECASE
+    )
 
-        # skip standalone jersey number lines like "1", "14", "20 19", "21 20"
-        if re.fullmatch(r"\d{1,2}(?:\s+\d{1,2})*", s):
-            continue
+    def looks_like_name(s: str) -> bool:
+        s = _clean_player_name(s)
+        return bool(s) and len(s.split()) >= 2
 
-        m = pat.match(s)
-        if not m:
-            continue
-
-        _pos, team_raw, num_s, name_raw = m.groups()
-
-        team = _resolve_team_name(team_raw)
-        if not team:
-            continue
-
-        try:
-            num = int(num_s)
-        except Exception:
-            continue
-
-        # starters only for try scorer names
-        if not (1 <= num <= 13):
-            continue
-
-        name = _clean_player_name(name_raw)
-        if not name or len(name.split()) < 2:
-            continue
-
-        out.setdefault(team, {})
-        out[team][num] = name
-
-    return out
-
-def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
-    """
-    Parses article-style blocks:
-      Broncos
-      1 Reece Walsh
-      2 Jesse Arthars
-      ...
-    """
-    out: Dict[str, Dict[int, str]] = {}
     i = 0
     n = len(lines)
 
     while i < n:
-        line = lines[i]
-        team = _resolve_team_name(line)
+        s = _clean_text(lines[i])
 
-        if not team or len(line.split()) > 6:
+        # skip standalone jersey-number lines like "1", "14", "20 19"
+        if re.fullmatch(r"\d{1,2}(?:\s+\d{1,2})*", s):
             i += 1
             continue
 
-        players: Dict[int, str] = {}
-        j = i + 1
-        non_player_run = 0
+        # Case 1: everything on one line
+        m = pat_full.match(s)
+        if m:
+            _pos, team_raw, num_s, name_raw = m.groups()
+            team = _resolve_team_name(team_raw)
+            if team:
+                try:
+                    num = int(num_s)
+                except Exception:
+                    num = 0
 
-        while j < n:
-            nxt = lines[j]
-            next_team = _resolve_team_name(nxt)
+                if 1 <= num <= 13:
+                    name = _clean_player_name(name_raw)
+                    if looks_like_name(name):
+                        out.setdefault(team, {})
+                        out[team][num] = name
+            i += 1
+            continue
 
-            if next_team and next_team != team and len(players) >= 5 and len(nxt.split()) <= 6:
-                break
+        # Case 2: name is on the next line
+        m = pat_prefix.match(s)
+        if m:
+            _pos, team_raw, num_s = m.groups()
+            team = _resolve_team_name(team_raw)
 
-            parsed = _parse_player_line(nxt)
-            if parsed:
-                num, name = parsed
-                players[num] = name
-                non_player_run = 0
-            else:
-                if re.match(r"^(Interchange:?|Reserves:?|Bench:?|Extended Bench:?|Team List:?|Player Partner:?|Coach:?|Match Details:?|Venue:?|Kick[- ]?off:?|Broadcast:?|Tickets:?|Officials:?|Related\b)", nxt, re.I):
-                    pass
-                else:
-                    non_player_run += 1
-                    if len(players) >= 7 and non_player_run >= 4:
-                        break
+            next_line = _clean_text(lines[i + 1]) if i + 1 < n else ""
+            if team and looks_like_name(next_line):
+                try:
+                    num = int(num_s)
+                except Exception:
+                    num = 0
 
-            j += 1
-
-        if len(players) >= 7:
-            existing = out.get(team, {})
-            if _score_team_candidate(players) > _score_team_candidate(existing):
-                out[team] = players
+                if 1 <= num <= 13:
+                    name = _clean_player_name(next_line)
+                    out.setdefault(team, {})
+                    out[team][num] = name
+                    i += 2
+                    continue
 
         i += 1
 
