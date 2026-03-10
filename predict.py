@@ -394,23 +394,35 @@ def _merge_best_team_map(base: Dict[str, Dict[int, str]], incoming: Dict[str, Di
             out[team] = players
     return out
 
-def _parse_match_centre_blocks(text: str) -> Dict[str, Dict[int, str]]:
+def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     """
-    Parses lines like:
-    Fullback for Broncos is number 1 Reece Walsh
-    Winger for Cowboys is number 2 ...
+    Parses line-by-line match-centre rows like:
+      Fullback for Broncos is number 1 Reece Walsh
+      Fullback for Eels is number 1 Isaiah Iongi
+
+    This is much more reliable than parsing one giant flattened text blob.
     """
-    positions = r"(?:Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock)"
-    stop = rf"(?=\s+(?:\d{{1,2}}\s+)?{positions}\s+for\s+|\s*$)"
+    out: Dict[str, Dict[int, str]] = {}
 
     pat = re.compile(
-        rf"{positions}\s+for\s+(.+?)\s+is\s+number\s+(\d{{1,2}})\s+(.+?){stop}",
+        r"^(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
+        r"\s+for\s+(.+?)\s+is\s+number\s+(\d{1,2})\s+(.+)$",
         re.IGNORECASE
     )
 
-    starters: Dict[str, Dict[int, str]] = {}
+    for line in lines:
+        s = _clean_text(line)
 
-    for team_raw, num_s, name_raw in pat.findall(text):
+        # Skip stray standalone jersey number lines like "1", "14", "21 20"
+        if re.fullmatch(r"\d{1,2}(?:\s+\d{1,2})*", s):
+            continue
+
+        m = pat.match(s)
+        if not m:
+            continue
+
+        _pos, team_raw, num_s, name_raw = m.groups()
+
         team = _resolve_team_name(team_raw)
         if not team:
             continue
@@ -420,76 +432,16 @@ def _parse_match_centre_blocks(text: str) -> Dict[str, Dict[int, str]]:
         except Exception:
             continue
 
+        # We only need named starters for try scorers
         if not (1 <= num <= 13):
             continue
 
         name = _clean_player_name(name_raw)
-        if not name:
+        if not name or len(name.split()) < 2:
             continue
 
-        if len(name.split()) < 2:
-            continue
-
-        starters.setdefault(team, {})
-        starters[team][num] = name
-
-    return starters
-
-def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
-    """
-    Parses article-style blocks:
-      Broncos
-      1 Reece Walsh
-      2 ...
-      ...
-    """
-    out: Dict[str, Dict[int, str]] = {}
-    i = 0
-    n = len(lines)
-
-    while i < n:
-        line = lines[i]
-        team = _resolve_team_name(line)
-
-        # team heading should be mostly just the team name / heading
-        if not team or len(line.split()) > 6:
-            i += 1
-            continue
-
-        players: Dict[int, str] = {}
-        j = i + 1
-        non_player_run = 0
-
-        while j < n:
-            nxt = lines[j]
-
-            # stop at next clear team heading once we've started
-            next_team = _resolve_team_name(nxt)
-            if next_team and next_team != team and len(players) >= 5 and len(nxt.split()) <= 6:
-                break
-
-            parsed = _parse_player_line(nxt)
-            if parsed:
-                num, name = parsed
-                players[num] = name
-                non_player_run = 0
-            else:
-                # allow some labels like Interchange/Reserves between blocks
-                if re.match(r"^(Interchange:?|Reserves:?|Bench:?|Extended Bench:?|Team List:?|Player Partner:?|Coach:?|Match Details:?|Venue:?|Kick[- ]?off:?|Broadcast:?|Tickets:?|Officials:?|Related\b)", nxt, re.I):
-                    pass
-                else:
-                    non_player_run += 1
-                    if len(players) >= 7 and non_player_run >= 4:
-                        break
-
-            j += 1
-
-        if len(players) >= 7:
-            existing = out.get(team, {})
-            if _score_team_candidate(players) > _score_team_candidate(existing):
-                out[team] = players
-
-        i += 1
+        out.setdefault(team, {})
+        out[team][num] = name
 
     return out
 
