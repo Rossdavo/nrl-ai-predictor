@@ -262,6 +262,10 @@ def _clean_text(s: str) -> str:
     s = s.replace("–", "-").replace("—", "-")
     s = s.replace("’", "'").replace("‘", "'")
     s = s.replace("“", '"').replace("”", '"')
+
+    # strip common bullet / list markers at start
+    s = re.sub(r"^[\s\u2022\*\-\u25cf\u25e6]+", "", s)
+
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
