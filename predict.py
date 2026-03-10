@@ -526,7 +526,9 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
             print("[debug] first 40 teamlist lines:")
             for line in lines[:40]:
                 print("   ", line)
-
+        for team in sorted(ALL_TEAMS):
+            print(f"[debug] scrape team {team}: starters={len(starters.get(team, {}))}")
+            
         return starters
 
     except Exception as e:
