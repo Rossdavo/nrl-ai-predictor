@@ -14,6 +14,7 @@ import requests
 from zoneinfo import ZoneInfo
 import json
 import os
+import html as ihtml
 
 # ----------------------------
 # RUN MODE
@@ -58,6 +59,7 @@ TEAM_NAME_NORMALISE = {
     "Canberra Raiders": "Raiders",
     "South Sydney Rabbitohs": "Rabbitohs",
     "Dolphins": "Dolphins",
+    "Wests Tigers": "Wests Tigers",
 
     # short -> short (safe)
     "Bulldogs": "Bulldogs",
@@ -214,12 +216,322 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
 # ----------------------------
 # TEAM LIST SCRAPE (optional; may fallback)
 # ----------------------------
+TEAM_CANONICAL_PATTERNS = [
+    ("Canterbury Bulldogs", "Bulldogs"),
+    ("St George Illawarra Dragons", "Dragons"),
+    ("Newcastle Knights", "Knights"),
+    ("North Queensland Cowboys", "Cowboys"),
+    ("Melbourne Storm", "Storm"),
+    ("Parramatta Eels", "Eels"),
+    ("New Zealand Warriors", "Warriors"),
+    ("Sydney Roosters", "Roosters"),
+    ("Brisbane Broncos", "Broncos"),
+    ("Penrith Panthers", "Panthers"),
+    ("Cronulla Sutherland Sharks", "Sharks"),
+    ("Gold Coast Titans", "Titans"),
+    ("Manly Warringah Sea Eagles", "Sea Eagles"),
+    ("Canberra Raiders", "Raiders"),
+    ("South Sydney Rabbitohs", "Rabbitohs"),
+    ("Wests Tigers", "Wests Tigers"),
+    ("Dolphins", "Dolphins"),
+    # short forms too
+    ("Bulldogs", "Bulldogs"),
+    ("Dragons", "Dragons"),
+    ("Knights", "Knights"),
+    ("Cowboys", "Cowboys"),
+    ("Storm", "Storm"),
+    ("Eels", "Eels"),
+    ("Warriors", "Warriors"),
+    ("Roosters", "Roosters"),
+    ("Broncos", "Broncos"),
+    ("Panthers", "Panthers"),
+    ("Sharks", "Sharks"),
+    ("Titans", "Titans"),
+    ("Sea Eagles", "Sea Eagles"),
+    ("Raiders", "Raiders"),
+    ("Rabbitohs", "Rabbitohs"),
+]
+
+def _clean_text(s: str) -> str:
+    if s is None:
+        return ""
+    s = ihtml.unescape(str(s))
+    s = s.replace("\xa0", " ")
+    s = s.replace("&#160;", " ")
+    s = s.replace("&nbsp;", " ")
+    s = s.replace("–", "-").replace("—", "-").replace("-", "-")
+    s = s.replace("’", "'").replace("‘", "'")
+    s = s.replace("“", '"').replace("”", '"')
+    s = re.sub(r"\s+", " ", s)
+    return s.strip()
+
 def _strip_html_to_text(html: str) -> str:
-    html = re.sub(r"<(script|style)[\s\S]*?</\1>", " ", html, flags=re.IGNORECASE)
-    text = re.sub(r"<[^>]+>", " ", html)
-    text = re.sub(r"&nbsp;|&#160;", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    html = re.sub(r"<!--[\s\S]*?-->", " ", html)
+    html = re.sub(r"<(script|style|noscript)[\s\S]*?</\1>", " ", html, flags=re.IGNORECASE)
+    html = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
+    html = re.sub(r"</(p|div|section|article|header|footer|li|ul|ol|h1|h2|h3|h4|h5|h6|tr|td|th)>", "\n", html, flags=re.IGNORECASE)
+    html = re.sub(r"<[^>]+>", " ", html)
+    text = ihtml.unescape(html)
+    text = text.replace("\xa0", " ")
+    text = re.sub(r"\r", "\n", text)
+    text = re.sub(r"\n[ \t]+", "\n", text)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{2,}", "\n", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text.strip()
+
+def _html_to_lines(html: str) -> List[str]:
+    text = _strip_html_to_text(html)
+    lines = [_clean_text(x) for x in text.splitlines()]
+    return [x for x in lines if x]
+
+def _resolve_team_name(raw: str) -> str:
+    raw_clean = _clean_text(raw)
+    if not raw_clean:
+        return ""
+
+    direct = norm_team(raw_clean)
+    if direct in ALL_TEAMS:
+        return direct
+
+    raw_low = raw_clean.lower()
+
+    # prefer longer matches first
+    for alias, short in sorted(TEAM_CANONICAL_PATTERNS, key=lambda x: len(x[0]), reverse=True):
+        if alias.lower() in raw_low:
+            return short
+
+    # fallback: remove junk characters and try again
+    raw_clean2 = re.sub(r"[^A-Za-z \-']", " ", raw_clean)
+    raw_clean2 = re.sub(r"\s+", " ", raw_clean2).strip()
+    direct2 = norm_team(raw_clean2)
+    if direct2 in ALL_TEAMS:
+        return direct2
+
+    return ""
+
+def _clean_player_name(name_raw: str) -> str:
+    s = _clean_text(name_raw)
+
+    # strip common junk after names
+    s = re.sub(r"\s*-\s*sponsored by.*$", "", s, flags=re.I)
+    s = re.sub(r"\s+sponsored by.*$", "", s, flags=re.I)
+    s = re.sub(r"\s*\|\s*player partner.*$", "", s, flags=re.I)
+    s = re.sub(r"\s*player partner.*$", "", s, flags=re.I)
+    s = re.sub(r"\s*\(c\)\s*$", "", s, flags=re.I)
+    s = re.sub(r"\s*\(vc\)\s*$", "", s, flags=re.I)
+    s = re.sub(r"\s*\[[^\]]+\]\s*$", "", s)
+    s = re.sub(r"^[\-\|\:\. ]+", "", s)
+    s = re.sub(r"[\-\|\:\. ]+$", "", s)
+
+    # keep letters, apostrophes, hyphens, periods and spaces
+    s = re.sub(r"[^A-Za-z \-'.]", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+
+    # avoid obvious headings
+    if re.search(r"^(Interchange|Reserves|Bench|Extended Bench|Team List|Player Partner|Coach|Match Details|Venue|Kick[- ]?off|Broadcast|Tickets|Officials|Related)$", s, re.I):
+        return ""
+
+    return s
+
+def _parse_player_line(line: str) -> Optional[Tuple[int, str]]:
+    s = _clean_text(line)
+
+    # formats like:
+    # 1 Reece Walsh
+    # 1. Reece Walsh
+    # 1) Reece Walsh
+    m = re.match(r"^(\d{1,2})[\.\)]?\s+(.+)$", s)
+    if not m:
+        return None
+
+    try:
+        num = int(m.group(1))
+    except Exception:
+        return None
+
+    if not (1 <= num <= 13):
+        return None
+
+    name = _clean_player_name(m.group(2))
+    if not name:
+        return None
+
+    # must look like a person name
+    if len(name.split()) < 2:
+        return None
+
+    return num, name
+
+def _score_team_candidate(players: Dict[int, str]) -> int:
+    if not players:
+        return 0
+
+    score = 0
+    score += sum(8 for n in range(1, 14) if n in players)
+    score += sum(1 for n in players if 1 <= n <= 13)
+
+    for name in players.values():
+        if len(name.split()) >= 2:
+            score += 2
+        if re.search(r"(team list|match details|venue|tickets|broadcast|player partner|officials|related)", name, re.I):
+            score -= 20
+        if len(name) < 4:
+            score -= 10
+
+    return score
+
+def _merge_best_team_map(base: Dict[str, Dict[int, str]], incoming: Dict[str, Dict[int, str]]) -> Dict[str, Dict[int, str]]:
+    out = dict(base)
+    for team, players in incoming.items():
+        if team not in ALL_TEAMS:
+            continue
+
+        current = out.get(team, {})
+        if _score_team_candidate(players) > _score_team_candidate(current):
+            out[team] = players
+        elif _score_team_candidate(players) == _score_team_candidate(current) and len(players) > len(current):
+            out[team] = players
+    return out
+
+def _parse_match_centre_blocks(text: str) -> Dict[str, Dict[int, str]]:
+    """
+    Parses lines like:
+    Fullback for Broncos is number 1 Reece Walsh
+    Winger for Cowboys is number 2 ...
+    """
+    positions = r"(?:Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock)"
+    stop = rf"(?=\s+(?:\d{{1,2}}\s+)?{positions}\s+for\s+|\s*$)"
+
+    pat = re.compile(
+        rf"{positions}\s+for\s+(.+?)\s+is\s+number\s+(\d{{1,2}})\s+(.+?){stop}",
+        re.IGNORECASE
+    )
+
+    starters: Dict[str, Dict[int, str]] = {}
+
+    for team_raw, num_s, name_raw in pat.findall(text):
+        team = _resolve_team_name(team_raw)
+        if not team:
+            continue
+
+        try:
+            num = int(num_s)
+        except Exception:
+            continue
+
+        if not (1 <= num <= 13):
+            continue
+
+        name = _clean_player_name(name_raw)
+        if not name:
+            continue
+
+        if len(name.split()) < 2:
+            continue
+
+        starters.setdefault(team, {})
+        starters[team][num] = name
+
+    return starters
+
+def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
+    """
+    Parses article-style blocks:
+      Broncos
+      1 Reece Walsh
+      2 ...
+      ...
+    """
+    out: Dict[str, Dict[int, str]] = {}
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+        team = _resolve_team_name(line)
+
+        # team heading should be mostly just the team name / heading
+        if not team or len(line.split()) > 6:
+            i += 1
+            continue
+
+        players: Dict[int, str] = {}
+        j = i + 1
+        non_player_run = 0
+
+        while j < n:
+            nxt = lines[j]
+
+            # stop at next clear team heading once we've started
+            next_team = _resolve_team_name(nxt)
+            if next_team and next_team != team and len(players) >= 5 and len(nxt.split()) <= 6:
+                break
+
+            parsed = _parse_player_line(nxt)
+            if parsed:
+                num, name = parsed
+                players[num] = name
+                non_player_run = 0
+            else:
+                # allow some labels like Interchange/Reserves between blocks
+                if re.match(r"^(Interchange:?|Reserves:?|Bench:?|Extended Bench:?|Team List:?|Player Partner:?|Coach:?|Match Details:?|Venue:?|Kick[- ]?off:?|Broadcast:?|Tickets:?|Officials:?|Related\b)", nxt, re.I):
+                    pass
+                else:
+                    non_player_run += 1
+                    if len(players) >= 7 and non_player_run >= 4:
+                        break
+
+            j += 1
+
+        if len(players) >= 7:
+            existing = out.get(team, {})
+            if _score_team_candidate(players) > _score_team_candidate(existing):
+                out[team] = players
+
+        i += 1
+
+    return out
+
+def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
+    """
+    Backup parser for collapsed text where a whole team block appears after a team name.
+    """
+    out: Dict[str, Dict[int, str]] = {}
+
+    for alias, short_team in sorted(TEAM_CANONICAL_PATTERNS, key=lambda x: len(x[0]), reverse=True):
+        pat = re.compile(
+            rf"{re.escape(alias)}(?P<body>.*?)(?=(?:Canterbury Bulldogs|St George Illawarra Dragons|Newcastle Knights|North Queensland Cowboys|Melbourne Storm|Parramatta Eels|New Zealand Warriors|Sydney Roosters|Brisbane Broncos|Penrith Panthers|Cronulla Sutherland Sharks|Gold Coast Titans|Manly Warringah Sea Eagles|Canberra Raiders|South Sydney Rabbitohs|Wests Tigers|Dolphins|Bulldogs|Dragons|Knights|Cowboys|Storm|Eels|Warriors|Roosters|Broncos|Panthers|Sharks|Titans|Sea Eagles|Raiders|Rabbitohs)\b|$)",
+            re.IGNORECASE | re.DOTALL
+        )
+
+        for m in pat.finditer(text):
+            body = _clean_text(m.group("body"))
+            if not body:
+                continue
+
+            players: Dict[int, str] = {}
+            for pm in re.finditer(r"(\d{1,2})[\.\)]?\s+([A-Z][A-Za-z' .\-]+?)(?=\s+\d{1,2}[\.\)]?\s+|Interchange:?|Reserves:?|Bench:?|Extended Bench:?|$)", body):
+                try:
+                    num = int(pm.group(1))
+                except Exception:
+                    continue
+
+                if not (1 <= num <= 13):
+                    continue
+
+                name = _clean_player_name(pm.group(2))
+                if not name or len(name.split()) < 2:
+                    continue
+
+                players[num] = name
+
+            if len(players) >= 7:
+                existing = out.get(short_team, {})
+                if _score_team_candidate(players) > _score_team_candidate(existing):
+                    out[short_team] = players
+
+    return out
 
 def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
     """
@@ -229,52 +541,39 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
     try:
         r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
+
         text = _strip_html_to_text(r.text)
+        lines = _html_to_lines(r.text)
 
-        positions = r"(?:Fullback|Winger|Centre|Five-Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)"
-        # Allow an optional standalone number before next position block (NRL page sometimes injects jersey number lines)
-        stop = rf"(?=\s+(?:\d{{1,2}}\s+)?{positions}\s+for\s+|\s*$)"
-
-        pat = re.compile(
-            rf"{positions}\s+for\s+(.+?)\s+is\s+number\s+(\d{{1,2}})\s+"
-            rf"(.+?)"
-            rf"{stop}",
-            re.IGNORECASE
-        )
+        candidates: List[Dict[str, Dict[int, str]]] = [
+            _parse_match_centre_blocks(text),
+            _parse_team_heading_blocks(lines),
+            _parse_compact_team_runs(text),
+        ]
 
         starters: Dict[str, Dict[int, str]] = {}
+        for cand in candidates:
+            starters = _merge_best_team_map(starters, cand)
 
-        for team_raw, num_s, name_raw in pat.findall(text):
-            # --- CLEAN TEAM ---
-            team_raw = str(team_raw).strip()
-            # remove bullets/asterisks/odd chars but keep letters, spaces, hyphens, apostrophes
-            team_clean = re.sub(r"[^A-Za-z \-']", " ", team_raw)
-            team_clean = re.sub(r"\s+", " ", team_clean).strip()
-            team = norm_team(team_clean)
-
-            # --- CLEAN NUM ---
-            try:
-                num = int(num_s)
-            except Exception:
-                continue
-            if not (1 <= num <= 13):
-                continue
-
-            # --- CLEAN NAME ---
-            name_raw = str(name_raw).strip()
-            name_clean = re.sub(r"[^A-Za-z \-'.]", " ", name_raw)
-            name_clean = re.sub(r"\s+", " ", name_clean).strip()
-            if not name_clean:
-                continue
-
-            starters.setdefault(team, {})
-            starters[team][num] = name_clean
+        # only keep teams with a reasonable number of starters
+        starters = {
+            team: {k: v for k, v in sorted(players.items()) if 1 <= k <= 13}
+            for team, players in starters.items()
+            if sum(1 for n in range(1, 14) if n in players) >= 7
+        }
 
         if starters:
-            sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:8]
+            sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:16]
             print("[info] teamlist scrape sample:", ", ".join([f"{t}:{len(p)}" for t, p in sample]))
+
+            missing = [t for t in ALL_TEAMS if len(starters.get(t, {})) < 7]
+            if missing:
+                print("[warn] teamlist teams with weak/missing scrape:", ", ".join(missing))
         else:
             print("[warn] teamlist scrape returned 0 teams")
+            print("[debug] first 40 teamlist lines:")
+            for line in lines[:40]:
+                print("   ", line)
 
         return starters
 
@@ -467,6 +766,7 @@ def fetch_completed_results() -> pd.DataFrame:
         print(f"[warn] Could not write cache: {e}")
 
     return merged
+
 def fit_attack_defence(
     results: pd.DataFrame,
     teams: List[str],
@@ -522,14 +822,18 @@ def fit_attack_defence(
         row[1] = 1.0
         row[2 + hi] = 1.0
         row[2 + n_teams + ai] = -1.0
-        X_rows.append(row); y_vals.append(float(rrow["home_pts"])); w_vals.append(w)
+        X_rows.append(row)
+        y_vals.append(float(rrow["home_pts"]))
+        w_vals.append(w)
 
         row = np.zeros(p)
         row[0] = 1.0
         row[1] = 0.0
         row[2 + ai] = 1.0
         row[2 + n_teams + hi] = -1.0
-        X_rows.append(row); y_vals.append(float(rrow["away_pts"])); w_vals.append(w)
+        X_rows.append(row)
+        y_vals.append(float(rrow["away_pts"]))
+        w_vals.append(w)
 
     if len(y_vals) < 8:
         return None
@@ -600,8 +904,10 @@ def expected_points(model: Dict[str, object], home: str, away: str, venue: str, 
     away_pts += adj.get(home, {}).get("def", 0.0)
     home_pts += adj.get(away, {}).get("def", 0.0)
 
-    return (max(4.0, min(40.0, home_pts)),
-            max(4.0, min(40.0, away_pts)))
+    return (
+        max(4.0, min(40.0, home_pts)),
+        max(4.0, min(40.0, away_pts)),
+    )
 
 def simulate_match_ad(
     model: Dict[str, object],
@@ -848,7 +1154,7 @@ def fetch_latest_teamlist_url() -> str:
                 sm_low = sm_xml.lower()
                 print(f"[debug] child chars={len(sm_xml)} has_team_terms={('team-lists' in sm_low) or ('team list' in sm_low)}")
 
-                if ("team-lists" not in sm_low) and ("nrl-team-lists" not in sm_low):
+                if ("team-lists" not in sm_low) and ("team list" not in sm_low) and ("nrl-team-lists" not in sm_low):
                     continue
 
                 for blk in re.findall(r"<url>.*?</url>", sm_xml, flags=re.DOTALL | re.IGNORECASE):
@@ -861,7 +1167,7 @@ def fetch_latest_teamlist_url() -> str:
 
                     if "/news/" not in loc_low:
                         continue
-                    if ("team-lists" not in loc_low) and ("nrl-team-lists" not in loc_low):
+                    if ("team-lists" not in loc_low) and ("nrl-team-lists" not in loc_low) and ("team-list" not in loc_low):
                         continue
 
                     hits += 1
@@ -893,6 +1199,7 @@ def fetch_latest_teamlist_url() -> str:
     except Exception as e:
         print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap index: {e}")
         return ""
+
 # ----------------------------
 # BUILD OUTPUT
 # ----------------------------
@@ -915,8 +1222,6 @@ def build_predictions() -> pd.DataFrame:
     saved_model = load_saved_ratings()
 
     results = fetch_completed_results()
-    
-    
 
     results = (
         results
@@ -966,9 +1271,11 @@ def build_predictions() -> pd.DataFrame:
     for m in fixtures:
         key = (m.date, m.home, m.away)
         o = odds.get(key)
-        if (not o
+        if (
+            not o
             or math.isnan(o.get("home_odds", float("nan")))
-            or math.isnan(o.get("away_odds", float("nan")))):
+            or math.isnan(o.get("away_odds", float("nan")))
+        ):
             missing_keys.append(key)
 
     if missing_keys:
