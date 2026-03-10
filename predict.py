@@ -498,7 +498,7 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         lines = _html_to_lines(r.text)
 
         candidates: List[Dict[str, Dict[int, str]]] = [
-            _parse_match_centre_blocks(text),
+            _parse_match_centre_blocks(lines),   # changed: use lines, not flat text
             _parse_team_heading_blocks(lines),
             _parse_compact_team_runs(text),
         ]
