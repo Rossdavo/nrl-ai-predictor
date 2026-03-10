@@ -388,13 +388,14 @@ def _merge_best_team_map(base: Dict[str, Dict[int, str]], incoming: Dict[str, Di
 def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     """
     Parses line-by-line match-centre rows like:
-      Fullback for Broncos is number 1 Reece Walsh
+      * Fullback for Broncos is number 1 Reece Walsh
       Fullback for Eels is number 1 Isaiah Iongi
     """
     out: Dict[str, Dict[int, str]] = {}
 
     pat = re.compile(
-        r"^(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
+        r"^(?:[\u2022\*\-]\s*)?"
+        r"(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
         r"\s+for\s+(.+?)\s+is\s+number\s+(\d{1,2})\s+(.+)$",
         re.IGNORECASE
     )
@@ -402,7 +403,7 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     for line in lines:
         s = _clean_text(line)
 
-        # skip standalone jersey number lines
+        # skip standalone jersey number lines like "1", "14", "20 19", "21 20"
         if re.fullmatch(r"\d{1,2}(?:\s+\d{1,2})*", s):
             continue
 
@@ -421,6 +422,7 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
         except Exception:
             continue
 
+        # starters only for try scorer names
         if not (1 <= num <= 13):
             continue
 
