@@ -1536,6 +1536,32 @@ def build_predictions() -> pd.DataFrame:
     round_start = df["date"].min()
     round_end = round_start + pd.Timedelta(days=3)
     df = df[(df["date"] >= round_start) & (df["date"] <= round_end)].copy()
+
+    # ---------------------------------
+    # Exposure protection
+    # Keep highest-edge bets until max round exposure is reached
+    # ---------------------------------
+    if "stake_dollars" in df.columns:
+        df["stake_dollars"] = pd.to_numeric(df["stake_dollars"], errors="coerce").fillna(0.0)
+        df["stake_units"] = pd.to_numeric(df["stake_units"], errors="coerce").fillna(0.0)
+        df["edge"] = pd.to_numeric(df["edge"], errors="coerce").fillna(0.0)
+
+        df_cap = df.sort_values(["edge", "date", "kickoff_local"], ascending=[False, True, True]).reset_index(drop=True)
+
+        running_exposure = 0.0
+        keep_idx = []
+
+        for idx, row in df_cap.iterrows():
+            stake_amt = float(row["stake_dollars"])
+            if running_exposure + stake_amt <= MAX_ROUND_EXPOSURE:
+                keep_idx.append(idx)
+                running_exposure += stake_amt
+
+        df = df_cap.loc[keep_idx].copy()
+        df = df.sort_values(["date", "kickoff_local"]).reset_index(drop=True)
+
+        print(f"[predict] exposure cap applied: ${running_exposure:.2f} / ${MAX_ROUND_EXPOSURE:.2f}")
+
     df["date"] = df["date"].dt.strftime("%Y-%m-%d")
 
     # ---------------------------------
@@ -1550,7 +1576,6 @@ def build_predictions() -> pd.DataFrame:
     print(f"[predict] current round fixtures={len(df)} bets={bet_count} exposure=${exposure:.2f} avg_edge={avg_edge:.3f}")
 
     return df
-
 def load_results_csv(path: str) -> pd.DataFrame:
     """
     Loads results from a manual CSV like:
@@ -1578,25 +1603,6 @@ def load_results_csv(path: str) -> pd.DataFrame:
     df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
 
     df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
-    if "stake_dollars" in df.columns:
-
-        df = df.sort_values("edge", ascending=False).reset_index(drop=True)
-
-        running_exposure = 0
-        keep_rows = []
-
-        for _, row in df.iterrows():
-            stake = row.get("stake_dollars", 0)
-
-            if running_exposure + stake <= MAX_ROUND_EXPOSURE:
-                keep_rows.append(True)
-                running_exposure += stake
-            else:
-                keep_rows.append(False)
-
-        df = df[keep_rows].copy()
-
-        print(f"[predict] exposure cap applied: ${running_exposure:.2f} / ${MAX_ROUND_EXPOSURE:.2f}")
 
     print(f"[info] Loaded {path}: {len(df)} rows")
     return df[["date", "home", "away", "home_pts", "away_pts"]]
