@@ -1123,6 +1123,35 @@ def value_edge(model_prob: float, decimal_odds: float) -> float:
     if decimal_odds <= 1.0:
         return float("nan")
     return model_prob - (1.0 / decimal_odds)
+def kelly_stake_dollars(model_prob: float, decimal_odds: float, bankroll: float, confidence: float) -> float:
+    """
+    Quarter-Kelly staking with confidence scaling and hard cap.
+    Returns stake in dollars.
+    """
+    if decimal_odds <= 1.0 or model_prob <= 0.0 or model_prob >= 1.0:
+        return 0.0
+
+    b = decimal_odds - 1.0
+    p = model_prob
+    q = 1.0 - p
+
+    raw_kelly = ((b * p) - q) / b
+
+    if raw_kelly <= 0:
+        return 0.0
+
+    # Quarter Kelly for safety
+    adj_kelly = raw_kelly * 0.25
+
+    # Confidence scaling
+    # 0.50 conf => smaller stake, 0.80 conf => full adjusted stake
+    conf_scale = max(0.5, min(1.0, confidence / 0.80))
+    adj_kelly *= conf_scale
+
+    # Hard cap: max 10% of bankroll on any one bet
+    adj_kelly = min(adj_kelly, 0.10)
+
+    return round(bankroll * adj_kelly, 2)
 
 # ----------------------------
 # RATINGS PERSISTENCE
