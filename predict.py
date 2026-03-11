@@ -1576,6 +1576,7 @@ def build_predictions() -> pd.DataFrame:
         df.loc[excluded_mask, "stake"] = 0.0
         df.loc[excluded_mask, "stake_units"] = 0.0
         df.loc[excluded_mask, "stake_dollars"] = 0.0
+        df.loc[excluded_mask, "recommended_bet"] = "No Bet"
 
         print(f"[predict] exposure cap applied: ${running_exposure:.2f} / ${MAX_ROUND_EXPOSURE:.2f}")
 
