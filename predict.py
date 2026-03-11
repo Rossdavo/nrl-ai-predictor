@@ -1484,6 +1484,7 @@ def build_predictions() -> pd.DataFrame:
             "value_flag": value_flag,
             "pick": pick,
             "edge": round(edge, 3) if not math.isnan(edge) else 0.0,
+            "stake": float(stake),
             "stake_units": float(stake),
             "stake_dollars": round(stake * UNIT_SIZE, 2),
             "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
