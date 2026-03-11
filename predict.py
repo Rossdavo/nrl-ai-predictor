@@ -1521,6 +1521,11 @@ def build_predictions() -> pd.DataFrame:
             "stake": float(stake_units),
             "stake_units": float(stake_units),
             "stake_dollars": float(stake_dollars),
+            "recommended_bet": (
+                f"${stake_dollars:.2f} {m.home if pick == 'HOME' else m.away}"
+                if stake_dollars > 0 and pick in {"HOME", "AWAY"}
+                else "No Bet"
+            ),
             "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
             "away_top_try": " | ".join([f"{n} {p:.0%}" for n, p in away_named]),
             "teamlist_source": teamlist_url if starters_by_team else "fallback (no scrape)",
