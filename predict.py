@@ -1547,6 +1547,25 @@ def load_results_csv(path: str) -> pd.DataFrame:
     df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
 
     df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+    if "stake_dollars" in df.columns:
+
+        df = df.sort_values("edge", ascending=False).reset_index(drop=True)
+
+        running_exposure = 0
+        keep_rows = []
+
+        for _, row in df.iterrows():
+            stake = row.get("stake_dollars", 0)
+
+            if running_exposure + stake <= MAX_ROUND_EXPOSURE:
+                keep_rows.append(True)
+                running_exposure += stake
+            else:
+                keep_rows.append(False)
+
+        df = df[keep_rows].copy()
+
+        print(f"[predict] exposure cap applied: ${running_exposure:.2f} / ${MAX_ROUND_EXPOSURE:.2f}")
 
     print(f"[info] Loaded {path}: {len(df)} rows")
     return df[["date", "home", "away", "home_pts", "away_pts"]]
