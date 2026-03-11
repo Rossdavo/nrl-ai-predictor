@@ -1493,11 +1493,28 @@ def build_predictions() -> pd.DataFrame:
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
 
-    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
-    df["date"] = pd.to_datetime(df["date"])
-    current_round_date = df["date"].min()
-    df = df[df["date"] <= current_round_date + pd.Timedelta(days=3)]
+    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"]).reset_index(drop=True)
+
+    # ---------------------------------
+    # Keep only the current round
+    # ---------------------------------
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    round_start = df["date"].min()
+    round_end = round_start + pd.Timedelta(days=3)
+    df = df[(df["date"] >= round_start) & (df["date"] <= round_end)].copy()
     df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+
+    # ---------------------------------
+    # Round summary for logs
+    # ---------------------------------
+    round_label = f"Round window {round_start.strftime('%Y-%m-%d')} to {round_end.strftime('%Y-%m-%d')}"
+    bet_count = int((pd.to_numeric(df.get("stake_units", 0), errors="coerce").fillna(0) > 0).sum())
+    exposure = float(pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0).sum())
+    avg_edge = float(pd.to_numeric(df.get("edge", 0), errors="coerce").fillna(0).replace(0, pd.NA).dropna().mean())
+
+    print(f"[predict] {round_label}")
+    print(f"[predict] current round fixtures={len(df)} bets={bet_count} exposure=${exposure:.2f} avg_edge={avg_edge:.3f}")
+
     return df
 
 def load_results_csv(path: str) -> pd.DataFrame:
