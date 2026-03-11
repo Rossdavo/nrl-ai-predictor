@@ -1494,6 +1494,10 @@ def build_predictions() -> pd.DataFrame:
         })
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"])
+    df["date"] = pd.to_datetime(df["date"])
+    current_round_date = df["date"].min()
+    df = df[df["date"] <= current_round_date + pd.Timedelta(days=3)]
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
     return df
 
 def load_results_csv(path: str) -> pd.DataFrame:
