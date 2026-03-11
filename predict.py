@@ -1464,7 +1464,8 @@ def build_predictions() -> pd.DataFrame:
         value_flag = ""
         pick = ""
         edge = float("nan")
-        stake = 0.0
+        stake_units = 0.0
+        stake_dollars = 0.0
 
         if rating_mode != "ATTACK_DEFENCE":
             value_flag = "MODEL OFF (FALLBACK)"
@@ -1493,11 +1494,12 @@ def build_predictions() -> pd.DataFrame:
                 pick = best_side
                 edge = best_edge
 
-                stake = 1.0
-                if edge >= 0.10:
-                    stake = 2.0
-                if edge >= 0.15:
-                    stake = 3.0
+                if best_side == "HOME":
+                    stake_dollars = kelly_stake_dollars(win_prob, home_odds, BANKROLL, conf)
+                else:
+                    stake_dollars = kelly_stake_dollars(1 - win_prob, away_odds, BANKROLL, conf)
+
+                stake_units = round(stake_dollars / UNIT_SIZE, 2) if UNIT_SIZE > 0 else 0.0
 
         rows.append({
             "mode": MODE,
