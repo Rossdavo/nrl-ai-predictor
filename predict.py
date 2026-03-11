@@ -1541,7 +1541,7 @@ def build_predictions() -> pd.DataFrame:
     # Exposure protection
     # Keep highest-edge bets until max round exposure is reached
     # ---------------------------------
-     if "stake_dollars" in df.columns:
+    if "stake_dollars" in df.columns:
         df["stake_dollars"] = pd.to_numeric(df["stake_dollars"], errors="coerce").fillna(0.0)
         df["stake_units"] = pd.to_numeric(df["stake_units"], errors="coerce").fillna(0.0)
         df["stake"] = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
