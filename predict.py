@@ -1541,24 +1541,36 @@ def build_predictions() -> pd.DataFrame:
     # Exposure protection
     # Keep highest-edge bets until max round exposure is reached
     # ---------------------------------
-    if "stake_dollars" in df.columns:
+     if "stake_dollars" in df.columns:
         df["stake_dollars"] = pd.to_numeric(df["stake_dollars"], errors="coerce").fillna(0.0)
         df["stake_units"] = pd.to_numeric(df["stake_units"], errors="coerce").fillna(0.0)
+        df["stake"] = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
         df["edge"] = pd.to_numeric(df["edge"], errors="coerce").fillna(0.0)
 
-        df_cap = df.sort_values(["edge", "date", "kickoff_local"], ascending=[False, True, True]).reset_index(drop=True)
+        # work only on rows that are actual bets
+        bet_mask = df["stake_dollars"] > 0
+        bet_df = df[bet_mask].copy()
+
+        # highest edge first for bet selection
+        bet_df = bet_df.sort_values(["edge", "date", "kickoff_local"], ascending=[False, True, True]).reset_index()
 
         running_exposure = 0.0
-        keep_idx = []
+        keep_original_idx = []
 
-        for idx, row in df_cap.iterrows():
+        for _, row in bet_df.iterrows():
             stake_amt = float(row["stake_dollars"])
             if running_exposure + stake_amt <= MAX_ROUND_EXPOSURE:
-                keep_idx.append(idx)
+                keep_original_idx.append(int(row["index"]))
                 running_exposure += stake_amt
 
-        df = df_cap.loc[keep_idx].copy()
-        df = df.sort_values(["date", "kickoff_local"]).reset_index(drop=True)
+        # zero out bets that did not make the cap
+        excluded_mask = bet_mask & (~df.index.isin(keep_original_idx))
+        df.loc[excluded_mask, "pick"] = ""
+        df.loc[excluded_mask, "value_flag"] = ""
+        df.loc[excluded_mask, "edge"] = 0.0
+        df.loc[excluded_mask, "stake"] = 0.0
+        df.loc[excluded_mask, "stake_units"] = 0.0
+        df.loc[excluded_mask, "stake_dollars"] = 0.0
 
         print(f"[predict] exposure cap applied: ${running_exposure:.2f} / ${MAX_ROUND_EXPOSURE:.2f}")
 
