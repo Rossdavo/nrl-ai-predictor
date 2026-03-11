@@ -17,8 +17,11 @@ import os
 import html as ihtml
 
 BANKROLL = 200.0
-UNIT_PCT = 0.05   # 5% of bankroll
+UNIT_PCT = 0.05
 UNIT_SIZE = round(BANKROLL * UNIT_PCT, 2)
+
+MAX_ROUND_EXPOSURE_PCT = 0.40
+MAX_ROUND_EXPOSURE = BANKROLL * MAX_ROUND_EXPOSURE_PCT
 print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 
 
