@@ -19,6 +19,8 @@ import html as ihtml
 BANKROLL = 200.0
 UNIT_PCT = 0.05   # 5% of bankroll
 UNIT_SIZE = round(BANKROLL * UNIT_PCT, 2)
+print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
+
 
 # ----------------------------
 # RUN MODE
