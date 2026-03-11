@@ -482,42 +482,79 @@
     }
 
     function renderPredictions(rows) {
-      const filtered = rows.filter(r => isFutureOrToday(r.date));
-      const useRows = filtered.length ? filtered : rows;
+  const filtered = rows.filter(r => isFutureOrToday(r.date));
+  const useRows = filtered.length ? filtered : rows;
 
-      const headers = [
-        "date",
-        "home",
-        "away",
-        "home_win_prob",
-        "confidence",
-        "home_odds",
-        "away_odds",
-        "value_flag",
-        "pick",
-        "stake",
-        "exp_margin_home",
-        "home_top_try",
-        "away_top_try"
-      ].filter(h => useRows.some(r => h in r));
+  const headers = [
+    "date",
+    "home",
+    "away",
+    "home_win_prob",
+    "confidence",
+    "home_odds",
+    "away_odds",
+    "value_flag",
+    "pick",
+    "recommended_bet",
+    "stake_dollars",
+    "exp_margin_home",
+    "home_top_try",
+    "away_top_try"
+  ].filter(h => useRows.some(r => h in r));
 
-      const formatters = {
-        home_win_prob: v => escapeHtml(formatPct(v, 1)),
-        confidence: v => escapeHtml(formatPct(v, 0)),
-        home_odds: v => escapeHtml(formatFixed(v, 2)),
-        away_odds: v => escapeHtml(formatFixed(v, 2)),
-        stake: v => escapeHtml(formatFixed(v, 1)),
-        exp_margin_home: v => escapeHtml(formatSigned(v, 1)),
-        pick: v => {
-          if (!v) return "";
-          const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
-          return `<span class="${klass}">${escapeHtml(v)}</span>`;
-        },
-        value_flag: v => {
-          if (!v) return "";
-          const klass = /VALUE/i.test(v) ? "pill pill-green" : "pill pill-amber";
-          return `<span class="${klass}">${escapeHtml(v)}</span>`;
-        }
+  const formatters = {
+
+    home_win_prob: v => escapeHtml(formatPct(v, 1)),
+
+    confidence: v => escapeHtml(formatPct(v, 0)),
+
+    home_odds: v => escapeHtml(formatFixed(v, 2)),
+
+    away_odds: v => escapeHtml(formatFixed(v, 2)),
+
+    stake_dollars: v => {
+      const n = toNumber(v);
+      if (!n) return "";
+      return `<span class="mono">$${n.toFixed(2)}</span>`;
+    },
+
+    exp_margin_home: v => escapeHtml(formatSigned(v, 1)),
+
+    pick: v => {
+      if (!v) return "";
+      const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
+      return `<span class="${klass}">${escapeHtml(v)}</span>`;
+    },
+
+    value_flag: v => {
+      if (!v) return "";
+      const klass = /VALUE/i.test(v) ? "pill pill-green" : "pill pill-amber";
+      return `<span class="${klass}">${escapeHtml(v)}</span>`;
+    },
+
+    recommended_bet: (v) => {
+
+      const text = String(v || "").trim();
+
+      if (!text || text === "No Bet") {
+        return `<span class="pill pill-red">No Bet</span>`;
+      }
+
+      return `<span class="pill pill-green">${escapeHtml(text)}</span>`;
+    }
+  };
+
+  document.getElementById("pred-meta").textContent =
+    `${useRows.length} row${useRows.length === 1 ? "" : "s"}`;
+
+  document.getElementById("kpi-upcoming").textContent = String(useRows.length);
+
+  document.getElementById("kpi-upcoming-sub").textContent =
+    filtered.length ? "Current and upcoming fixtures" : "Showing all predictions";
+
+  document.getElementById("pred-table").innerHTML =
+    makeTable(headers, useRows, formatters);
+}
       };
 
       document.getElementById("pred-meta").textContent = `${useRows.length} row${useRows.length === 1 ? "" : "s"}`;
