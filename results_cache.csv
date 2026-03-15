@@ -212,12 +212,19 @@ date,home,away,home_pts,away_pts
 2025-09-26,Storm,Sharks,22.0,14.0
 2025-09-28,Broncos,Panthers,16.0,14.0
 2025-10-05,Storm,Broncos,22.0,26.0
-2026-01-03,Bulldogs,Dragons,15.0,14.0
-2026-01-03,Knights,Cowboys,28.0,18.0
-2026-05-03,Storm,Eels,52.0,4.0
-2026-06-03,Broncos,Panthers,0.0,26.0
-2026-06-03,Warriors,Roosters,42.0,18.0
-2026-07-03,Sea Eagles,Raiders,28.0,29.0
-2026-07-03,Sharks,Titans,50.0,10.0
-2026-08-03,Dolphins,Rabbitohs,30.0,40.0
-2026-12-03,Broncos,Eels,32.0,40.0
+2026-03-05,Knights,Cowboys,28,18
+2026-03-06,Bulldogs,Dragons,15,14
+2026-03-06,Storm,Eels,52,4
+2026-03-07,Warriors,Roosters,42,18
+2026-03-07,Broncos,Panthers,0,26
+2026-03-08,Sharks,Titans,50,10
+2026-03-08,Sea Eagles,Raiders,28,29
+2026-03-08,Dolphins,Rabbitohs,30,40
+2026-03-12,Broncos,Eels,32,40
+2026-03-13,Warriors,Raiders,40,6
+2026-03-13,Roosters,Rabbitohs,26,18
+2026-03-14,Wests Tigers,Cowboys,44,16
+2026-03-14,Dragons,Storm,20,46
+2026-03-14,Panthers,Sharks,26,6
+2026-03-15,Sea Eagles,Knights,16,36
+2026-03-15,Dolphins,Titans,18,14
