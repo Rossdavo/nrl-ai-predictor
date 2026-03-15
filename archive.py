@@ -11,6 +11,7 @@ ODDS_HIST = "odds_history.csv"
 
 PRED_HISTORY_COLS = [
     "date",
+    "kickoff_local",
     "home",
     "away",
     "home_win_prob",
