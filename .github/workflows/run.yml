@@ -48,6 +48,9 @@ jobs:
           echo "=== RUN: staking.py ==="
           python -u staking.py
 
+          echo "=== RUN: bet_log_updater.py ==="
+          python -u bet_log_updater.py
+
           echo "=== RUN: archive.py ==="
           python -u archive.py
 
