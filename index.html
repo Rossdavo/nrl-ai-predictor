@@ -304,6 +304,14 @@
 
     <div class="card" style="margin-top:16px;">
       <div class="section-title-row">
+        <h2>Round Dashboard</h2>
+        <span class="small" id="round-meta">Loading…</span>
+      </div>
+      <div id="round-summary" class="empty">Loading round summary…</div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="section-title-row">
         <h2>Upcoming Predictions</h2>
         <span class="small" id="pred-meta">Loading…</span>
       </div>
@@ -340,13 +348,6 @@
 
     <p class="footer">Generated automatically via GitHub Actions and published to GitHub Pages.</p>
   </div>
-  <div class="card" style="margin-top:16px;">
-      <div class="section-title-row">
-        <h2>Round Dashboard</h2>
-        <span class="small" id="round-meta">Loading…</span>
-      </div>
-      <div id="round-summary" class="empty">Loading round summary…</div>
-    </div>
 
   <script>
     function cacheBust(path) {
@@ -671,6 +672,7 @@
 
       elTable.innerHTML = makeTable(["metric", "value"], mergedRows, {});
     }
+
     function getRoundLabel(dateStr) {
       const d = new Date((dateStr || "") + "T00:00:00");
       if (isNaN(d)) return "Unknown round";
@@ -680,7 +682,6 @@
       const day = String(d.getDate()).padStart(2, "0");
       const iso = `${y}-${m}-${day}`;
 
-      // Hardcoded early 2026 rounds for now
       if (iso >= "2026-03-05" && iso <= "2026-03-08") return "Round 1";
       if (iso >= "2026-03-12" && iso <= "2026-03-15") return "Round 2";
       if (iso >= "2026-03-19" && iso <= "2026-03-22") return "Round 3";
@@ -698,7 +699,6 @@
         return;
       }
 
-      // Find latest settled round from accuracy.csv
       const roundMap = {};
       for (const r of accuracyRows) {
         const round = getRoundLabel(r.date);
@@ -706,20 +706,15 @@
         roundMap[round].push(r);
       }
 
-      const roundOrder = ["Round 1", "Round 2", "Round 3", "Other"];
-      const availableRounds = Object.keys(roundMap).sort((a, b) => {
-        const ai = roundOrder.indexOf(a);
-        const bi = roundOrder.indexOf(b);
-        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-      });
+      const orderedRounds = ["Round 1", "Round 2", "Round 3", "Other"];
+      const availableRounds = orderedRounds.filter(r => roundMap[r] && roundMap[r].length);
 
-      const latestRound = availableRounds[availableRounds.length - 1];
+      const latestRound = availableRounds.length ? availableRounds[availableRounds.length - 1] : "Other";
       const modelRows = roundMap[latestRound] || [];
 
       const modelWins = modelRows.filter(r => Number(r.winner_correct) === 1).length;
       const modelLosses = modelRows.length - modelWins;
 
-      // Match performance rows to same round
       const perfRoundRows = perfRows.filter(r => getRoundLabel(r.date) === latestRound);
       const betWins = perfRoundRows.filter(r => String(r.result || "").toUpperCase() === "WIN").length;
       const betLosses = perfRoundRows.filter(r => String(r.result || "").toUpperCase() === "LOSS").length;
