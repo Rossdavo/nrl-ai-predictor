@@ -340,6 +340,13 @@
 
     <p class="footer">Generated automatically via GitHub Actions and published to GitHub Pages.</p>
   </div>
+  <div class="card" style="margin-top:16px;">
+      <div class="section-title-row">
+        <h2>Round Dashboard</h2>
+        <span class="small" id="round-meta">Loading…</span>
+      </div>
+      <div id="round-summary" class="empty">Loading round summary…</div>
+    </div>
 
   <script>
     function cacheBust(path) {
@@ -664,6 +671,96 @@
 
       elTable.innerHTML = makeTable(["metric", "value"], mergedRows, {});
     }
+    function getRoundLabel(dateStr) {
+      const d = new Date((dateStr || "") + "T00:00:00");
+      if (isNaN(d)) return "Unknown round";
+
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const iso = `${y}-${m}-${day}`;
+
+      // Hardcoded early 2026 rounds for now
+      if (iso >= "2026-03-05" && iso <= "2026-03-08") return "Round 1";
+      if (iso >= "2026-03-12" && iso <= "2026-03-15") return "Round 2";
+      if (iso >= "2026-03-19" && iso <= "2026-03-22") return "Round 3";
+
+      return "Other";
+    }
+
+    function renderRoundDashboard(accuracyRows, perfRows) {
+      const meta = document.getElementById("round-meta");
+      const el = document.getElementById("round-summary");
+
+      if (!accuracyRows.length) {
+        meta.textContent = "No settled rounds yet";
+        el.innerHTML = '<div class="empty">No completed round data available yet.</div>';
+        return;
+      }
+
+      // Find latest settled round from accuracy.csv
+      const roundMap = {};
+      for (const r of accuracyRows) {
+        const round = getRoundLabel(r.date);
+        if (!roundMap[round]) roundMap[round] = [];
+        roundMap[round].push(r);
+      }
+
+      const roundOrder = ["Round 1", "Round 2", "Round 3", "Other"];
+      const availableRounds = Object.keys(roundMap).sort((a, b) => {
+        const ai = roundOrder.indexOf(a);
+        const bi = roundOrder.indexOf(b);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+
+      const latestRound = availableRounds[availableRounds.length - 1];
+      const modelRows = roundMap[latestRound] || [];
+
+      const modelWins = modelRows.filter(r => Number(r.winner_correct) === 1).length;
+      const modelLosses = modelRows.length - modelWins;
+
+      // Match performance rows to same round
+      const perfRoundRows = perfRows.filter(r => getRoundLabel(r.date) === latestRound);
+      const betWins = perfRoundRows.filter(r => String(r.result || "").toUpperCase() === "WIN").length;
+      const betLosses = perfRoundRows.filter(r => String(r.result || "").toUpperCase() === "LOSS").length;
+      const betProfit = perfRoundRows.reduce((s, r) => s + (toNumber(r.profit) ?? 0), 0);
+      const betStake = perfRoundRows.reduce((s, r) => s + (toNumber(r.stake) ?? 0), 0);
+      const roi = betStake > 0 ? (betProfit / betStake) * 100 : null;
+
+      meta.textContent = latestRound;
+
+      el.innerHTML = `
+        <div class="grid grid-3">
+          <div class="kpi">
+            <div class="kpi-label">Model Record</div>
+            <div class="kpi-value">${modelWins}-${modelLosses}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Bet Record</div>
+            <div class="kpi-value">${perfRoundRows.length ? `${betWins}-${betLosses}` : "—"}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Settled Bets</div>
+            <div class="kpi-value">${perfRoundRows.length}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:16px;">
+          <div class="kpi">
+            <div class="kpi-label">Profit</div>
+            <div class="kpi-value ${betProfit >= 0 ? "positive" : "negative"}">
+              ${perfRoundRows.length ? (betProfit > 0 ? "+" : "") + betProfit.toFixed(2) : "—"}
+            </div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">ROI</div>
+            <div class="kpi-value ${roi !== null && roi >= 0 ? "positive" : "negative"}">
+              ${roi !== null ? (roi > 0 ? "+" : "") + roi.toFixed(1) + "%" : "—"}
+            </div>
+          </div>
+        </div>
+      `;
+    }
 
     function renderResultsCache(rows) {
       const el = document.getElementById("results-table");
@@ -715,6 +812,7 @@
 
       renderAccuracy(accuracyRows);
       renderPerformance(perfRows, bankRows);
+      renderRoundDashboard(accuracyRows, perfRows);
       renderResultsCache(resultsRows);
     })();
   </script>
