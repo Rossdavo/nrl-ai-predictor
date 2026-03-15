@@ -185,7 +185,7 @@ def main():
         print("No matching completed matches to score yet.")
         return
 
-    j["date"] = j["date_pred"].dt.strftime("%Y-%m-%d")
+    j["date"] = j["date"].dt.strftime("%Y-%m-%d")
     j["actual_margin"] = j["home_pts"] - j["away_pts"]
 
     j["pred_winner"] = j.apply(
