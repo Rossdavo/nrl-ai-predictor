@@ -24,18 +24,13 @@ def _load_prediction_file(path: str) -> pd.DataFrame:
     if not os.path.exists(path):
         return pd.DataFrame()
 
-    need_pred = {"date", "home", "away", "home_win_prob"}
-
     try:
         df = pd.read_csv(path)
-    except Exception:
-        try:
-            df = pd.read_csv(path, on_bad_lines="skip", engine="python")
-            print(f"[warn] Loaded {path} with bad lines skipped.")
-        except Exception as e:
-            print(f"[warn] Could not read {path}: {e}")
-            return pd.DataFrame()
+    except Exception as e:
+        print(f"[warn] Could not read {path}: {e}")
+        return pd.DataFrame()
 
+    need_pred = {"date", "home", "away", "home_win_prob"}
     if not need_pred.issubset(set(df.columns)):
         print(f"[warn] {path} missing required columns.")
         return pd.DataFrame()
@@ -46,12 +41,13 @@ def _load_prediction_file(path: str) -> pd.DataFrame:
             df[c] = pd.NA
 
     df = df[keep_cols].copy()
+
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["home"] = df["home"].map(_norm)
     df["away"] = df["away"].map(_norm)
     df["home_win_prob"] = pd.to_numeric(df["home_win_prob"], errors="coerce")
     df["exp_margin_home"] = pd.to_numeric(df["exp_margin_home"], errors="coerce")
-    df["generated_at"] = df["generated_at"].astype(str).str.strip()
+    df["generated_at"] = pd.to_datetime(df["generated_at"], errors="coerce")
 
     df = df.dropna(subset=["date", "home", "away", "home_win_prob"]).copy()
     df["date"] = df["date"].dt.normalize()
@@ -96,14 +92,13 @@ def _match_predictions_to_results(pred: pd.DataFrame, res: pd.DataFrame) -> pd.D
       2) prediction date - 1 day
       3) prediction date + 1 day
 
-    Team orientation must remain the same (home vs away).
+    Team orientation must remain the same.
     """
     pred = pred.copy()
     res = res.copy()
 
     pred["match_key"] = pred["home"] + "||" + pred["away"]
     res["match_key"] = res["home"] + "||" + res["away"]
-
     pred["pred_row_id"] = range(len(pred))
 
     matched_parts = []
@@ -131,13 +126,11 @@ def _match_predictions_to_results(pred: pd.DataFrame, res: pd.DataFrame) -> pd.D
         if j.empty:
             continue
 
-        # If duplicates somehow exist, keep first result per prediction row
         j = j.sort_values(["pred_row_id"]).drop_duplicates(subset=["pred_row_id"], keep="first").copy()
         j["match_type"] = label
 
         matched_parts.append(j)
-        newly_matched = set(j["pred_row_id"].tolist())
-        matched_pred_ids.update(newly_matched)
+        matched_pred_ids.update(set(j["pred_row_id"].tolist()))
 
         if label == "exact":
             exact_count += len(j)
@@ -146,10 +139,7 @@ def _match_predictions_to_results(pred: pd.DataFrame, res: pd.DataFrame) -> pd.D
         elif label == "plus1":
             plus1_count += len(j)
 
-    if matched_parts:
-        out = pd.concat(matched_parts, ignore_index=True)
-    else:
-        out = pd.DataFrame()
+    out = pd.concat(matched_parts, ignore_index=True) if matched_parts else pd.DataFrame()
 
     print(f"[info] Matches found — exact: {exact_count}, -1 day: {minus1_count}, +1 day: {plus1_count}")
     return out
@@ -195,7 +185,6 @@ def main():
         print("No matching completed matches to score yet.")
         return
 
-    # Use prediction date in final output, not shifted match_date
     j["date"] = j["date_pred"].dt.strftime("%Y-%m-%d")
     j["actual_margin"] = j["home_pts"] - j["away_pts"]
 
