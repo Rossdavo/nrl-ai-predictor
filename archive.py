@@ -62,6 +62,7 @@ def _prepare_prediction_history(df: pd.DataFrame, run_id: str) -> pd.DataFrame:
     out = out[PRED_HISTORY_COLS].copy()
 
     out["date"] = pd.to_datetime(out["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    out["kickoff_local"] = out["kickoff_local"].astype(str).replace("nan", "").str.strip()
     out["home"] = out["home"].astype(str).str.strip()
     out["away"] = out["away"].astype(str).str.strip()
     out["home_win_prob"] = pd.to_numeric(out["home_win_prob"], errors="coerce")
@@ -77,7 +78,8 @@ def _prepare_prediction_history(df: pd.DataFrame, run_id: str) -> pd.DataFrame:
 
     out = out.dropna(subset=["date", "home", "away", "home_win_prob"]).copy()
 
-    out.insert(0, "run_utc", _utc_now_str())
+    run_utc = _utc_now_str()
+    out.insert(0, "run_utc", run_utc)
     out.insert(0, "run_id", run_id)
 
     return out
@@ -103,7 +105,8 @@ def _prepare_odds_history(df: pd.DataFrame, run_id: str) -> pd.DataFrame:
 
     out = out.dropna(subset=["date", "home", "away"]).copy()
 
-    out.insert(0, "run_utc", _utc_now_str())
+    run_utc = _utc_now_str()
+    out.insert(0, "run_utc", run_utc)
     out.insert(0, "run_id", run_id)
 
     return out
