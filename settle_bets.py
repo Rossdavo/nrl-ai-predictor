@@ -7,7 +7,7 @@ RESULTS_CACHE_PATH = "results_cache.csv"
 BET_HISTORY_OUT = "bet_history.csv"
 BET_SUMMARY_OUT = "bet_summary.csv"
 
-START_BANKROLL = 1000.0
+START_BANKROLL = float(os.getenv("BANKROLL", "200"))
 
 
 def _norm(s: str) -> str:
