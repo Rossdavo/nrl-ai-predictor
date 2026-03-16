@@ -256,8 +256,8 @@
   <div class="wrap">
     <div class="card">
       <h1>NRL AI Predictions</h1>
-      <p class="small">INDEX VERSION: LIVE CSV LOADER + BET SUMMARY</p>
-      <p class="lead">Automated predictions, staking, results tracking, and performance reporting from the latest generated CSV files.</p>
+      <p class="small">INDEX VERSION: LIVE CSV LOADER + BET SUMMARY + CLV</p>
+      <p class="lead">Automated predictions, staking, results tracking, performance reporting, and closing line value from the latest generated CSV files.</p>
 
       <div class="downloads" style="margin-top:16px;">
         <h2>Downloads</h2>
@@ -271,6 +271,9 @@
           <li><a href="performance.csv" target="_blank" rel="noopener">Performance CSV</a></li>
           <li><a href="bankroll_status.csv" target="_blank" rel="noopener">Bankroll Status CSV</a></li>
           <li><a href="closing_odds.csv" target="_blank" rel="noopener">Closing Odds CSV</a></li>
+          <li><a href="clv_history.csv" target="_blank" rel="noopener">CLV History CSV</a></li>
+          <li><a href="clv_summary.csv" target="_blank" rel="noopener">CLV Summary CSV</a></li>
+          <li><a href="clv_results.csv" target="_blank" rel="noopener">CLV Results CSV</a></li>
           <li><a href="predictions_history.csv" target="_blank" rel="noopener">Predictions History CSV</a></li>
           <li><a href="odds_history.csv" target="_blank" rel="noopener">Odds History CSV</a></li>
           <li><a href="results_cache.csv" target="_blank" rel="noopener">Results Cache CSV</a></li>
@@ -355,6 +358,15 @@
         <span class="small" id="bet-history-meta">Loading…</span>
       </div>
       <div id="bet-history-table" class="empty">Loading bet history…</div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="section-title-row">
+        <h2>Closing Line Value</h2>
+        <span class="small" id="clv-meta">Loading…</span>
+      </div>
+      <div id="clv-summary" class="empty">Loading CLV…</div>
+      <div id="clv-table" style="margin-top:12px;"></div>
     </div>
 
     <p class="footer">Generated automatically via GitHub Actions and published to GitHub Pages.</p>
@@ -902,6 +914,97 @@
       el.innerHTML = makeTable(headers, settledRows, formatters);
     }
 
+    function renderCLV(clvSummaryRows, clvHistoryRows, clvResultsRows) {
+      const elMeta = document.getElementById("clv-meta");
+      const elSummary = document.getElementById("clv-summary");
+      const elTable = document.getElementById("clv-table");
+
+      const summary = clvSummaryRows.length ? clvSummaryRows[clvSummaryRows.length - 1] : null;
+      const history = clvHistoryRows.length ? clvHistoryRows : clvResultsRows;
+
+      if (!summary && !history.length) {
+        elMeta.textContent = "No CLV data";
+        elSummary.innerHTML = '<div class="empty">No closing line value data available yet.</div>';
+        elTable.innerHTML = "";
+        return;
+      }
+
+      const bets = summary ? (toNumber(summary.bets_with_closing_odds) ?? history.length) : history.length;
+      const avgDiff = summary ? toNumber(summary.avg_clv_diff) : null;
+      const avgEdge = summary ? toNumber(summary.avg_clv_edge) : null;
+      const positiveRate = summary ? toNumber(summary.positive_clv_rate) : null;
+
+      elMeta.textContent = `${bets} matched bet${bets === 1 ? "" : "s"}`;
+
+      elSummary.innerHTML = `
+        <div class="grid grid-3">
+          <div class="kpi">
+            <div class="kpi-label">Avg CLV Diff</div>
+            <div class="kpi-value ${(avgDiff ?? 0) >= 0 ? "positive" : "negative"}">
+              ${avgDiff === null ? "—" : formatSigned(avgDiff, 3)}
+            </div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Avg CLV Edge</div>
+            <div class="kpi-value ${(avgEdge ?? 0) >= 0 ? "positive" : "negative"}">
+              ${avgEdge === null ? "—" : formatPct(avgEdge, 2)}
+            </div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Positive CLV Rate</div>
+            <div class="kpi-value">
+              ${positiveRate === null ? "—" : formatPct(positiveRate, 1)}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const tableRows = history
+        .slice()
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+        .slice(0, 20);
+
+      const headers = [
+        "date",
+        "home",
+        "away",
+        "pick",
+        "bet_odds",
+        "closing_odds",
+        "clv_diff",
+        "clv_edge",
+        "positive_clv"
+      ].filter(h => tableRows.some(r => h in r));
+
+      const formatters = {
+        pick: v => {
+          if (!v) return "";
+          const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
+          return `<span class="${klass}">${escapeHtml(v)}</span>`;
+        },
+        bet_odds: v => escapeHtml(formatFixed(v, 2)),
+        closing_odds: v => escapeHtml(formatFixed(v, 2)),
+        clv_diff: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
+          const klass = n >= 0 ? "positive" : "negative";
+          return `<span class="${klass}">${escapeHtml(formatSigned(n, 3))}</span>`;
+        },
+        clv_edge: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
+          const klass = n >= 0 ? "positive" : "negative";
+          return `<span class="${klass}">${escapeHtml(formatPct(n, 2))}</span>`;
+        },
+        positive_clv: v => {
+          const ok = toNumber(v) === 1;
+          return `<span class="${ok ? "pill pill-green" : "pill pill-red"}">${ok ? "Yes" : "No"}</span>`;
+        }
+      };
+
+      elTable.innerHTML = makeTable(headers, tableRows, formatters);
+    }
+
     async function loadOptionalCSV(path) {
       try {
         const text = await loadText(path);
@@ -929,7 +1032,10 @@
         betHistoryRows,
         perfRows,
         bankRows,
-        resultsRows
+        resultsRows,
+        clvSummaryRows,
+        clvHistoryRows,
+        clvResultsRows
       ] = await Promise.all([
         loadOptionalCSV("accuracy.csv"),
         loadOptionalCSV("accuracy_summary.csv"),
@@ -937,7 +1043,10 @@
         loadOptionalCSV("bet_history.csv"),
         loadOptionalCSV("performance.csv"),
         loadOptionalCSV("bankroll_status.csv"),
-        loadOptionalCSV("results_cache.csv")
+        loadOptionalCSV("results_cache.csv"),
+        loadOptionalCSV("clv_summary.csv"),
+        loadOptionalCSV("clv_history.csv"),
+        loadOptionalCSV("clv_results.csv")
       ]);
 
       renderAccuracy(accuracyRows, accuracySummaryRows);
@@ -945,6 +1054,7 @@
       renderRoundDashboard(accuracyRows, betHistoryRows);
       renderResultsCache(resultsRows);
       renderBetHistory(betHistoryRows);
+      renderCLV(clvSummaryRows, clvHistoryRows, clvResultsRows);
     })();
   </script>
 </body>
