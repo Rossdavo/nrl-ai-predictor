@@ -256,7 +256,7 @@
   <div class="wrap">
     <div class="card">
       <h1>NRL AI Predictions</h1>
-      <p class="small">INDEX VERSION: LIVE CSV LOADER</p>
+      <p class="small">INDEX VERSION: LIVE CSV LOADER + BET SUMMARY</p>
       <p class="lead">Automated predictions, staking, results tracking, and performance reporting from the latest generated CSV files.</p>
 
       <div class="downloads" style="margin-top:16px;">
@@ -265,6 +265,9 @@
           <li><a href="predictions.csv" target="_blank" rel="noopener">Predictions CSV</a></li>
           <li><a href="odds.csv" target="_blank" rel="noopener">Odds CSV</a></li>
           <li><a href="accuracy.csv" target="_blank" rel="noopener">Accuracy CSV</a></li>
+          <li><a href="accuracy_summary.csv" target="_blank" rel="noopener">Accuracy Summary CSV</a></li>
+          <li><a href="bet_history.csv" target="_blank" rel="noopener">Bet History CSV</a></li>
+          <li><a href="bet_summary.csv" target="_blank" rel="noopener">Bet Summary CSV</a></li>
           <li><a href="performance.csv" target="_blank" rel="noopener">Performance CSV</a></li>
           <li><a href="bankroll_status.csv" target="_blank" rel="noopener">Bankroll Status CSV</a></li>
           <li><a href="closing_odds.csv" target="_blank" rel="noopener">Closing Odds CSV</a></li>
@@ -346,6 +349,14 @@
       <div id="results-table" class="empty">Loading results cache…</div>
     </div>
 
+    <div class="card" style="margin-top:16px;">
+      <div class="section-title-row">
+        <h2>Recent Bet Settlements</h2>
+        <span class="small" id="bet-history-meta">Loading…</span>
+      </div>
+      <div id="bet-history-table" class="empty">Loading bet history…</div>
+    </div>
+
     <p class="footer">Generated automatically via GitHub Actions and published to GitHub Pages.</p>
   </div>
 
@@ -421,7 +432,7 @@
     function formatPct(v, digits = 0) {
       const n = toNumber(v);
       if (n === null) return "";
-      if (n <= 1) return (n * 100).toFixed(digits) + "%";
+      if (Math.abs(n) <= 1) return (n * 100).toFixed(digits) + "%";
       return n.toFixed(digits) + "%";
     }
 
@@ -435,6 +446,12 @@
       const n = toNumber(v);
       if (n === null) return "";
       return n.toFixed(digits);
+    }
+
+    function formatMoney(v, digits = 2) {
+      const n = toNumber(v);
+      if (n === null) return "";
+      return "$" + n.toFixed(digits);
     }
 
     function isFutureOrToday(dateStr) {
@@ -544,12 +561,12 @@
         makeTable(headers, useRows, formatters);
     }
 
-    function renderAccuracy(rows) {
+    function renderAccuracy(rows, summaryRows) {
       const elSummary = document.getElementById("accuracy-summary");
       const elTable = document.getElementById("accuracy-table");
       const elMeta = document.getElementById("accuracy-meta");
 
-      if (!rows.length) {
+      if (!rows.length && !summaryRows.length) {
         elMeta.textContent = "0 settled matches";
         elSummary.innerHTML = '<div class="empty">No completed matches scored yet.</div>';
         elTable.innerHTML = "";
@@ -560,12 +577,25 @@
         return;
       }
 
-      const settled = rows.length;
+      const summary = summaryRows.length ? summaryRows[summaryRows.length - 1] : null;
+
+      const settled = summary
+        ? (toNumber(summary.scored_matches) ?? rows.length)
+        : rows.length;
+
       const wins = rows.filter(r => toNumber(r.winner_correct) === 1).length;
-      const acc = settled ? (wins / settled) : null;
-      const avgBrier = settled
-        ? rows.reduce((s, r) => s + (toNumber(r.brier) ?? 0), 0) / settled
-        : null;
+
+      const acc = summary
+        ? toNumber(summary.winner_accuracy)
+        : (settled ? wins / settled : null);
+
+      const avgBrier = summary
+        ? toNumber(summary.brier)
+        : (settled ? rows.reduce((s, r) => s + (toNumber(r.brier) ?? 0), 0) / settled : null);
+
+      const marginMae = summary
+        ? toNumber(summary.mae_margin)
+        : (settled ? rows.reduce((s, r) => s + (toNumber(r.abs_margin_error) ?? 0), 0) / settled : null);
 
       elMeta.textContent = `${settled} settled match${settled === 1 ? "" : "es"}`;
       elSummary.innerHTML = `
@@ -575,12 +605,12 @@
             <div class="kpi-value">${acc === null ? "—" : formatPct(acc, 0)}</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Correct Tips</div>
-            <div class="kpi-value">${wins}/${settled}</div>
-          </div>
-          <div class="kpi">
             <div class="kpi-label">Average Brier</div>
             <div class="kpi-value">${avgBrier === null ? "—" : avgBrier.toFixed(3)}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Margin MAE</div>
+            <div class="kpi-value">${marginMae === null ? "—" : marginMae.toFixed(1)}</div>
           </div>
         </div>
       `;
@@ -622,55 +652,80 @@
       elTable.innerHTML = makeTable(headers, tableRows, formatters);
     }
 
-    function renderPerformance(perfRows, bankRows) {
+    function renderPerformance(betSummaryRows, betHistoryRows, perfRows, bankRows) {
       const elSummary = document.getElementById("perf-summary");
       const elTable = document.getElementById("perf-table");
       const elMeta = document.getElementById("perf-meta");
 
-      if (!perfRows.length && !bankRows.length) {
+      const betSummary = betSummaryRows.length ? betSummaryRows[betSummaryRows.length - 1] : null;
+
+      if (!betSummary && !perfRows.length && !bankRows.length) {
         elMeta.textContent = "No settled betting data";
         elSummary.innerHTML = '<div class="empty">Nothing to report yet.</div>';
         elTable.innerHTML = "";
         return;
       }
 
-      const latestPerf = perfRows.length ? perfRows[perfRows.length - 1] : null;
-      const latestBank = bankRows.length ? bankRows[bankRows.length - 1] : null;
+      let roi = null;
+      let profit = null;
+      let bankroll = null;
+      let settled = null;
+      let wins = null;
+      let losses = null;
+      let pending = null;
 
-      const roi = latestPerf?.roi_pct ?? latestPerf?.roi ?? "";
-      const strike = latestPerf?.strike_rate ?? latestPerf?.win_rate ?? "";
-      const profit = latestPerf?.profit_units ?? latestPerf?.profit ?? "";
-      const bankroll = latestBank?.bankroll ?? latestBank?.current_bankroll ?? "";
+      if (betSummary) {
+        roi = toNumber(betSummary.roi);
+        profit = toNumber(betSummary.units_profit);
+        bankroll = toNumber(betSummary.closing_bankroll);
+        settled = toNumber(betSummary.bets_settled);
+        wins = toNumber(betSummary.wins);
+        losses = toNumber(betSummary.losses);
+        pending = toNumber(betSummary.pending);
+      } else {
+        const latestPerf = perfRows.length ? perfRows[perfRows.length - 1] : null;
+        const latestBank = bankRows.length ? bankRows[bankRows.length - 1] : null;
+        roi = toNumber(latestPerf?.roi_pct ?? latestPerf?.roi);
+        profit = toNumber(latestPerf?.profit_units ?? latestPerf?.profit);
+        bankroll = toNumber(latestBank?.bankroll ?? latestBank?.current_bankroll);
+      }
 
-      elMeta.textContent = `${perfRows.length} performance row${perfRows.length === 1 ? "" : "s"}`;
+      elMeta.textContent = betSummary
+        ? `${toNumber(betSummary.bets_total) ?? 0} total bets tracked`
+        : `${perfRows.length} performance row${perfRows.length === 1 ? "" : "s"}`;
 
       elSummary.innerHTML = `
         <div class="grid grid-3">
           <div class="kpi">
             <div class="kpi-label">ROI</div>
-            <div class="kpi-value ${toNumber(roi) >= 0 ? "positive" : "negative"}">${roi ? formatPct(roi, 1) : "—"}</div>
+            <div class="kpi-value ${(roi ?? 0) >= 0 ? "positive" : "negative"}">${roi === null ? "—" : formatPct(roi, 1)}</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Profit</div>
-            <div class="kpi-value ${toNumber(profit) >= 0 ? "positive" : "negative"}">${profit ? formatSigned(profit, 2) : "—"}</div>
+            <div class="kpi-value ${(profit ?? 0) >= 0 ? "positive" : "negative"}">${profit === null ? "—" : formatSigned(profit, 2)}</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Bankroll</div>
-            <div class="kpi-value">${bankroll ? formatFixed(bankroll, 2) : "—"}</div>
+            <div class="kpi-value">${bankroll === null ? "—" : formatMoney(bankroll, 2)}</div>
           </div>
         </div>
         <div class="small" style="margin-top:12px;">
-          ${strike ? `Strike rate: ${formatPct(strike, 1)}` : "Strike rate unavailable"}
+          ${settled !== null ? `Settled bets: ${settled}` : "Settled bets unavailable"}
+          ${wins !== null && losses !== null ? ` | Record: ${wins}-${losses}` : ""}
+          ${pending !== null ? ` | Pending: ${pending}` : ""}
         </div>
       `;
 
-      const mergedRows = [];
-      if (latestPerf) mergedRows.push({ metric: "Latest ROI", value: roi ? formatPct(roi, 1) : "—" });
-      if (latestPerf) mergedRows.push({ metric: "Latest Profit", value: profit ? formatSigned(profit, 2) : "—" });
-      if (latestPerf) mergedRows.push({ metric: "Latest Strike Rate", value: strike ? formatPct(strike, 1) : "—" });
-      if (latestBank) mergedRows.push({ metric: "Latest Bankroll", value: bankroll ? formatFixed(bankroll, 2) : "—" });
+      const summaryRows = [];
+      if (settled !== null) summaryRows.push({ metric: "Settled Bets", value: String(settled) });
+      if (wins !== null) summaryRows.push({ metric: "Wins", value: String(wins) });
+      if (losses !== null) summaryRows.push({ metric: "Losses", value: String(losses) });
+      if (pending !== null) summaryRows.push({ metric: "Pending", value: String(pending) });
+      if (roi !== null) summaryRows.push({ metric: "ROI", value: formatPct(roi, 1) });
+      if (profit !== null) summaryRows.push({ metric: "Profit (Units)", value: formatSigned(profit, 2) });
+      if (bankroll !== null) summaryRows.push({ metric: "Closing Bankroll", value: formatMoney(bankroll, 2) });
 
-      elTable.innerHTML = makeTable(["metric", "value"], mergedRows, {});
+      elTable.innerHTML = makeTable(["metric", "value"], summaryRows, {});
     }
 
     function getRoundLabel(dateStr) {
@@ -689,7 +744,7 @@
       return "Other";
     }
 
-    function renderRoundDashboard(accuracyRows, perfRows) {
+    function renderRoundDashboard(accuracyRows, betHistoryRows) {
       const meta = document.getElementById("round-meta");
       const el = document.getElementById("round-summary");
 
@@ -715,12 +770,16 @@
       const modelWins = modelRows.filter(r => Number(r.winner_correct) === 1).length;
       const modelLosses = modelRows.length - modelWins;
 
-      const perfRoundRows = perfRows.filter(r => getRoundLabel(r.date) === latestRound);
-      const betWins = perfRoundRows.filter(r => String(r.result || "").toUpperCase() === "WIN").length;
-      const betLosses = perfRoundRows.filter(r => String(r.result || "").toUpperCase() === "LOSS").length;
-      const betProfit = perfRoundRows.reduce((s, r) => s + (toNumber(r.profit) ?? 0), 0);
-      const betStake = perfRoundRows.reduce((s, r) => s + (toNumber(r.stake) ?? 0), 0);
-      const roi = betStake > 0 ? (betProfit / betStake) * 100 : null;
+      const roundBetRows = betHistoryRows.filter(r =>
+        getRoundLabel(r.date) === latestRound &&
+        ["WIN", "LOSS", "DRAW"].includes(String(r.bet_status || "").toUpperCase())
+      );
+
+      const betWins = roundBetRows.filter(r => String(r.bet_status || "").toUpperCase() === "WIN").length;
+      const betLosses = roundBetRows.filter(r => String(r.bet_status || "").toUpperCase() === "LOSS").length;
+      const betProfit = roundBetRows.reduce((s, r) => s + (toNumber(r.profit_units) ?? 0), 0);
+      const betStake = roundBetRows.reduce((s, r) => s + (toNumber(r.stake) ?? 0), 0);
+      const roi = betStake > 0 ? betProfit / betStake : null;
 
       meta.textContent = latestRound;
 
@@ -732,11 +791,11 @@
           </div>
           <div class="kpi">
             <div class="kpi-label">Bet Record</div>
-            <div class="kpi-value">${perfRoundRows.length ? `${betWins}-${betLosses}` : "—"}</div>
+            <div class="kpi-value">${roundBetRows.length ? `${betWins}-${betLosses}` : "—"}</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Settled Bets</div>
-            <div class="kpi-value">${perfRoundRows.length}</div>
+            <div class="kpi-value">${roundBetRows.length}</div>
           </div>
         </div>
 
@@ -744,13 +803,13 @@
           <div class="kpi">
             <div class="kpi-label">Profit</div>
             <div class="kpi-value ${betProfit >= 0 ? "positive" : "negative"}">
-              ${perfRoundRows.length ? (betProfit > 0 ? "+" : "") + betProfit.toFixed(2) : "—"}
+              ${roundBetRows.length ? formatSigned(betProfit, 2) : "—"}
             </div>
           </div>
           <div class="kpi">
             <div class="kpi-label">ROI</div>
             <div class="kpi-value ${roi !== null && roi >= 0 ? "positive" : "negative"}">
-              ${roi !== null ? (roi > 0 ? "+" : "") + roi.toFixed(1) + "%" : "—"}
+              ${roi !== null ? formatPct(roi, 1) : "—"}
             </div>
           </div>
         </div>
@@ -778,6 +837,71 @@
       el.innerHTML = makeTable(headers, tableRows, {});
     }
 
+    function renderBetHistory(rows) {
+      const el = document.getElementById("bet-history-table");
+      const meta = document.getElementById("bet-history-meta");
+
+      if (!rows.length) {
+        meta.textContent = "0 rows";
+        el.innerHTML = '<div class="empty">No bet history available yet.</div>';
+        return;
+      }
+
+      const settledRows = rows
+        .filter(r => ["WIN", "LOSS", "DRAW", "PENDING"].includes(String(r.bet_status || "").toUpperCase()))
+        .sort((a, b) => {
+          const ak = `${a.date || ""} ${a.kickoff_local || ""}`;
+          const bk = `${b.date || ""} ${b.kickoff_local || ""}`;
+          return bk.localeCompare(ak);
+        })
+        .slice(0, 20);
+
+      meta.textContent = `${rows.length} tracked row${rows.length === 1 ? "" : "s"}`;
+
+      const headers = [
+        "date",
+        "home",
+        "away",
+        "pick",
+        "bet_odds",
+        "stake",
+        "bet_status",
+        "profit_units",
+        "bankroll_after"
+      ].filter(h => settledRows.some(r => h in r));
+
+      const formatters = {
+        pick: v => {
+          if (!v) return "";
+          const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
+          return `<span class="${klass}">${escapeHtml(v)}</span>`;
+        },
+        bet_status: v => {
+          const val = String(v || "").toUpperCase();
+          let klass = "pill pill-amber";
+          if (val === "WIN") klass = "pill pill-green";
+          if (val === "LOSS" || val === "DRAW") klass = "pill pill-red";
+          if (val === "PENDING") klass = "pill pill-blue";
+          return `<span class="${klass}">${escapeHtml(val)}</span>`;
+        },
+        bet_odds: v => escapeHtml(formatFixed(v, 2)),
+        stake: v => escapeHtml(formatFixed(v, 2)),
+        profit_units: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
+          const klass = n >= 0 ? "positive" : "negative";
+          return `<span class="${klass}">${escapeHtml(formatSigned(n, 2))}</span>`;
+        },
+        bankroll_after: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
+          return `<span class="mono">${escapeHtml(formatMoney(n, 2))}</span>`;
+        }
+      };
+
+      el.innerHTML = makeTable(headers, settledRows, formatters);
+    }
+
     async function loadOptionalCSV(path) {
       try {
         const text = await loadText(path);
@@ -798,17 +922,29 @@
         console.error(e);
       }
 
-      const [accuracyRows, perfRows, bankRows, resultsRows] = await Promise.all([
+      const [
+        accuracyRows,
+        accuracySummaryRows,
+        betSummaryRows,
+        betHistoryRows,
+        perfRows,
+        bankRows,
+        resultsRows
+      ] = await Promise.all([
         loadOptionalCSV("accuracy.csv"),
+        loadOptionalCSV("accuracy_summary.csv"),
+        loadOptionalCSV("bet_summary.csv"),
+        loadOptionalCSV("bet_history.csv"),
         loadOptionalCSV("performance.csv"),
         loadOptionalCSV("bankroll_status.csv"),
         loadOptionalCSV("results_cache.csv")
       ]);
 
-      renderAccuracy(accuracyRows);
-      renderPerformance(perfRows, bankRows);
-      renderRoundDashboard(accuracyRows, perfRows);
+      renderAccuracy(accuracyRows, accuracySummaryRows);
+      renderPerformance(betSummaryRows, betHistoryRows, perfRows, bankRows);
+      renderRoundDashboard(accuracyRows, betHistoryRows);
       renderResultsCache(resultsRows);
+      renderBetHistory(betHistoryRows);
     })();
   </script>
 </body>
