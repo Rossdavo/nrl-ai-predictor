@@ -1,82 +1,129 @@
 import os
 import pandas as pd
-import numpy as np
 
-BET_LOG_PATH = "bet_log.csv"
-RESULTS_PATH = "results_cache.csv"
+PRED_HISTORY = "predictions_history.csv"
+RESULTS = "results_cache.csv"
+
+BET_HISTORY_OUT = "bet_history.csv"
+BET_SUMMARY_OUT = "bet_summary.csv"
+
+START_BANKROLL = 1000
 
 
-def _norm(s: str) -> str:
-    return str(s).strip()
+def norm(x):
+    return str(x).strip().upper()
 
 
-def main():
-    if not (os.path.exists(BET_LOG_PATH) and os.path.exists(RESULTS_PATH)):
-        print("Missing bet_log.csv or results_cache.csv; nothing to settle.")
-        return
+def load_predictions():
+    df = pd.read_csv(PRED_HISTORY)
 
-    bets = pd.read_csv(BET_LOG_PATH)
-    res = pd.read_csv(RESULTS_PATH)
+    df["home"] = df["home"].map(norm)
+    df["away"] = df["away"].map(norm)
 
-    if bets.empty or res.empty:
-        print("Empty bets or results; nothing to settle.")
-        return
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
-    # Ensure columns exist in bet log
-    for col in ["settled", "actual_winner", "profit_units"]:
-        if col not in bets.columns:
-            bets[col] = ""
+    df["stake"] = pd.to_numeric(df["stake"], errors="coerce").fillna(0)
+    df["stake_dollars"] = pd.to_numeric(df["stake_dollars"], errors="coerce").fillna(0)
 
-    # Normalize keys
-    bets["date"] = bets["date"].astype(str).str.slice(0, 10).str.strip()
-    bets["home"] = bets["home"].map(_norm)
-    bets["away"] = bets["away"].map(_norm)
+    df["home_odds"] = pd.to_numeric(df["home_odds"], errors="coerce")
+    df["away_odds"] = pd.to_numeric(df["away_odds"], errors="coerce")
 
-    res["date"] = res["date"].astype(str).str.slice(0, 10).str.strip()
-    res["home"] = res["home"].map(_norm)
-    res["away"] = res["away"].map(_norm)
-    res["home_pts"] = pd.to_numeric(res["home_pts"], errors="coerce")
-    res["away_pts"] = pd.to_numeric(res["away_pts"], errors="coerce")
-    res = res.dropna(subset=["home_pts", "away_pts"])
+    return df
 
-    # Compute winner
-    res["actual_winner"] = np.where(res["home_pts"] > res["away_pts"], res["home"], res["away"])
 
-    # Join results onto bets
-    j = bets.merge(res[["date", "home", "away", "actual_winner"]], on=["date", "home", "away"], how="left", suffixes=("", "_r"))
+def load_results():
+    df = pd.read_csv(RESULTS)
 
-    # Only settle bets with a result
-    has_result = j["actual_winner_r"].notna()
+    df["home"] = df["home"].map(norm)
+    df["away"] = df["away"].map(norm)
 
-    # If already settled, don’t change
-    already = (j["settled"].astype(str).str.upper() == "Y")
-    to_settle = has_result & (~already)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
-    if to_settle.sum() == 0:
-        print("No new bets to settle.")
-        return
+    df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
+    df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
 
-    # Win if side matches winner
-    win = (
-        ((j["value_side"] == "HOME") & (j["actual_winner_r"] == j["home"])) |
-        ((j["value_side"] == "AWAY") & (j["actual_winner_r"] == j["away"]))
+    return df
+
+
+def settle():
+
+    pred = load_predictions()
+    res = load_results()
+
+    merged = pred.merge(
+        res,
+        on=["date", "home", "away"],
+        how="left"
     )
 
-    j.loc[to_settle, "actual_winner"] = j.loc[to_settle, "actual_winner_r"]
+    bets = merged[merged["stake"] > 0].copy()
 
-    # Profit in units: win = (odds-1)*stake ; loss = -stake
-    j["taken_odds"] = pd.to_numeric(j["taken_odds"], errors="coerce")
-    j["stake_units"] = pd.to_numeric(j["stake_units"], errors="coerce").fillna(1.0)
+    if bets.empty:
+        print("No bets found")
+        return
 
-    profit = np.where(win, (j["taken_odds"] - 1.0) * j["stake_units"], -1.0 * j["stake_units"])
-    j.loc[to_settle, "profit_units"] = profit[to_settle]
-    j.loc[to_settle, "settled"] = "Y"
+    def actual_winner(r):
 
-    # Drop helper column, write back
-    j = j.drop(columns=["actual_winner_r"], errors="ignore")
-    j.to_csv(BET_LOG_PATH, index=False)
-    print(f"Settled {int(to_settle.sum())} bets -> {BET_LOG_PATH}")
+        if pd.isna(r.home_pts):
+            return "PENDING"
+
+        if r.home_pts > r.away_pts:
+            return "HOME"
+
+        if r.away_pts > r.home_pts:
+            return "AWAY"
+
+        return "DRAW"
+
+
+    bets["actual"] = bets.apply(actual_winner, axis=1)
+
+    def bet_profit(r):
+
+        if r.actual == "PENDING":
+            return 0
+
+        if r.actual == "DRAW":
+            return -r.stake
+
+        if r.pick == r.actual:
+
+            odds = r.home_odds if r.pick == "HOME" else r.away_odds
+
+            return r.stake * (odds - 1)
+
+        return -r.stake
+
+
+    bets["profit_units"] = bets.apply(bet_profit, axis=1)
+
+    bankroll = START_BANKROLL
+    bankrolls = []
+
+    for p in bets["profit_units"]:
+        bankroll += p
+        bankrolls.append(bankroll)
+
+    bets["bankroll"] = bankrolls
+
+    bets.to_csv(BET_HISTORY_OUT, index=False)
+
+    summary = {
+        "bets": len(bets),
+        "wins": (bets["profit_units"] > 0).sum(),
+        "losses": (bets["profit_units"] < 0).sum(),
+        "units_profit": bets["profit_units"].sum(),
+        "roi": bets["profit_units"].sum() / bets["stake"].sum(),
+        "closing_bankroll": bankroll
+    }
+
+    pd.DataFrame([summary]).to_csv(BET_SUMMARY_OUT, index=False)
+
+    print("Bets:", summary["bets"])
+    print("Profit Units:", round(summary["units_profit"], 2))
+    print("ROI:", round(summary["roi"] * 100, 2), "%")
+    print("Bankroll:", round(bankroll, 2))
 
 
 if __name__ == "__main__":
-    main()
+    settle()
