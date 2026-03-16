@@ -133,8 +133,17 @@ def main():
             (odds_hist[ts_col] <= ko_utc)
         ].copy()
 
+    if subset.empty:
+        # fallback: use earliest available odds snapshot
+        subset = odds_hist.loc[
+            (odds_hist["date"] == date) &
+            (odds_hist["home"] == home) &
+            (odds_hist["away"] == away)
+        ].copy()
+
         if subset.empty:
             continue
+            
 
         subset = subset.sort_values(ts_col)
         last = subset.iloc[-1]
