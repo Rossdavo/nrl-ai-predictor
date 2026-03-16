@@ -82,7 +82,6 @@ def main():
         _write_empty("Predictions missing kickoff_local — cannot build closing odds.")
         return
 
-    # Prefer latest saved prediction row per game if generated_at exists
     if "generated_at" in preds.columns:
         preds["generated_at"] = pd.to_datetime(preds["generated_at"], errors="coerce", utc=True)
         preds = preds.sort_values(["date", "home", "away", "generated_at"])
@@ -90,16 +89,13 @@ def main():
     else:
         preds = preds.drop_duplicates(subset=["date", "home", "away"], keep="last").copy()
 
-    # kickoff_local may be either "19:00" or a fuller datetime string
     kickoff_raw = preds["kickoff_local"].astype(str).str.strip()
 
-    # Try date + time first
     preds["kickoff_dt"] = pd.to_datetime(
         preds["date"].astype(str) + " " + kickoff_raw,
         errors="coerce"
     )
 
-    # Fallback: kickoff_local itself may already be a full datetime
     missing_mask = preds["kickoff_dt"].isna()
     if missing_mask.any():
         preds.loc[missing_mask, "kickoff_dt"] = pd.to_datetime(
@@ -133,17 +129,16 @@ def main():
             (odds_hist[ts_col] <= ko_utc)
         ].copy()
 
-    if subset.empty:
-        # fallback: use earliest available odds snapshot
-        subset = odds_hist.loc[
-            (odds_hist["date"] == date) &
-            (odds_hist["home"] == home) &
-            (odds_hist["away"] == away)
-        ].copy()
+        # fallback: if no pre-kickoff snapshot, use earliest available snapshot for that game
+        if subset.empty:
+            subset = odds_hist.loc[
+                (odds_hist["date"] == date) &
+                (odds_hist["home"] == home) &
+                (odds_hist["away"] == away)
+            ].copy()
 
         if subset.empty:
             continue
-            
 
         subset = subset.sort_values(ts_col)
         last = subset.iloc[-1]
