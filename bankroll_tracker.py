@@ -5,7 +5,7 @@ from pandas.errors import EmptyDataError
 BET_SUMMARY_PATH = "bet_summary.csv"
 PERFORMANCE_PATH = "performance.csv"
 
-START_BANKROLL = float(os.getenv("BANKROLL", "1000"))
+START_BANKROLL = float(os.getenv("BANKROLL", "200"))
 
 
 def _write_default():
