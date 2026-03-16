@@ -31,13 +31,25 @@ def _load_predictions(path: str) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = df.copy()
+
+    optional_cols = [
+        "kickoff_local", "edge", "home_win_prob",
+        "exp_margin_home", "recommended_bet"
+    ]
+    for col in optional_cols:
+        if col not in df.columns:
+            df[col] = pd.NA
+
     df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.normalize()
     df["generated_at"] = pd.to_datetime(df["generated_at"], errors="coerce", utc=True)
     df["home"] = df["home"].map(_norm)
     df["away"] = df["away"].map(_norm)
     df["pick"] = df["pick"].astype(str).str.strip().str.upper()
 
-    for col in ["stake", "stake_dollars", "home_odds", "away_odds", "edge", "home_win_prob", "exp_margin_home"]:
+    for col in [
+        "stake", "stake_dollars", "home_odds", "away_odds",
+        "edge", "home_win_prob", "exp_margin_home"
+    ]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
@@ -67,7 +79,6 @@ def _load_results(path: str) -> pd.DataFrame:
 
     df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
 
-    # protect against duplicate results
     df = (
         df.sort_values(["date", "home", "away"])
         .drop_duplicates(subset=["date", "home", "away"], keep="last")
@@ -77,9 +88,6 @@ def _load_results(path: str) -> pd.DataFrame:
 
 
 def _latest_prediction_per_match(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Keep only the most recent saved prediction for each fixture.
-    """
     sort_cols = ["date", "home", "away", "generated_at", "run_id"]
     for col in sort_cols:
         if col not in df.columns:
@@ -197,6 +205,20 @@ def main():
     if merged.empty:
         print("No matches available after merge.")
         pd.DataFrame().to_csv(BET_HISTORY_OUT, index=False)
+        pd.DataFrame([{
+            "start_bankroll": START_BANKROLL,
+            "closing_bankroll": START_BANKROLL,
+            "bets_total": 0,
+            "bets_settled": 0,
+            "wins": 0,
+            "losses": 0,
+            "draws": 0,
+            "pending": 0,
+            "units_staked": 0.0,
+            "units_profit": 0.0,
+            "roi": 0.0,
+            "yield_on_settled": 0.0
+        }]).to_csv(BET_SUMMARY_OUT, index=False)
         return
 
     merged["bet_odds"] = merged.apply(_bet_odds, axis=1)
@@ -220,12 +242,22 @@ def main():
     merged["bet_status"] = merged.apply(_status, axis=1)
     merged["profit_units"] = merged.apply(_bet_profit_units, axis=1)
 
-    # bankroll progression across settled bets only, in fixture order
     bets = merged.copy()
+
+    # Build sortable kickoff datetime from date + kickoff_local when available
+    kickoff_text = bets["kickoff_local"].astype(str).str.strip()
     bets["sort_kickoff"] = pd.to_datetime(
-        bets["kickoff_local"].where(bets["kickoff_local"].notna(), bets["date"].astype(str)),
+        bets["date"].dt.strftime("%Y-%m-%d") + " " + kickoff_text,
         errors="coerce"
     )
+
+    # fallback to date only if kickoff parse fails
+    missing_sort = bets["sort_kickoff"].isna()
+    bets.loc[missing_sort, "sort_kickoff"] = pd.to_datetime(
+        bets.loc[missing_sort, "date"],
+        errors="coerce"
+    )
+
     bets = bets.sort_values(["sort_kickoff", "date", "home", "away"]).reset_index(drop=True)
 
     bankroll = START_BANKROLL
@@ -261,9 +293,11 @@ def main():
     units_profit = float(settled["profit_units"].sum()) if not settled.empty else 0.0
     roi = (units_profit / units_staked) if units_staked > 0 else 0.0
 
+    closing_bankroll = START_BANKROLL + units_profit
+
     summary = pd.DataFrame([{
         "start_bankroll": START_BANKROLL,
-        "closing_bankroll": round(bankroll, 2),
+        "closing_bankroll": round(closing_bankroll, 2),
         "bets_total": int(len(bet_rows)),
         "bets_settled": int(len(settled)),
         "wins": int((settled["bet_status"] == "WIN").sum()),
@@ -285,7 +319,7 @@ def main():
         f"Losses: {(settled['bet_status'] == 'LOSS').sum()} | "
         f"Profit: {units_profit:.2f}u | "
         f"ROI: {roi:.2%} | "
-        f"Bankroll: ${bankroll:.2f}"
+        f"Bankroll: ${closing_bankroll:.2f}"
     )
 
 
