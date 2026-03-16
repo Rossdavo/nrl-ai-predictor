@@ -5,19 +5,33 @@ PRED_PATH = "predictions.csv"
 PRED_HIST_PATH = "predictions_history.csv"
 RESULTS_CACHE_PATH = "results_cache.csv"
 OUT_PATH = "accuracy.csv"
+SUMMARY_PATH = "accuracy_summary.csv"
 
 
 def _norm(s: str) -> str:
-    return str(s).strip()
+    return " ".join(str(s).strip().upper().split())
 
 
 def _empty_accuracy() -> pd.DataFrame:
     return pd.DataFrame(columns=[
-        "date", "home", "away", "home_win_prob",
+        "date", "home", "away", "match_type", "generated_at",
+        "home_win_prob", "exp_margin_home",
         "home_pts", "away_pts", "actual_margin",
         "pred_winner", "actual_winner", "winner_correct",
-        "brier", "abs_margin_error"
+        "is_draw", "brier", "abs_margin_error"
     ])
+
+
+def _write_empty_outputs(message: str) -> None:
+    _empty_accuracy().to_csv(OUT_PATH, index=False)
+    pd.DataFrame([{
+        "scored_matches": 0,
+        "winner_accuracy": pd.NA,
+        "brier": pd.NA,
+        "mae_margin": pd.NA,
+        "draws": 0
+    }]).to_csv(SUMMARY_PATH, index=False)
+    print(message)
 
 
 def _load_prediction_file(path: str) -> pd.DataFrame:
@@ -81,6 +95,13 @@ def _load_results_file(path: str) -> pd.DataFrame:
     df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
     df["date"] = df["date"].dt.normalize()
 
+    # Keep latest unique result per date/home/away if duplicates exist
+    df = (
+        df.sort_values(["date", "home", "away"])
+          .drop_duplicates(subset=["date", "home", "away"], keep="last")
+          .reset_index(drop=True)
+    )
+
     print(f"[info] Loaded results from {path}: {len(df)} rows")
     return df
 
@@ -114,7 +135,7 @@ def _match_predictions_to_results(pred: pd.DataFrame, res: pd.DataFrame) -> pd.D
             continue
 
         still_unmatched["match_date"] = still_unmatched["date"] + pd.to_timedelta(delta, unit="D")
-        res_tmp = res.copy().rename(columns={"date": "match_date"})
+        res_tmp = res.rename(columns={"date": "match_date"}).copy()
 
         j = still_unmatched.merge(
             res_tmp,
@@ -126,7 +147,11 @@ def _match_predictions_to_results(pred: pd.DataFrame, res: pd.DataFrame) -> pd.D
         if j.empty:
             continue
 
-        j = j.sort_values(["pred_row_id"]).drop_duplicates(subset=["pred_row_id"], keep="first").copy()
+        j = (
+            j.sort_values(["pred_row_id"])
+             .drop_duplicates(subset=["pred_row_id"], keep="first")
+             .copy()
+        )
         j["match_type"] = label
 
         matched_parts.append(j)
@@ -157,67 +182,101 @@ def main():
         pred_frames.append(hist_pred)
 
     if not pred_frames:
-        _empty_accuracy().to_csv(OUT_PATH, index=False)
-        print("No usable prediction files found.")
+        _write_empty_outputs("No usable prediction files found.")
         return
 
     pred = pd.concat(pred_frames, ignore_index=True)
 
-    # Keep latest version for each match
+    # Keep latest version for each predicted match
     pred = pred.sort_values(["date", "home", "away", "generated_at"])
     pred = pred.drop_duplicates(subset=["date", "home", "away"], keep="last").reset_index(drop=True)
 
     if not os.path.exists(RESULTS_CACHE_PATH):
-        _empty_accuracy().to_csv(OUT_PATH, index=False)
-        print("No results_cache.csv found yet — nothing to score.")
+        _write_empty_outputs("No results_cache.csv found yet — nothing to score.")
         return
 
     res = _load_results_file(RESULTS_CACHE_PATH)
     if res.empty:
-        _empty_accuracy().to_csv(OUT_PATH, index=False)
-        print("No usable results found.")
+        _write_empty_outputs("No usable results found.")
         return
 
     j = _match_predictions_to_results(pred, res)
 
     if j.empty:
-        _empty_accuracy().to_csv(OUT_PATH, index=False)
-        print("No matching completed matches to score yet.")
+        _write_empty_outputs("No matching completed matches to score yet.")
         return
 
-    j["date"] = j["date"].dt.strftime("%Y-%m-%d")
     j["actual_margin"] = j["home_pts"] - j["away_pts"]
+    j["is_draw"] = (j["home_pts"] == j["away_pts"]).astype(int)
 
     j["pred_winner"] = j.apply(
         lambda r: r["home"] if r["home_win_prob"] >= 0.5 else r["away"],
         axis=1
     )
 
-    j["actual_winner"] = j.apply(
-        lambda r: r["home"] if r["home_pts"] > r["away_pts"] else r["away"],
+    def _actual_winner(row):
+        if row["home_pts"] > row["away_pts"]:
+            return row["home"]
+        if row["away_pts"] > row["home_pts"]:
+            return row["away"]
+        return "DRAW"
+
+    j["actual_winner"] = j.apply(_actual_winner, axis=1)
+
+    # A draw is not counted as a correct winner pick
+    j["winner_correct"] = (
+        (j["actual_winner"] != "DRAW") &
+        (j["pred_winner"] == j["actual_winner"])
+    ).astype(int)
+
+    # Brier score for binary home-win framing.
+    # For draws, score as 0.5 outcome rather than forcing 0 or 1.
+    actual_home_win_prob = j.apply(
+        lambda r: 1.0 if r["home_pts"] > r["away_pts"] else (0.0 if r["away_pts"] > r["home_pts"] else 0.5),
         axis=1
     )
+    j["brier"] = (j["home_win_prob"] - actual_home_win_prob) ** 2
 
-    j["winner_correct"] = (j["pred_winner"] == j["actual_winner"]).astype(int)
+    j["abs_margin_error"] = (
+        pd.to_numeric(j["exp_margin_home"], errors="coerce") - j["actual_margin"]
+    ).abs()
 
-    actual_home_win = (j["home_pts"] > j["away_pts"]).astype(int)
-    j["brier"] = (j["home_win_prob"] - actual_home_win) ** 2
-    j["abs_margin_error"] = (pd.to_numeric(j["exp_margin_home"], errors="coerce") - j["actual_margin"]).abs()
+    j["date"] = pd.to_datetime(j["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    j["generated_at"] = pd.to_datetime(j["generated_at"], errors="coerce")
 
     out_cols = [
-        "date", "home", "away",
-        "home_win_prob",
+        "date", "home", "away", "match_type", "generated_at",
+        "home_win_prob", "exp_margin_home",
         "home_pts", "away_pts", "actual_margin",
         "pred_winner", "actual_winner", "winner_correct",
-        "brier", "abs_margin_error"
+        "is_draw", "brier", "abs_margin_error"
     ]
 
-    j[out_cols].sort_values(["date", "home"]).to_csv(OUT_PATH, index=False)
+    out_df = j[out_cols].sort_values(["date", "home", "away"]).reset_index(drop=True)
+    out_df.to_csv(OUT_PATH, index=False)
 
-    scored = len(j)
-    win_acc = j["winner_correct"].mean()
-    brier = j["brier"].mean()
-    print(f"Scored matches: {scored} | Winner accuracy: {win_acc:.0%} | Brier: {brier:.3f}")
+    scored = len(out_df)
+    winner_accuracy = out_df["winner_correct"].mean() if scored else pd.NA
+    brier = out_df["brier"].mean() if scored else pd.NA
+    mae_margin = out_df["abs_margin_error"].mean() if scored else pd.NA
+    draws = int(out_df["is_draw"].sum()) if scored else 0
+
+    summary_df = pd.DataFrame([{
+        "scored_matches": scored,
+        "winner_accuracy": winner_accuracy,
+        "brier": brier,
+        "mae_margin": mae_margin,
+        "draws": draws
+    }])
+    summary_df.to_csv(SUMMARY_PATH, index=False)
+
+    print(
+        f"Scored matches: {scored} | "
+        f"Winner accuracy: {winner_accuracy:.0%} | "
+        f"Brier: {brier:.3f} | "
+        f"Margin MAE: {mae_margin:.2f} | "
+        f"Draws: {draws}"
+    )
 
 
 if __name__ == "__main__":
