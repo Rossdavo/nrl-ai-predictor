@@ -50,14 +50,22 @@ jobs:
           echo "=== RUN: archive.py ==="
           python -u archive.py
 
-          echo "=== RUN: build_current_predictions.py ==="
-          python -u build_current_predictions.py
+          if [ -f build_current_predictions.py ]; then
+            echo "=== RUN: build_current_predictions.py ==="
+            python -u build_current_predictions.py
+          else
+            echo "=== SKIP: build_current_predictions.py not found ==="
+          fi
 
           echo "=== RUN: tracker.py ==="
           python -u tracker.py
 
-          echo "=== RUN: settle_bets.py ==="
-          python -u settle_bets.py
+          if [ -f settle_bets.py ]; then
+            echo "=== RUN: settle_bets.py ==="
+            python -u settle_bets.py
+          else
+            echo "=== SKIP: settle_bets.py not found ==="
+          fi
 
           echo "=== RUN: performance.py ==="
           python -u performance.py || true
@@ -83,7 +91,8 @@ jobs:
           git config user.email "github-actions@github.com"
           git add -A
           git commit -m "Update predictions/data" || echo "No changes to commit"
-          git push
+          git pull --rebase origin "${GITHUB_REF_NAME}" || true
+          git push || echo "Nothing to push"
 
       - name: Prepare site
         run: |
@@ -96,6 +105,8 @@ jobs:
           if [ -f accuracy_summary.csv ]; then cp accuracy_summary.csv site/accuracy_summary.csv; fi
           if [ -f bet_history.csv ]; then cp bet_history.csv site/bet_history.csv; fi
           if [ -f bet_summary.csv ]; then cp bet_summary.csv site/bet_summary.csv; fi
+          if [ -f clv_history.csv ]; then cp clv_history.csv site/clv_history.csv; fi
+          if [ -f clv_summary.csv ]; then cp clv_summary.csv site/clv_summary.csv; fi
           if [ -f performance.csv ]; then cp performance.csv site/performance.csv; fi
           if [ -f bankroll_status.csv ]; then cp bankroll_status.csv site/bankroll_status.csv; fi
           if [ -f closing_odds.csv ]; then cp closing_odds.csv site/closing_odds.csv; fi
@@ -104,6 +115,7 @@ jobs:
           if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
           if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
           if [ -f bet_log.csv ]; then cp bet_log.csv site/bet_log.csv; fi
+          if [ -f clv_results.csv ]; then cp clv_results.csv site/clv_results.csv; fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
