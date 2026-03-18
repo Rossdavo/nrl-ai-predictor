@@ -620,7 +620,22 @@ def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
                     out[short_team] = players
 
     return out
+def _is_prose_teamlist_article(lines: List[str]) -> bool:
+    """
+    Detects newer NRL prose-style team list articles:
+      ### Raiders v Bulldogs ...
+      Raiders: ...
+      Bulldogs: ...
+    """
+    joined = "\n".join(lines[:140])
 
+    has_match_heading = bool(re.search(r"^###\s+[A-Za-z .'-]+\s+v\s+[A-Za-z .'-]+", joined, flags=re.M))
+    has_team_paragraph = bool(re.search(r"^(Raiders|Bulldogs|Broncos|Eels|Warriors|Roosters|Rabbitohs|Wests Tigers|Cowboys|Dragons|Storm|Panthers|Sharks|Sea Eagles|Knights|Dolphins|Titans):\s+", joined, flags=re.M))
+
+    # old structured format marker
+    has_old_match_centre = any(" is number " in x and " for " in x for x in lines[:200])
+
+    return has_match_heading and has_team_paragraph and not has_old_match_centre
 
 def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
     """
@@ -684,13 +699,22 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
                 print("[warn] teamlist teams with weak/missing scrape:", ", ".join(missing))
             for team in sorted(ALL_TEAMS):
                 print(f"[debug] scrape team {team}: starters={len(starters.get(team, {}))}")
-        else:
-            print("[warn] teamlist scrape returned 0 teams")
+            return starters
+
+        # New prose-style article fallback
+        if _is_prose_teamlist_article(lines):
+            print("[warn] team list article is prose-style and does not expose full named 1-13 lineups in scrapeable text.")
+            print("[warn] Falling back to manual teamlists.csv overrides (if present) and generic try-scorer profiles.")
             print("[debug] first 40 teamlist lines:")
             for line in lines[:40]:
                 print(" ", line)
+            return {}
 
-        return starters
+        print("[warn] teamlist scrape returned 0 teams")
+        print("[debug] first 40 teamlist lines:")
+        for line in lines[:40]:
+            print(" ", line)
+        return {}
 
     except Exception as e:
         print(f"[warn] teamlist scrape failed: {e}")
