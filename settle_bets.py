@@ -14,12 +14,43 @@ def _norm(s: str) -> str:
     return " ".join(str(s).strip().upper().split())
 
 
+def _safe_read_csv(path: str) -> pd.DataFrame:
+    if not os.path.exists(path):
+        return pd.DataFrame()
+
+    try:
+        return pd.read_csv(path)
+    except Exception as e1:
+        print(f"[warn] Standard read failed for {path}: {e1}")
+
+    try:
+        return pd.read_csv(path, engine="python", on_bad_lines="skip")
+    except Exception as e2:
+        print(f"[warn] Fallback read failed for {path}: {e2}")
+        return pd.DataFrame()
+
+
+def _resolve_prob_column(df: pd.DataFrame) -> str | None:
+    for col in ["final_home_win_prob", "model_home_win_prob", "home_win_prob"]:
+        if col in df.columns:
+            return col
+    return None
+
+
 def _load_predictions(path: str) -> pd.DataFrame:
     if not os.path.exists(path):
         print(f"[warn] Missing file: {path}")
         return pd.DataFrame()
 
-    df = pd.read_csv(path)
+    df = _safe_read_csv(path)
+    if df.empty:
+        print(f"[warn] No usable rows in {path}")
+        return pd.DataFrame()
+
+    prob_col = _resolve_prob_column(df)
+    if prob_col is None:
+        print(f"[warn] predictions history missing probability column")
+        return pd.DataFrame()
 
     required = {
         "run_id", "date", "home", "away", "pick",
@@ -33,25 +64,45 @@ def _load_predictions(path: str) -> pd.DataFrame:
     df = df.copy()
 
     optional_cols = [
-        "kickoff_local", "edge", "home_win_prob",
-        "exp_margin_home", "recommended_bet"
+        "kickoff_local", "edge", "exp_margin_home", "recommended_bet",
+        "stake_units", "mode", "rating_mode", "confidence",
+        "favourite_team", "underdog_team", "upset_flag",
+        "final_upset_score", "fragile_favourite"
     ]
     for col in optional_cols:
         if col not in df.columns:
             df[col] = pd.NA
+
+    keep_cols = [
+        "run_id", "date", "home", "away", "pick",
+        "stake", "stake_dollars", "home_odds", "away_odds", "generated_at",
+        "kickoff_local", "edge", "exp_margin_home", "recommended_bet",
+        "stake_units", "mode", "rating_mode", "confidence",
+        "favourite_team", "underdog_team", "upset_flag",
+        "final_upset_score", "fragile_favourite", prob_col
+    ]
+
+    df = df[keep_cols].copy()
+    df = df.rename(columns={prob_col: "home_win_prob"})
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.normalize()
     df["generated_at"] = pd.to_datetime(df["generated_at"], errors="coerce", utc=True)
     df["home"] = df["home"].map(_norm)
     df["away"] = df["away"].map(_norm)
     df["pick"] = df["pick"].astype(str).str.strip().str.upper()
+    df["kickoff_local"] = df["kickoff_local"].astype(str).replace("nan", "").str.strip()
 
     for col in [
         "stake", "stake_dollars", "home_odds", "away_odds",
-        "edge", "home_win_prob", "exp_margin_home"
+        "edge", "home_win_prob", "exp_margin_home", "stake_units",
+        "confidence", "upset_flag", "final_upset_score", "fragile_favourite"
     ]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    if "stake_units" in df.columns:
+        missing_units = df["stake_units"].isna()
+        df.loc[missing_units, "stake_units"] = df.loc[missing_units, "stake"]
 
     df = df.dropna(subset=["date", "home", "away"]).copy()
     return df
@@ -62,7 +113,10 @@ def _load_results(path: str) -> pd.DataFrame:
         print(f"[warn] Missing file: {path}")
         return pd.DataFrame()
 
-    df = pd.read_csv(path)
+    df = _safe_read_csv(path)
+    if df.empty:
+        print(f"[warn] No usable rows in {path}")
+        return pd.DataFrame()
 
     required = {"date", "home", "away", "home_pts", "away_pts"}
     missing = required - set(df.columns)
@@ -161,19 +215,38 @@ def _bet_odds(row):
 
 
 def _bet_profit_units(row):
+    stake_units = float(row["stake"]) if pd.notna(row["stake"]) else 0.0
+
     if row["bet_status"] == "NO_BET":
         return 0.0
     if row["bet_status"] == "PENDING":
         return 0.0
     if row["bet_status"] == "DRAW":
-        return -float(row["stake"])
+        return -stake_units
     if row["bet_status"] == "WIN":
         if pd.isna(row["bet_odds"]):
             return 0.0
-        return float(row["stake"]) * (float(row["bet_odds"]) - 1.0)
+        return stake_units * (float(row["bet_odds"]) - 1.0)
     if row["bet_status"] == "LOSS":
-        return -float(row["stake"])
+        return -stake_units
     return 0.0
+
+
+def _empty_summary() -> pd.DataFrame:
+    return pd.DataFrame([{
+        "start_bankroll": START_BANKROLL,
+        "closing_bankroll": START_BANKROLL,
+        "bets_total": 0,
+        "bets_settled": 0,
+        "wins": 0,
+        "losses": 0,
+        "draws": 0,
+        "pending": 0,
+        "units_staked": 0.0,
+        "units_profit": 0.0,
+        "roi": 0.0,
+        "yield_on_settled": 0.0
+    }])
 
 
 def main():
@@ -183,20 +256,7 @@ def main():
     if pred.empty:
         print("No usable predictions history found.")
         pd.DataFrame().to_csv(BET_HISTORY_OUT, index=False)
-        pd.DataFrame([{
-            "start_bankroll": START_BANKROLL,
-            "closing_bankroll": START_BANKROLL,
-            "bets_total": 0,
-            "bets_settled": 0,
-            "wins": 0,
-            "losses": 0,
-            "draws": 0,
-            "pending": 0,
-            "units_staked": 0.0,
-            "units_profit": 0.0,
-            "roi": 0.0,
-            "yield_on_settled": 0.0
-        }]).to_csv(BET_SUMMARY_OUT, index=False)
+        _empty_summary().to_csv(BET_SUMMARY_OUT, index=False)
         return
 
     pred = _latest_prediction_per_match(pred)
@@ -205,20 +265,7 @@ def main():
     if merged.empty:
         print("No matches available after merge.")
         pd.DataFrame().to_csv(BET_HISTORY_OUT, index=False)
-        pd.DataFrame([{
-            "start_bankroll": START_BANKROLL,
-            "closing_bankroll": START_BANKROLL,
-            "bets_total": 0,
-            "bets_settled": 0,
-            "wins": 0,
-            "losses": 0,
-            "draws": 0,
-            "pending": 0,
-            "units_staked": 0.0,
-            "units_profit": 0.0,
-            "roi": 0.0,
-            "yield_on_settled": 0.0
-        }]).to_csv(BET_SUMMARY_OUT, index=False)
+        _empty_summary().to_csv(BET_SUMMARY_OUT, index=False)
         return
 
     merged["bet_odds"] = merged.apply(_bet_odds, axis=1)
@@ -244,14 +291,12 @@ def main():
 
     bets = merged.copy()
 
-    # Build sortable kickoff datetime from date + kickoff_local when available
     kickoff_text = bets["kickoff_local"].astype(str).str.strip()
     bets["sort_kickoff"] = pd.to_datetime(
         bets["date"].dt.strftime("%Y-%m-%d") + " " + kickoff_text,
         errors="coerce"
     )
 
-    # fallback to date only if kickoff parse fails
     missing_sort = bets["sort_kickoff"].isna()
     bets.loc[missing_sort, "sort_kickoff"] = pd.to_datetime(
         bets.loc[missing_sort, "date"],
@@ -274,7 +319,7 @@ def main():
         "run_id", "date", "kickoff_local", "home", "away",
         "home_win_prob", "exp_margin_home",
         "home_odds", "away_odds", "pick", "bet_odds",
-        "edge", "stake", "stake_dollars", "recommended_bet",
+        "edge", "stake", "stake_units", "stake_dollars", "recommended_bet",
         "actual_result", "home_pts", "away_pts",
         "match_type", "bet_status", "profit_units", "bankroll_after",
         "generated_at"
