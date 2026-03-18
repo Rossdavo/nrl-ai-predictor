@@ -714,7 +714,13 @@
           </div>
           <div class="kpi">
             <div class="kpi-label">Profit</div>
-            <div class="kpi-value ${(profit ?? 0) >= 0 ? "positive" : "negative"}">${profit === null ? "—" : formatSigned(profit, 2)}</div>
+            <div class="kpi-value ${(profit ?? 0) >= 0 ? "positive" : "negative"}">${
+              profit === null
+                ? "—"
+                : ((profit * 10) >= 0
+                ? `$${Math.abs(profit * 10).toFixed(2)}`
+                : `-$${Math.abs(profit * 10).toFixed(2)}`)
+          }</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Bankroll</div>
@@ -734,7 +740,15 @@
       if (losses !== null) summaryRows.push({ metric: "Losses", value: String(losses) });
       if (pending !== null) summaryRows.push({ metric: "Pending", value: String(pending) });
       if (roi !== null) summaryRows.push({ metric: "ROI", value: formatPct(roi, 1) });
-      if (profit !== null) summaryRows.push({ metric: "Profit (Units)", value: formatSigned(profit, 2) });
+      if (profit !== null) {
+        const profitDollars = profit * 10;
+        summaryRows.push({
+        metric: "Profit ($)",
+        value: profitDollars >= 0
+          ? `$${Math.abs(profitDollars).toFixed(2)}`
+          : `-$${Math.abs(profitDollars).toFixed(2)}`
+        });
+      }
       if (bankroll !== null) summaryRows.push({ metric: "Closing Bankroll", value: formatMoney(bankroll, 2) });
 
       elTable.innerHTML = makeTable(["metric", "value"], summaryRows, {});
