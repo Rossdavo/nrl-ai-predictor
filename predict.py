@@ -34,9 +34,9 @@ print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 MODE = "AUTO"
 
 # ----------------------------
-# Team lists (optional; may fallback)
+# Team lists
 # ----------------------------
-FORCE_TRY_FALLBACK = False  # set to True to force try-scorer fallback profiles
+FORCE_TRY_FALLBACK = False
 TEAMLISTS_CSV_PATH = "teamlists.csv"  # optional manual override file (date/team/num/name)
 
 # ----------------------------
@@ -70,7 +70,7 @@ TEAM_NAME_NORMALISE = {
     "South Sydney Rabbitohs": "Rabbitohs",
     "Dolphins": "Dolphins",
     "Wests Tigers": "Wests Tigers",
-    # short -> short (safe)
+    # short -> short
     "Bulldogs": "Bulldogs",
     "Dragons": "Dragons",
     "Knights": "Knights",
@@ -87,6 +87,7 @@ TEAM_NAME_NORMALISE = {
     "Raiders": "Raiders",
     "Rabbitohs": "Rabbitohs",
     "Wests Tigers": "Wests Tigers",
+    "Dolphins": "Dolphins",
 }
 
 
@@ -227,7 +228,7 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
 
 
 # ----------------------------
-# TEAM LIST SCRAPE (optional; may fallback)
+# TEAM LIST SCRAPE
 # ----------------------------
 TEAM_CANONICAL_PATTERNS = [
     ("Canterbury Bulldogs", "Bulldogs"),
@@ -263,6 +264,8 @@ TEAM_CANONICAL_PATTERNS = [
     ("Sea Eagles", "Sea Eagles"),
     ("Raiders", "Raiders"),
     ("Rabbitohs", "Rabbitohs"),
+    ("Wests Tigers", "Wests Tigers"),
+    ("Dolphins", "Dolphins"),
 ]
 
 
@@ -340,6 +343,7 @@ def _clean_player_name(name_raw: str) -> str:
     s = re.sub(r"\s*\(c\)\s*$", "", s, flags=re.I)
     s = re.sub(r"\s*\(vc\)\s*$", "", s, flags=re.I)
     s = re.sub(r"\s*\[[^\]]+\]\s*$", "", s)
+    s = re.sub(r"^the captain,\s*", "", s, flags=re.I)
     s = re.sub(r"^[\-\|\:\. ]+", "", s)
     s = re.sub(r"[\-\|\:\. ]+$", "", s)
     s = re.sub(r"[^A-Za-z \-'.]", " ", s)
@@ -388,15 +392,15 @@ def _score_team_candidate(players: Dict[int, str]) -> int:
 
 
 def _merge_best_team_map(base: Dict[str, Dict[int, str]], incoming: Dict[str, Dict[int, str]]) -> Dict[str, Dict[int, str]]:
-    out = dict(base)
+    out = {k: dict(v) for k, v in base.items()}
     for team, players in incoming.items():
         if team not in ALL_TEAMS:
             continue
         current = out.get(team, {})
         if _score_team_candidate(players) > _score_team_candidate(current):
-            out[team] = players
+            out[team] = dict(players)
         elif _score_team_candidate(players) == _score_team_candidate(current) and len(players) > len(current):
-            out[team] = players
+            out[team] = dict(players)
     return out
 
 
@@ -405,7 +409,7 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     Parses line-by-line match-centre rows like:
     Fullback for Broncos is number 1 Reece Walsh
 
-    and also split-name variants like:
+    and split-name variants like:
     Fullback for Eels is number 1
     Isaiah Iongi
     """
@@ -446,10 +450,6 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
         return True
 
     def consume_name(start_idx: int) -> Tuple[str, int]:
-        """
-        Join up to 3 following lines into a player name.
-        Returns (name, next_index_after_name).
-        """
         parts: List[str] = []
         j = start_idx
         while j < len(lines) and len(parts) < 3:
@@ -473,7 +473,6 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
             i += 1
             continue
 
-        # Case 1: everything on one line
         m = pat_full.match(s)
         if m:
             _pos, team_raw, num_s, name_raw = m.groups()
@@ -491,7 +490,6 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
             i += 1
             continue
 
-        # Case 2: name is on following line(s)
         m = pat_prefix.match(s)
         if m:
             _pos, team_raw, num_s = m.groups()
@@ -620,6 +618,8 @@ def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
                     out[short_team] = players
 
     return out
+
+
 def _is_prose_teamlist_article(lines: List[str]) -> bool:
     """
     Detects newer NRL prose-style team list articles:
@@ -630,22 +630,131 @@ def _is_prose_teamlist_article(lines: List[str]) -> bool:
     joined = "\n".join(lines[:140])
 
     has_match_heading = bool(re.search(r"^###\s+[A-Za-z .'-]+\s+v\s+[A-Za-z .'-]+", joined, flags=re.M))
-    has_team_paragraph = bool(re.search(r"^(Raiders|Bulldogs|Broncos|Eels|Warriors|Roosters|Rabbitohs|Wests Tigers|Cowboys|Dragons|Storm|Panthers|Sharks|Sea Eagles|Knights|Dolphins|Titans):\s+", joined, flags=re.M))
+    has_team_paragraph = bool(re.search(
+        r"^(Raiders|Bulldogs|Broncos|Eels|Warriors|Roosters|Rabbitohs|Wests Tigers|Cowboys|Dragons|Storm|Panthers|Sharks|Sea Eagles|Knights|Dolphins|Titans):\s+",
+        joined,
+        flags=re.M,
+    ))
 
-    # old structured format marker
     has_old_match_centre = any(" is number " in x and " for " in x for x in lines[:200])
 
     return has_match_heading and has_team_paragraph and not has_old_match_centre
 
-def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
-    """
-    Attempts to scrape named starters from an NRL team list article.
 
-    Returns:
-        {
-          "TeamShortName": {1:"Name", 2:"Name", ... 13:"Name"}
-        }
+def slugify_team(team: str) -> str:
+    team = norm_team(team)
+    mapping = {
+        "Bulldogs": "bulldogs",
+        "Dragons": "dragons",
+        "Knights": "knights",
+        "Cowboys": "cowboys",
+        "Storm": "storm",
+        "Eels": "eels",
+        "Warriors": "warriors",
+        "Roosters": "roosters",
+        "Broncos": "broncos",
+        "Panthers": "panthers",
+        "Sharks": "sharks",
+        "Titans": "titans",
+        "Sea Eagles": "sea-eagles",
+        "Raiders": "raiders",
+        "Rabbitohs": "rabbitohs",
+        "Wests Tigers": "wests-tigers",
+        "Dolphins": "dolphins",
+    }
+    return mapping.get(team, re.sub(r"[^a-z0-9]+", "-", team.lower()).strip("-"))
+
+
+def build_match_centre_url(season: int, round_no: int, home: str, away: str) -> str:
+    return (
+        f"https://www.nrl.com/draw/nrl-premiership/{season}/round-{round_no}/"
+        f"{slugify_team(home)}-v-{slugify_team(away)}/"
+    )
+
+
+def _parse_modern_match_centre(lines: List[str], expected_home: str, expected_away: str) -> Dict[str, Dict[int, str]]:
     """
+    Parses modern match-centre text like:
+      Team list for Canberra Raiders
+      At Fullback: number 1, Kaeo Weekes
+      ...
+      Team list for Canterbury Bulldogs
+      At Fullback: number 1, Connor Tracey
+    """
+    out: Dict[str, Dict[int, str]] = {
+        expected_home: {},
+        expected_away: {},
+    }
+
+    current_team = ""
+    team_header_pat = re.compile(r"^Team list for\s+(.+)$", re.I)
+    slot_pat = re.compile(
+        r"^At\s+"
+        r"(Fullback|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock)"
+        r":\s*number\s+(\d{1,2})\s*,\s*(.+)$",
+        re.I,
+    )
+
+    def match_expected_team(raw: str) -> str:
+        raw = _clean_text(raw)
+        resolved = _resolve_team_name(raw)
+        if resolved in {expected_home, expected_away}:
+            return resolved
+
+        raw_low = raw.lower()
+        long_map = {
+            "canberra raiders": "Raiders",
+            "canterbury bulldogs": "Bulldogs",
+            "st george illawarra dragons": "Dragons",
+            "newcastle knights": "Knights",
+            "north queensland cowboys": "Cowboys",
+            "melbourne storm": "Storm",
+            "parramatta eels": "Eels",
+            "new zealand warriors": "Warriors",
+            "sydney roosters": "Roosters",
+            "brisbane broncos": "Broncos",
+            "penrith panthers": "Panthers",
+            "cronulla sutherland sharks": "Sharks",
+            "gold coast titans": "Titans",
+            "manly warringah sea eagles": "Sea Eagles",
+            "south sydney rabbitohs": "Rabbitohs",
+            "wests tigers": "Wests Tigers",
+            "dolphins": "Dolphins",
+        }
+        mapped = long_map.get(raw_low, "")
+        if mapped in {expected_home, expected_away}:
+            return mapped
+
+        for t in [expected_home, expected_away]:
+            if t.lower() in raw_low:
+                return t
+
+        return resolved
+
+    for line in lines:
+        s = _clean_text(line)
+
+        mh = team_header_pat.match(s)
+        if mh:
+            current_team = match_expected_team(mh.group(1))
+            continue
+
+        ms = slot_pat.match(s)
+        if ms and current_team:
+            try:
+                num = int(ms.group(2))
+            except Exception:
+                num = 0
+            if 1 <= num <= 13:
+                name = _clean_player_name(ms.group(3))
+                if len(name.split()) >= 2:
+                    out.setdefault(current_team, {})
+                    out[current_team][num] = name
+
+    return out
+
+
+def _legacy_article_scrape(url: str) -> Dict[str, Dict[int, str]]:
     try:
         r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
@@ -667,11 +776,6 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
                     break
 
         parsed_mc = _parse_match_centre_blocks(lines)
-        print(
-            "[debug] match-centre parsed teams:",
-            ", ".join(f"{t}:{len(p)}" for t, p in sorted(parsed_mc.items())) if parsed_mc else "(none)"
-        )
-
         parsed_heading = _parse_team_heading_blocks(lines)
         parsed_compact = _parse_compact_team_runs(text)
 
@@ -693,7 +797,7 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
 
         if starters:
             sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:16]
-            print("[info] teamlist scrape sample:", ", ".join([f"{t}:{len(p)}" for t, p in sample]))
+            print("[info] legacy article scrape sample:", ", ".join([f"{t}:{len(p)}" for t, p in sample]))
             missing = [t for t in ALL_TEAMS if len(starters.get(t, {})) < 7]
             if missing:
                 print("[warn] teamlist teams with weak/missing scrape:", ", ".join(missing))
@@ -701,10 +805,9 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
                 print(f"[debug] scrape team {team}: starters={len(starters.get(team, {}))}")
             return starters
 
-        # New prose-style article fallback
         if _is_prose_teamlist_article(lines):
             print("[warn] team list article is prose-style and does not expose full named 1-13 lineups in scrapeable text.")
-            print("[warn] Falling back to manual teamlists.csv overrides (if present) and generic try-scorer profiles.")
+            print("[warn] Using fixture match-centre scraping first; article scrape is not sufficient by itself.")
             print("[debug] first 40 teamlist lines:")
             for line in lines[:40]:
                 print(" ", line)
@@ -719,6 +822,103 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
     except Exception as e:
         print(f"[warn] teamlist scrape failed: {e}")
         return {}
+
+
+def detect_season_and_round(fixtures: List[Match], teamlist_url: str = "") -> Tuple[Optional[int], Optional[int]]:
+    season = None
+    round_no = None
+
+    if fixtures:
+        try:
+            season = int(str(fixtures[0].date)[:4])
+        except Exception:
+            season = datetime.now(SYDNEY_TZ).year
+    else:
+        season = datetime.now(SYDNEY_TZ).year
+
+    url = teamlist_url or ""
+    if url:
+        m = re.search(r"round-(\d+)", url.lower())
+        if m:
+            round_no = int(m.group(1))
+
+    return season, round_no
+
+
+def fetch_starters_for_fixture(match: Match, season: int, round_no: int, round_article_url: str = "") -> Dict[str, Dict[int, str]]:
+    """
+    Primary source: fixture match-centre page
+    Fallback: round team-list article using existing parsers
+    """
+    starters: Dict[str, Dict[int, str]] = {}
+
+    # 1) Match centre
+    try:
+        mc_url = build_match_centre_url(season, round_no, match.home, match.away)
+        r = requests.get(mc_url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+
+        lines = _html_to_lines(r.text)
+        parsed_modern = _parse_modern_match_centre(lines, match.home, match.away)
+        parsed_legacy = _parse_match_centre_blocks(lines)
+
+        starters = _merge_best_team_map(starters, parsed_modern)
+        starters = _merge_best_team_map(starters, parsed_legacy)
+
+        home_n = len(starters.get(match.home, {}))
+        away_n = len(starters.get(match.away, {}))
+        print(f"[debug] match-centre {match.home} v {match.away}: {home_n}/{away_n} starters url={mc_url}")
+
+        if home_n >= 7 and away_n >= 7:
+            return starters
+
+    except Exception as e:
+        print(f"[warn] match-centre scrape failed for {match.home} v {match.away}: {e}")
+
+    # 2) Round article fallback
+    if round_article_url:
+        starters = _legacy_article_scrape(round_article_url)
+        home_n = len(starters.get(match.home, {}))
+        away_n = len(starters.get(match.away, {}))
+        print(f"[debug] round-article fallback {match.home} v {match.away}: {home_n}/{away_n} starters")
+        if home_n >= 7 and away_n >= 7:
+            return starters
+
+    return {}
+
+
+def fetch_starters_by_team(url: str, fixtures: Optional[List[Match]] = None) -> Dict[str, Dict[int, str]]:
+    """
+    New approach:
+    - If fixtures are supplied, scrape each match-centre page first.
+    - Merge all teams into one starters_by_team map.
+    - Fallback to the old article-wide scrape if needed.
+    """
+    starters_by_team: Dict[str, Dict[int, str]] = {}
+
+    if fixtures:
+        season, round_no = detect_season_and_round(fixtures, url)
+        print(f"[debug] inferred season={season} round={round_no}")
+
+        if season and round_no:
+            for m in fixtures:
+                fixture_map = fetch_starters_for_fixture(m, season, round_no, round_article_url=url or "")
+                starters_by_team = _merge_best_team_map(starters_by_team, fixture_map)
+
+        if starters_by_team:
+            sample = sorted(starters_by_team.items(), key=lambda x: (-len(x[1]), x[0]))
+            print("[info] fixture-based teamlist scrape sample:", ", ".join(f"{t}:{len(p)}" for t, p in sample[:16]))
+            return starters_by_team
+
+    # Legacy fallback: article-wide scrape
+    if not url:
+        return {}
+
+    starters = _legacy_article_scrape(url)
+    if starters:
+        return starters
+
+    return {}
 
 
 # ----------------------------
@@ -774,10 +974,10 @@ def fetch_completed_results() -> pd.DataFrame:
       date, home, away, home_pts, away_pts
 
     Fixed behaviour:
-    - Load cache if present (even if valid)
+    - Load cache if present
     - ALWAYS attempt web fetch from RESULTS_URL
-    - Merge + dedupe (keeps latest) and write back to RESULTS_CACHE_PATH
-    - If web fails, return cache (or empty if no cache)
+    - Merge + dedupe and write back to RESULTS_CACHE_PATH
+    - If web fails, return cache
     """
     needed = {"date", "home", "away", "home_pts", "away_pts"}
 
@@ -1079,7 +1279,7 @@ def simulate_match_ad(
 
 
 # ----------------------------
-# TRY SCORERS (optional; will fallback if scrape fails)
+# TRY SCORERS
 # ----------------------------
 def _try_probs_named(starters: Dict[int, str], team_exp_points: float) -> List[Tuple[str, float]]:
     exp_tries = max(1.0, team_exp_points / 4.2)
@@ -1169,15 +1369,11 @@ def kelly_stake_dollars(model_prob: float, decimal_odds: float, bankroll: float,
     if raw_kelly <= 0:
         return 0.0
 
-    # Quarter Kelly for safety
     adj_kelly = raw_kelly * 0.25
 
-    # Confidence scaling
-    # 0.50 conf => smaller stake, 0.80 conf => full adjusted stake
     conf_scale = max(0.5, min(1.0, confidence / 0.80))
     adj_kelly *= conf_scale
 
-    # Hard cap: max 10% of bankroll on any one bet
     adj_kelly = min(adj_kelly, 0.10)
 
     return round(bankroll * adj_kelly, 2)
@@ -1252,7 +1448,7 @@ def fetch_latest_teamlist_url() -> str:
     """
     Find the best team lists article by walking NRL's sitemap index.
     Strongly prefers current-season round-based team list articles.
-    Handles .xml.gz child sitemaps properly (gzip decompress).
+    Handles .xml.gz child sitemaps properly.
     """
     headers = {
         "User-Agent": "Mozilla/5.0",
@@ -1405,15 +1601,18 @@ def build_predictions() -> pd.DataFrame:
 
     teamlist_url = fetch_latest_teamlist_url()
     if teamlist_url:
-        print(f"[info] Using team lists from: {teamlist_url}")
+        print(f"[info] Using round team lists article as fallback/source hint: {teamlist_url}")
     else:
-        print("[warn] No team list article found yet — using try-scorer fallback profiles.")
+        print("[warn] No team list article found yet — using match-centre scraping where possible and try-scorer fallback otherwise.")
 
-    starters_by_team = fetch_starters_by_team(teamlist_url) if teamlist_url else {}
+    starters_by_team = fetch_starters_by_team(teamlist_url, fixtures=fixtures)
     print("[debug] starters_by_team keys sample:", list(sorted(starters_by_team.keys()))[:30])
 
     for m in fixtures:
-        print(f"[debug] {m.home} home_len={len(starters_by_team.get(m.home, {}))} | {m.away} away_len={len(starters_by_team.get(m.away, {}))}")
+        print(
+            f"[debug] {m.home} home_len={len(starters_by_team.get(m.home, {}))} | "
+            f"{m.away} away_len={len(starters_by_team.get(m.away, {}))}"
+        )
 
     manual_by_date = load_manual_teamlists(TEAMLISTS_CSV_PATH)
     for m in fixtures:
@@ -1464,6 +1663,7 @@ def build_predictions() -> pd.DataFrame:
         if FORCE_TRY_FALLBACK:
             home_named = _try_profiles_fallback(exp_home_pts)
             away_named = _try_profiles_fallback(exp_away_pts)
+            teamlist_source = "forced fallback"
         else:
             home_has_list = _has_valid_named_teamlist(starters_by_team, m.home)
             away_has_list = _has_valid_named_teamlist(starters_by_team, m.away)
@@ -1475,6 +1675,13 @@ def build_predictions() -> pd.DataFrame:
                 home_named = _try_profiles_fallback(exp_home_pts)
             if not away_named:
                 away_named = _try_profiles_fallback(exp_away_pts)
+
+            if home_has_list and away_has_list:
+                teamlist_source = "match-centre/article scrape"
+            elif starters_by_team:
+                teamlist_source = "partial scrape"
+            else:
+                teamlist_source = "fallback (no scrape)"
 
         key = (m.date, m.home, m.away)
         o = odds.get(key, {})
@@ -1550,7 +1757,7 @@ def build_predictions() -> pd.DataFrame:
             ),
             "home_top_try": " | ".join([f"{n} {p:.0%}" for n, p in home_named]),
             "away_top_try": " | ".join([f"{n} {p:.0%}" for n, p in away_named]),
-            "teamlist_source": teamlist_url if starters_by_team else "fallback (no scrape)",
+            "teamlist_source": teamlist_source,
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
 
@@ -1566,7 +1773,6 @@ def build_predictions() -> pd.DataFrame:
 
     # ---------------------------------
     # Exposure protection
-    # Keep highest-edge bets until max round exposure is reached
     # ---------------------------------
     if "stake_dollars" in df.columns:
         df["stake_dollars"] = pd.to_numeric(df["stake_dollars"], errors="coerce").fillna(0.0)
@@ -1574,11 +1780,9 @@ def build_predictions() -> pd.DataFrame:
         df["stake"] = pd.to_numeric(df["stake"], errors="coerce").fillna(0.0)
         df["edge"] = pd.to_numeric(df["edge"], errors="coerce").fillna(0.0)
 
-        # work only on rows that are actual bets
         bet_mask = df["stake_dollars"] > 0
         bet_df = df[bet_mask].copy()
 
-        # highest edge first for bet selection
         bet_df = bet_df.sort_values(["edge", "date", "kickoff_local"], ascending=[False, True, True]).reset_index()
 
         running_exposure = 0.0
@@ -1590,7 +1794,6 @@ def build_predictions() -> pd.DataFrame:
                 keep_original_idx.append(int(row["index"]))
                 running_exposure += stake_amt
 
-        # zero out bets that did not make the cap
         excluded_mask = bet_mask & (~df.index.isin(keep_original_idx))
         df.loc[excluded_mask, "pick"] = ""
         df.loc[excluded_mask, "value_flag"] = ""
@@ -1610,7 +1813,8 @@ def build_predictions() -> pd.DataFrame:
     round_label = f"Round window {round_start.strftime('%Y-%m-%d')} to {round_end.strftime('%Y-%m-%d')}"
     bet_count = int((pd.to_numeric(df.get("stake_units", 0), errors="coerce").fillna(0) > 0).sum())
     exposure = float(pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0).sum())
-    avg_edge = float(pd.to_numeric(df.get("edge", 0), errors="coerce").fillna(0).replace(0, pd.NA).dropna().mean())
+    avg_edge_series = pd.to_numeric(df.get("edge", 0), errors="coerce").fillna(0).replace(0, pd.NA).dropna()
+    avg_edge = float(avg_edge_series.mean()) if not avg_edge_series.empty else 0.0
 
     print(f"[predict] {round_label}")
     print(f"[predict] current round fixtures={len(df)} bets={bet_count} exposure=${exposure:.2f} avg_edge={avg_edge:.3f}")
