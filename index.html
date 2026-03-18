@@ -876,7 +876,7 @@
         "away",
         "pick",
         "bet_odds",
-        "stake",
+        "stake_dollars",
         "bet_status",
         "profit_units",
         "bankroll_after"
@@ -897,7 +897,11 @@
           return `<span class="${klass}">${escapeHtml(val)}</span>`;
         },
         bet_odds: v => escapeHtml(formatFixed(v, 2)),
-        stake: v => escapeHtml(formatFixed(v, 2)),
+        stake_dollars: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
+          return `<span class="mono">${escapeHtml(formatMoney(n, 2))}</span>`;
+        },
         profit_units: v => {
           const n = toNumber(v);
           if (n === null) return "";
