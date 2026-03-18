@@ -1,11 +1,29 @@
 date,home,away,home_pts,away_pts
+2025-01-06,Panthers,Eels,18.0,10.0
+2025-01-06,Rabbitohs,Warriors,30.0,36.0
+2025-01-06,Roosters,Raiders,24.0,26.0
+2025-01-08,Broncos,Rabbitohs,60.0,14.0
+2025-01-08,Warriors,Dolphins,18.0,20.0
+2025-02-03,Panthers,Sharks,28.0,22.0
+2025-02-03,Raiders,Warriors,30.0,8.0
+2025-02-05,Roosters,Dolphins,36.0,26.0
+2025-02-05,Sharks,Eels,28.0,18.0
+2025-02-08,Dragons,Raiders,18.0,12.0
+2025-02-08,Sea Eagles,Roosters,4.0,20.0
+2025-02-08,Titans,Panthers,26.0,30.0
 2025-03-02,Panthers,Sharks,28.0,22.0
 2025-03-02,Raiders,Warriors,30.0,8.0
+2025-03-04,Raiders,Sharks,24.0,20.0
+2025-03-05,Rabbitohs,Knights,4.0,30.0
+2025-03-05,Warriors,Cowboys,30.0,26.0
+2025-03-05,Wests Tigers,Dragons,34.0,28.0
 2025-03-06,Roosters,Broncos,14.0,50.0
 2025-03-07,Rabbitohs,Dolphins,16.0,14.0
 2025-03-07,Wests Tigers,Knights,8.0,10.0
 2025-03-08,Dragons,Bulldogs,20.0,28.0
 2025-03-08,Sea Eagles,Cowboys,42.0,12.0
+2025-03-08,Sharks,Cowboys,32.0,12.0
+2025-03-08,Wests Tigers,Bulldogs,28.0,14.0
 2025-03-09,Storm,Eels,56.0,18.0
 2025-03-13,Knights,Dolphins,26.0,12.0
 2025-03-14,Panthers,Roosters,32.0,38.0
@@ -36,9 +54,14 @@ date,home,away,home_pts,away_pts
 2025-04-04,Rabbitohs,Roosters,20.0,14.0
 2025-04-05,Broncos,Wests Tigers,46.0,24.0
 2025-04-05,Eels,Dragons,23.0,22.0
+2025-04-05,Panthers,Broncos,32.0,8.0
+2025-04-05,Storm,Raiders,18.0,20.0
+2025-04-05,Titans,Bulldogs,18.0,38.0
 2025-04-05,Titans,Dolphins,10.0,36.0
 2025-04-06,Bulldogs,Knights,20.0,0.0
 2025-04-06,Sea Eagles,Storm,24.0,48.0
+2025-04-07,Bulldogs,Broncos,18.0,22.0
+2025-04-09,Broncos,Storm,30.0,14.0
 2025-04-10,Dolphins,Panthers,30.0,12.0
 2025-04-11,Broncos,Roosters,16.0,26.0
 2025-04-11,Dragons,Titans,38.0,16.0
@@ -68,15 +91,24 @@ date,home,away,home_pts,away_pts
 2025-05-03,Rabbitohs,Knights,4.0,30.0
 2025-05-03,Warriors,Cowboys,30.0,26.0
 2025-05-03,Wests Tigers,Dragons,34.0,28.0
+2025-05-04,Broncos,Wests Tigers,46.0,24.0
+2025-05-04,Eels,Dragons,23.0,22.0
 2025-05-04,Panthers,Broncos,32.0,8.0
 2025-05-04,Storm,Raiders,18.0,20.0
 2025-05-04,Titans,Bulldogs,18.0,38.0
+2025-05-04,Titans,Dolphins,10.0,36.0
+2025-05-06,Knights,Sea Eagles,26.0,22.0
+2025-05-07,Cowboys,Storm,20.0,26.0
+2025-05-07,Raiders,Dragons,28.0,24.0
 2025-05-08,Eels,Dolphins,16.0,20.0
 2025-05-09,Knights,Titans,20.0,24.0
 2025-05-09,Rabbitohs,Broncos,22.0,14.0
+2025-05-09,Roosters,Rabbitohs,36.0,6.0
+2025-05-09,Sea Eagles,Warriors,27.0,26.0
 2025-05-10,Cowboys,Panthers,30.0,30.0
 2025-05-10,Dragons,Warriors,14.0,15.0
 2025-05-10,Raiders,Bulldogs,20.0,32.0
+2025-05-10,Storm,Broncos,22.0,26.0
 2025-05-11,Sea Eagles,Sharks,14.0,30.0
 2025-05-11,Storm,Wests Tigers,64.0,0.0
 2025-05-16,Bulldogs,Roosters,24.0,20.0
@@ -99,14 +131,22 @@ date,home,away,home_pts,away_pts
 2025-06-01,Panthers,Eels,18.0,10.0
 2025-06-01,Rabbitohs,Warriors,30.0,36.0
 2025-06-01,Roosters,Raiders,24.0,26.0
+2025-06-03,Roosters,Broncos,14.0,50.0
+2025-06-04,Bulldogs,Knights,20.0,0.0
+2025-06-04,Sea Eagles,Storm,24.0,48.0
 2025-06-05,Knights,Sea Eagles,26.0,22.0
 2025-06-06,Dolphins,Dragons,56.0,6.0
 2025-06-06,Storm,Cowboys,38.0,14.0
 2025-06-07,Broncos,Titans,44.0,14.0
+2025-06-07,Roosters,Wests Tigers,28.0,30.0
+2025-06-07,Sea Eagles,Rabbitohs,30.0,12.0
 2025-06-07,Sharks,Warriors,10.0,40.0
 2025-06-08,Raiders,Rabbitohs,36.0,12.0
 2025-06-08,Wests Tigers,Panthers,14.0,18.0
 2025-06-09,Bulldogs,Eels,30.0,12.0
+2025-06-09,Bulldogs,Sharks,6.0,24.0
+2025-06-09,Dragons,Panthers,20.0,40.0
+2025-06-09,Titans,Wests Tigers,36.0,28.0
 2025-06-12,Sharks,Dragons,30.0,18.0
 2025-06-13,Titans,Sea Eagles,28.0,8.0
 2025-06-14,Cowboys,Dolphins,4.0,58.0
@@ -127,11 +167,18 @@ date,home,away,home_pts,away_pts
 2025-06-28,Dragons,Eels,34.0,20.0
 2025-06-29,Storm,Sharks,30.0,6.0
 2025-06-29,Titans,Cowboys,24.0,30.0
+2025-07-03,Rabbitohs,Dolphins,16.0,14.0
+2025-07-03,Wests Tigers,Knights,8.0,10.0
 2025-07-04,Bulldogs,Broncos,18.0,22.0
 2025-07-05,Cowboys,Storm,20.0,26.0
 2025-07-05,Raiders,Dragons,28.0,24.0
+2025-07-06,Broncos,Titans,44.0,14.0
 2025-07-06,Roosters,Wests Tigers,28.0,30.0
 2025-07-06,Sea Eagles,Rabbitohs,30.0,12.0
+2025-07-06,Sharks,Warriors,10.0,40.0
+2025-07-08,Storm,Broncos,22.0,2.0
+2025-07-09,Dolphins,Raiders,62.0,24.0
+2025-07-09,Eels,Knights,66.0,10.0
 2025-07-11,Sharks,Dolphins,24.0,12.0
 2025-07-12,Cowboys,Bulldogs,8.0,12.0
 2025-07-12,Dragons,Roosters,24.0,31.0
@@ -161,8 +208,13 @@ date,home,away,home_pts,away_pts
 2025-08-02,Dragons,Raiders,18.0,12.0
 2025-08-02,Sea Eagles,Roosters,4.0,20.0
 2025-08-02,Titans,Panthers,26.0,30.0
+2025-08-03,Dragons,Bulldogs,20.0,28.0
+2025-08-03,Sea Eagles,Cowboys,42.0,12.0
 2025-08-03,Sharks,Cowboys,32.0,12.0
 2025-08-03,Wests Tigers,Bulldogs,28.0,14.0
+2025-08-05,Eels,Dolphins,16.0,20.0
+2025-08-06,Raiders,Rabbitohs,36.0,12.0
+2025-08-06,Wests Tigers,Panthers,14.0,18.0
 2025-08-07,Storm,Broncos,22.0,2.0
 2025-08-08,Knights,Panthers,12.0,48.0
 2025-08-08,Raiders,Sea Eagles,28.0,12.0
@@ -195,14 +247,21 @@ date,home,away,home_pts,away_pts
 2025-08-30,Raiders,Wests Tigers,24.0,10.0
 2025-08-31,Dolphins,Titans,36.0,30.0
 2025-08-31,Sharks,Knights,40.0,16.0
+2025-09-03,Storm,Eels,56.0,18.0
 2025-09-04,Broncos,Storm,30.0,14.0
+2025-09-05,Knights,Titans,20.0,24.0
+2025-09-05,Rabbitohs,Broncos,22.0,14.0
 2025-09-05,Roosters,Rabbitohs,36.0,6.0
 2025-09-05,Sea Eagles,Warriors,27.0,26.0
+2025-09-06,Bulldogs,Eels,30.0,12.0
 2025-09-06,Bulldogs,Sharks,6.0,24.0
 2025-09-06,Dragons,Panthers,20.0,40.0
 2025-09-06,Titans,Wests Tigers,36.0,28.0
 2025-09-07,Dolphins,Raiders,62.0,24.0
 2025-09-07,Eels,Knights,66.0,10.0
+2025-09-08,Bulldogs,Warriors,32.0,14.0
+2025-09-08,Dolphins,Roosters,12.0,64.0
+2025-09-08,Dragons,Sharks,22.0,14.0
 2025-09-12,Storm,Bulldogs,26.0,18.0
 2025-09-13,Sharks,Roosters,20.0,10.0
 2025-09-13,Warriors,Panthers,8.0,24.0
@@ -211,7 +270,26 @@ date,home,away,home_pts,away_pts
 2025-09-21,Bulldogs,Panthers,26.0,46.0
 2025-09-26,Storm,Sharks,22.0,14.0
 2025-09-28,Broncos,Panthers,16.0,14.0
+2025-10-04,Dolphins,Panthers,30.0,12.0
+2025-10-05,Cowboys,Panthers,30.0,30.0
+2025-10-05,Dragons,Warriors,14.0,15.0
+2025-10-05,Raiders,Bulldogs,20.0,32.0
 2025-10-05,Storm,Broncos,22.0,26.0
+2025-10-08,Eels,Cowboys,19.0,18.0
+2025-10-08,Titans,Rabbitohs,18.0,20.0
+2025-11-04,Broncos,Roosters,16.0,26.0
+2025-11-04,Dragons,Titans,38.0,16.0
+2025-11-05,Sea Eagles,Sharks,14.0,30.0
+2025-11-05,Storm,Wests Tigers,64.0,0.0
+2025-11-07,Sharks,Dolphins,24.0,12.0
+2025-12-04,Eels,Raiders,12.0,50.0
+2025-12-04,Rabbitohs,Cowboys,16.0,24.0
+2025-12-04,Sharks,Sea Eagles,24.0,18.0
+2025-12-06,Sharks,Dragons,30.0,18.0
+2025-12-07,Cowboys,Bulldogs,8.0,12.0
+2025-12-07,Dragons,Roosters,24.0,31.0
+2025-12-07,Knights,Storm,14.0,32.0
+2025-12-09,Storm,Bulldogs,26.0,18.0
 2026-01-03,Bulldogs,Dragons,15.0,14.0
 2026-01-03,Knights,Cowboys,28.0,18.0
 2026-03-05,Knights,Cowboys,28.0,18.0
