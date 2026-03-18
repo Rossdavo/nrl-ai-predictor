@@ -12,9 +12,6 @@ BOOKMAKERS = "sportsbet,tab,pointsbetau"
 
 URL = f"https://api.the-odds-api.com/v4/sports/{SPORT}/odds"
 
-ODDS_OUT = "odds.csv"
-TRY_OUT = "try_scorers.csv"
-
 TEAM_ALIASES = {
     "Wests Tigers": ["Wests Tigers", "Wests Tigers NRL", "Wests Tigers (NRL)"],
     "Sea Eagles": ["Manly", "Manly Sea Eagles", "Manly-Warringah Sea Eagles", "Sea Eagles"],
@@ -72,28 +69,12 @@ def best_h2h_prices(bookmakers, home, away):
     return home_best, away_best
 
 
-def write_empty_try_scorers():
-    pd.DataFrame(
-        columns=[
-            "date",
-            "home",
-            "away",
-            "team",
-            "player",
-            "odds",
-            "rank",
-            "bookmaker",
-            "event_id",
-            "captured_at_utc",
-        ]
-    ).to_csv(TRY_OUT, index=False)
-
-
 def main():
     if not API_KEY:
         print("No ODDS_API_KEY provided")
-        pd.DataFrame(columns=["date", "home", "away", "home_odds", "away_odds", "captured_at_utc"]).to_csv(ODDS_OUT, index=False)
-        write_empty_try_scorers()
+        pd.DataFrame(
+            columns=["date", "home", "away", "home_odds", "away_odds", "captured_at_utc"]
+        ).to_csv("odds.csv", index=False)
         return
 
     params = {
@@ -140,11 +121,8 @@ def main():
     if df.empty:
         df = pd.DataFrame(columns=["date", "home", "away", "home_odds", "away_odds", "captured_at_utc"])
 
-    df.to_csv(ODDS_OUT, index=False)
-    write_empty_try_scorers()
-
+    df.to_csv("odds.csv", index=False)
     print(f"odds.csv updated ({len(df)} rows). Priced events: {priced}")
-    print("try_scorers.csv updated (0 rows). Player try scorer market not available from current Odds API setup.")
 
 
 if __name__ == "__main__":
