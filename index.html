@@ -256,7 +256,7 @@
   <div class="wrap">
     <div class="card">
       <h1>NRL AI Predictions</h1>
-      <p class="small">INDEX VERSION: LIVE CSV LOADER + BET SUMMARY + CLV</p>
+      <p class="small">INDEX VERSION: LIVE CSV LOADER + NEW SCHEMA SUPPORT</p>
       <p class="lead">Automated predictions, staking, results tracking, performance reporting, and closing line value from the latest generated CSV files.</p>
 
       <div class="downloads" style="margin-top:16px;">
@@ -510,15 +510,24 @@
       `;
     }
 
+    function resolveProbField(rows) {
+      if (rows.some(r => "final_home_win_prob" in r)) return "final_home_win_prob";
+      if (rows.some(r => "model_home_win_prob" in r)) return "model_home_win_prob";
+      if (rows.some(r => "home_win_prob" in r)) return "home_win_prob";
+      return null;
+    }
+
     function renderPredictions(rows) {
       const filtered = rows.filter(r => isFutureOrToday(r.date));
       const useRows = filtered.length ? filtered : rows;
+
+      const probField = resolveProbField(useRows);
 
       const headers = [
         "date",
         "home",
         "away",
-        "home_win_prob",
+        probField,
         "confidence",
         "home_odds",
         "away_odds",
@@ -526,10 +535,14 @@
         "pick",
         "recommended_bet",
         "stake_dollars",
-        "exp_margin_home"
-      ].filter(h => useRows.some(r => h in r));
+        "exp_margin_home",
+        "upset_flag",
+        "fragile_favourite"
+      ].filter(h => h && useRows.some(r => h in r));
 
       const formatters = {
+        final_home_win_prob: v => escapeHtml(formatPct(v, 1)),
+        model_home_win_prob: v => escapeHtml(formatPct(v, 1)),
         home_win_prob: v => escapeHtml(formatPct(v, 1)),
         confidence: v => escapeHtml(formatPct(v, 0)),
         home_odds: v => escapeHtml(formatFixed(v, 2)),
@@ -556,14 +569,28 @@
             return `<span class="pill pill-red">No Bet</span>`;
           }
           return `<span class="pill pill-green">${escapeHtml(text)}</span>`;
+        },
+        upset_flag: v => {
+          const n = toNumber(v);
+          return n === 1
+            ? `<span class="pill pill-amber">Yes</span>`
+            : `<span class="pill pill-blue">No</span>`;
+        },
+        fragile_favourite: v => {
+          const n = toNumber(v);
+          return n === 1
+            ? `<span class="pill pill-red">Fragile</span>`
+            : `<span class="pill pill-green">No</span>`;
         }
       };
 
+      const totalExposure = useRows.reduce((s, r) => s + (toNumber(r.stake_dollars) ?? 0), 0);
+      const betCount = useRows.filter(r => (toNumber(r.stake_dollars) ?? 0) > 0 && String(r.pick || "").trim() !== "").length;
+
       document.getElementById("pred-meta").textContent =
-        `${useRows.length} row${useRows.length === 1 ? "" : "s"}`;
+        `${useRows.length} rows | ${betCount} bets | exposure ${formatMoney(totalExposure, 2)}`;
 
       document.getElementById("kpi-upcoming").textContent = String(useRows.length);
-
       document.getElementById("kpi-upcoming-sub").textContent =
         filtered.length ? "Current and upcoming fixtures" : "Showing all predictions";
 
