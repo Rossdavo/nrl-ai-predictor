@@ -16,13 +16,23 @@ from zoneinfo import ZoneInfo
 import json
 import os
 
+# ----------------------------
+# BANKROLL / STAKING
+# ----------------------------
 BANKROLL = 200.0
 UNIT_PCT = 0.05
 UNIT_SIZE = round(BANKROLL * UNIT_PCT, 2)
-MAX_ROUND_EXPOSURE_PCT = 0.40
-MAX_ROUND_EXPOSURE = BANKROLL * MAX_ROUND_EXPOSURE_PCT
+
+# User update: usable bankroll per round = 50%
+MAX_ROUND_EXPOSURE_PCT = 0.50
+MAX_ROUND_EXPOSURE = round(BANKROLL * MAX_ROUND_EXPOSURE_PCT, 2)
+
+# Keep some discipline on a single game
+MAX_SINGLE_BET_PCT = 0.25
+MAX_SINGLE_BET = round(BANKROLL * MAX_SINGLE_BET_PCT, 2)
 
 print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
+print(f"[predict] max_round_exposure=${MAX_ROUND_EXPOSURE} | max_single_bet=${MAX_SINGLE_BET}")
 
 # ----------------------------
 # RUN MODE
@@ -30,9 +40,15 @@ print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 MODE = "AUTO"
 
 # ----------------------------
-# Results source for ratings
+# Results sources for ratings
+# 2026 = primary
+# 2025 = secondary anchor
+# older years excluded
 # ----------------------------
-RESULTS_URL = "https://fixturedownload.com/results/nrl-2026"
+RESULTS_URLS = {
+    2026: "https://fixturedownload.com/results/nrl-2026",
+    2025: "https://fixturedownload.com/results/nrl-2025",
+}
 RESULTS_CACHE_PATH = "results_cache.csv"
 
 # ----------------------------
@@ -40,6 +56,29 @@ RESULTS_CACHE_PATH = "results_cache.csv"
 # ----------------------------
 FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
+
+# ----------------------------
+# MODEL / BLEND SETTINGS
+# ----------------------------
+MIN_EDGE = 0.035
+MIN_CONF = 0.56
+
+# Stronger market use
+MODEL_BLEND = 0.57
+MARKET_BLEND = 0.43
+
+# Results weighting
+YEAR_WEIGHTS = {
+    2026: 1.00,
+    2025: 0.32,
+}
+RECENCY_HALF_LIFE_DAYS = 35
+
+# Upset logic
+UPSET_MANUAL_PATH = "upset_flags.csv"
+UPSET_PROB_SHIFT_PER_POINT = 0.0125
+UPSET_PROB_SHIFT_CAP = 0.05
+UPSET_FLAG_THRESHOLD = 2.0
 
 TEAM_NAME_NORMALISE = {
     "Canterbury Bulldogs": "Bulldogs",
@@ -78,15 +117,8 @@ TEAM_NAME_NORMALISE = {
     "Sea Eagles": "Sea Eagles",
     "Raiders": "Raiders",
     "Rabbitohs": "Rabbitohs",
-    "Wests Tigers": "Wests Tigers",
     "Dolphins": "Dolphins",
 }
-
-
-def norm_team(name: str) -> str:
-    name = str(name).strip()
-    return TEAM_NAME_NORMALISE.get(name, name)
-
 
 TEAM_REGION = {
     "Broncos": "QLD",
@@ -109,6 +141,11 @@ TEAM_REGION = {
 }
 
 ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
+
+
+def norm_team(name: str) -> str:
+    name = str(name).strip()
+    return TEAM_NAME_NORMALISE.get(name, name)
 
 
 @dataclass
@@ -225,58 +262,8 @@ def _filter_current_round_fixtures(fixtures: List[Match]) -> List[Match]:
     return out
 
 
-def fetch_completed_results() -> pd.DataFrame:
-    needed = {"date", "home", "away", "home_pts", "away_pts"}
-
-    cache = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
-    if os.path.exists(RESULTS_CACHE_PATH):
-        try:
-            cached = pd.read_csv(RESULTS_CACHE_PATH)
-            if needed.issubset(set(cached.columns)) and len(cached) > 0:
-                cache = cached.copy()
-                cache["date"] = pd.to_datetime(cache["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-                cache["home"] = cache["home"].astype(str).apply(norm_team)
-                cache["away"] = cache["away"].astype(str).apply(norm_team)
-                cache["home_pts"] = pd.to_numeric(cache["home_pts"], errors="coerce")
-                cache["away_pts"] = pd.to_numeric(cache["away_pts"], errors="coerce")
-                cache = cache.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
-                print(f"[info] Loaded cached results: {RESULTS_CACHE_PATH} ({len(cache)} rows)")
-            else:
-                print(f"[warn] Cache exists but invalid. cols={list(cached.columns)} rows={len(cached)}")
-        except Exception as e:
-            print(f"[warn] Could not read cached results: {e}")
-
-    headers = {"User-Agent": "Mozilla/5.0"}
-    html = None
-    last_err = None
-
-    for attempt in range(3):
-        try:
-            r = requests.get(RESULTS_URL, timeout=45, headers=headers)
-            r.raise_for_status()
-            html = r.text
-            break
-        except Exception as e:
-            last_err = e
-            time.sleep(2 * (attempt + 1))
-
-    if html is None:
-        print(f"[warn] results fetch failed: {last_err} -> using cache only")
-        return cache.reset_index(drop=True)
-
-    try:
-        tables = pd.read_html(StringIO(html))
-    except Exception as e:
-        print(f"[warn] pd.read_html failed: {e} -> using cache only")
-        return cache.reset_index(drop=True)
-
-    if not tables:
-        print("[warn] No tables found on results page -> using cache only")
-        return cache.reset_index(drop=True)
-
-    df = tables[0].copy()
+def _extract_results_table(df: pd.DataFrame) -> pd.DataFrame:
     cols = set(df.columns)
-    out = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     if {"Home", "Away", "HomeScore", "AwayScore"}.issubset(cols):
         if "Date" in cols:
@@ -291,8 +278,9 @@ def fetch_completed_results() -> pd.DataFrame:
             "home_pts": pd.to_numeric(df["HomeScore"], errors="coerce"),
             "away_pts": pd.to_numeric(df["AwayScore"], errors="coerce"),
         })
+        return out
 
-    elif {"Home Team", "Away Team", "Result"}.issubset(cols):
+    if {"Home Team", "Away Team", "Result"}.issubset(cols):
         def extract_scores(x: object) -> Tuple[float, float]:
             s = str(x)
             m = re.search(r"(\d+)\s*[-–]\s*(\d+)", s)
@@ -314,25 +302,148 @@ def fetch_completed_results() -> pd.DataFrame:
             "home_pts": scores.apply(lambda t: t[0]),
             "away_pts": scores.apply(lambda t: t[1]),
         })
+        return out
+
+    # common fixturedownload table format
+    if {"Date", "Home Team", "Away Team", "Result"}.issubset(cols):
+        def extract_scores_2(x: object) -> Tuple[float, float]:
+            s = str(x)
+            m = re.search(r"(\d+)\s*[-–]\s*(\d+)", s)
+            if not m:
+                return (np.nan, np.nan)
+            return (float(m.group(1)), float(m.group(2)))
+
+        scores = df["Result"].apply(extract_scores_2)
+        out = pd.DataFrame({
+            "date": pd.to_datetime(df["Date"], errors="coerce", dayfirst=True).dt.strftime("%Y-%m-%d"),
+            "home": df["Home Team"].astype(str).apply(norm_team),
+            "away": df["Away Team"].astype(str).apply(norm_team),
+            "home_pts": scores.apply(lambda t: t[0]),
+            "away_pts": scores.apply(lambda t: t[1]),
+        })
+        return out
+
+    # fallback for pages where columns have spaces/case variations
+    colmap = {str(c).strip().lower(): c for c in df.columns}
+    required = {"date", "home team", "away team", "result"}
+    if required.issubset(set(colmap.keys())):
+        def extract_scores_3(x: object) -> Tuple[float, float]:
+            s = str(x)
+            m = re.search(r"(\d+)\s*[-–]\s*(\d+)", s)
+            if not m:
+                return (np.nan, np.nan)
+            return (float(m.group(1)), float(m.group(2)))
+
+        scores = df[colmap["result"]].apply(extract_scores_3)
+        out = pd.DataFrame({
+            "date": pd.to_datetime(df[colmap["date"]], errors="coerce", dayfirst=True).dt.strftime("%Y-%m-%d"),
+            "home": df[colmap["home team"]].astype(str).apply(norm_team),
+            "away": df[colmap["away team"]].astype(str).apply(norm_team),
+            "home_pts": scores.apply(lambda t: t[0]),
+            "away_pts": scores.apply(lambda t: t[1]),
+        })
+        return out
+
+    return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+
+def fetch_results_for_year(year: int, url: str) -> pd.DataFrame:
+    headers = {"User-Agent": "Mozilla/5.0"}
+    html = None
+    last_err = None
+
+    for attempt in range(3):
+        try:
+            r = requests.get(url, timeout=45, headers=headers)
+            r.raise_for_status()
+            html = r.text
+            break
+        except Exception as e:
+            last_err = e
+            time.sleep(2 * (attempt + 1))
+
+    if html is None:
+        print(f"[warn] results fetch failed for {year}: {last_err}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+    try:
+        tables = pd.read_html(StringIO(html))
+    except Exception as e:
+        print(f"[warn] pd.read_html failed for {year}: {e}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+    if not tables:
+        print(f"[warn] No tables found on results page for {year}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+
+    best = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
+    for t in tables:
+        extracted = _extract_results_table(t)
+        if len(extracted) > len(best):
+            best = extracted.copy()
+
+    if best.empty:
+        print(f"[warn] Could not extract results table for {year}")
+        return best
+
+    best = best.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
+    best["date"] = pd.to_datetime(best["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    best["home_pts"] = pd.to_numeric(best["home_pts"], errors="coerce")
+    best["away_pts"] = pd.to_numeric(best["away_pts"], errors="coerce")
+    best = best.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
+    best["season_year"] = year
+
+    print(f"[info] Web fetched results rows={len(best)} for {year}")
+    return best
+
+
+def fetch_completed_results() -> pd.DataFrame:
+    needed = {"date", "home", "away", "home_pts", "away_pts"}
+    cache = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts", "season_year"])
+
+    if os.path.exists(RESULTS_CACHE_PATH):
+        try:
+            cached = pd.read_csv(RESULTS_CACHE_PATH)
+            if needed.issubset(set(cached.columns)) and len(cached) > 0:
+                cache = cached.copy()
+                cache["date"] = pd.to_datetime(cache["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+                cache["home"] = cache["home"].astype(str).apply(norm_team)
+                cache["away"] = cache["away"].astype(str).apply(norm_team)
+                cache["home_pts"] = pd.to_numeric(cache["home_pts"], errors="coerce")
+                cache["away_pts"] = pd.to_numeric(cache["away_pts"], errors="coerce")
+                if "season_year" not in cache.columns:
+                    cache["season_year"] = pd.to_datetime(cache["date"], errors="coerce").dt.year
+                cache["season_year"] = pd.to_numeric(cache["season_year"], errors="coerce")
+                cache = cache.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+                cache = cache[cache["season_year"].fillna(0) >= 2025].copy()
+                print(f"[info] Loaded cached results: {RESULTS_CACHE_PATH} ({len(cache)} rows)")
+            else:
+                print(f"[warn] Cache exists but invalid. cols={list(cached.columns)} rows={len(cached)}")
+        except Exception as e:
+            print(f"[warn] Could not read cached results: {e}")
+
+    fetched_frames = []
+    for year, url in RESULTS_URLS.items():
+        yr_df = fetch_results_for_year(year, url)
+        if not yr_df.empty:
+            fetched_frames.append(yr_df)
+
+    if fetched_frames:
+        web_df = pd.concat(fetched_frames, ignore_index=True)
     else:
-        print(f"[warn] Results table missing required columns. Found cols={list(df.columns)} -> using cache only")
-        return cache.reset_index(drop=True)
+        web_df = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts", "season_year"])
 
-    out = out.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
-    out["date"] = pd.to_datetime(out["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    out["home_pts"] = pd.to_numeric(out["home_pts"], errors="coerce")
-    out["away_pts"] = pd.to_numeric(out["away_pts"], errors="coerce")
-    out = out.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
-    print(f"[info] Web fetched results rows={len(out)}")
-
-    merged = pd.concat([cache, out], ignore_index=True)
+    merged = pd.concat([cache, web_df], ignore_index=True)
     merged["date"] = pd.to_datetime(merged["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    merged["season_year"] = pd.to_datetime(merged["date"], errors="coerce").dt.year
     merged["home"] = merged["home"].astype(str).apply(norm_team)
     merged["away"] = merged["away"].astype(str).apply(norm_team)
     merged["home_pts"] = pd.to_numeric(merged["home_pts"], errors="coerce")
     merged["away_pts"] = pd.to_numeric(merged["away_pts"], errors="coerce")
-    merged = merged.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+    merged = merged.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
+    merged = merged[merged["season_year"].fillna(0) >= 2025].copy()
     merged = merged.drop_duplicates(subset=["date", "home", "away"], keep="last").reset_index(drop=True)
+    merged = merged.sort_values(["date", "home", "away"]).reset_index(drop=True)
 
     try:
         merged.to_csv(RESULTS_CACHE_PATH, index=False)
@@ -346,25 +457,33 @@ def fetch_completed_results() -> pd.DataFrame:
 def fit_attack_defence(
     results: pd.DataFrame,
     teams: List[str],
-    half_life_days: int = 56,
+    half_life_days: int = RECENCY_HALF_LIFE_DAYS,
+    year_weights: Optional[Dict[int, float]] = None,
 ) -> Optional[Dict[str, object]]:
     if results is None or results.empty:
         return None
 
     results = results.dropna(subset=["home", "away", "home_pts", "away_pts"]).copy()
-    if results.empty:
-        return None
-    if len(results) < 4:
+    results["date"] = pd.to_datetime(results["date"], errors="coerce")
+    results = results.dropna(subset=["date"]).copy()
+    results = results[results["date"].dt.year >= 2025].copy()
+
+    if results.empty or len(results) < 8:
         return None
 
+    year_weights = year_weights or YEAR_WEIGHTS
     now = pd.Timestamp.now(tz=None).normalize()
-    if "date" in results.columns:
-        d = pd.to_datetime(results["date"], errors="coerce")
-        age_days = (now - d).dt.days
-        age_days = age_days.fillna(0).clip(lower=0)
-        weights = (0.5 ** (age_days / float(half_life_days))).astype(float).values
-    else:
-        weights = np.ones(len(results), dtype=float)
+    age_days = (now - results["date"]).dt.days.fillna(0).clip(lower=0).astype(float)
+    recency_weights = (0.5 ** (age_days / float(half_life_days))).astype(float)
+
+    season_weights = results["date"].dt.year.map(lambda y: year_weights.get(int(y), 0.0)).astype(float)
+    weights = (recency_weights * season_weights).astype(float)
+
+    results = results[weights > 0].copy()
+    weights = weights[weights > 0].values
+
+    if len(results) < 8:
+        return None
 
     team_to_i = {t: i for i, t in enumerate(teams)}
     n_teams = len(teams)
@@ -403,18 +522,18 @@ def fit_attack_defence(
         y_vals.append(float(rrow["away_pts"]))
         w_vals.append(w)
 
-    if len(y_vals) < 8:
+    if len(y_vals) < 12:
         return None
 
     X = np.vstack(X_rows)
-    y = np.array(y_vals)
-    w = np.array(w_vals)
+    y = np.array(y_vals, dtype=float)
+    w = np.array(w_vals, dtype=float)
 
     sw = np.sqrt(w)
     Xw = X * sw[:, None]
     yw = y * sw
 
-    ridge = 1.0
+    ridge = 1.2
     XtX = Xw.T @ Xw + ridge * np.eye(p)
     Xty = Xw.T @ yw
     beta = np.linalg.solve(XtX, Xty)
@@ -430,7 +549,13 @@ def fit_attack_defence(
     atk_map = {t: float(atk[team_to_i[t]]) for t in teams}
     dfn_map = {t: float(dfn[team_to_i[t]]) for t in teams}
 
-    return {"mu": mu, "home_adv": home_adv, "atk": atk_map, "dfn": dfn_map}
+    return {
+        "mu": mu,
+        "home_adv": home_adv,
+        "atk": atk_map,
+        "dfn": dfn_map,
+        "rows_used": len(results),
+    }
 
 
 def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float]]:
@@ -497,7 +622,7 @@ def simulate_match_ad(
     totals = []
 
     exp_home, exp_away = expected_points(model, home, away, venue, adj)
-    sd = 8.5
+    sd = 8.2
 
     for _ in range(n):
         h = max(0, int(round(random.gauss(exp_home, sd) / 2.0) * 2))
@@ -510,7 +635,7 @@ def simulate_match_ad(
     win_prob = hw / n
     exp_margin = sum(margins) / n
     exp_total = sum(totals) / n
-    conf = min(0.80, 0.50 + abs(win_prob - 0.5) * 0.9)
+    conf = min(0.82, 0.50 + abs(win_prob - 0.5) * 1.00)
 
     return win_prob, exp_margin, exp_total, conf
 
@@ -538,35 +663,28 @@ def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, fl
         return {}
 
 
+def fair_probs_from_odds(home_odds: float, away_odds: float) -> Tuple[float, float]:
+    if any(math.isnan(x) for x in [home_odds, away_odds]):
+        return (float("nan"), float("nan"))
+    if home_odds <= 1.0 or away_odds <= 1.0:
+        return (float("nan"), float("nan"))
+
+    imp_home = 1.0 / home_odds
+    imp_away = 1.0 / away_odds
+    total = imp_home + imp_away
+    if total <= 0:
+        return (float("nan"), float("nan"))
+
+    return imp_home / total, imp_away / total
+
+
 def value_edge(model_prob: float, decimal_odds: float) -> float:
-    if decimal_odds <= 1.0:
+    if decimal_odds <= 1.0 or math.isnan(decimal_odds):
         return float("nan")
     return model_prob - (1.0 / decimal_odds)
 
 
-def kelly_stake_dollars(model_prob: float, decimal_odds: float, bankroll: float, confidence: float) -> float:
-    if decimal_odds <= 1.0 or model_prob <= 0.0 or model_prob >= 1.0:
-        return 0.0
-
-    b = decimal_odds - 1.0
-    p = model_prob
-    q = 1.0 - p
-    raw_kelly = ((b * p) - q) / b
-    if raw_kelly <= 0:
-        return 0.0
-
-    adj_kelly = raw_kelly * 0.25
-    conf_scale = max(0.5, min(1.0, confidence / 0.80))
-    adj_kelly *= conf_scale
-    adj_kelly = min(adj_kelly, 0.10)
-
-    return round(bankroll * adj_kelly, 2)
-
-
-RATINGS_PATH = "ratings.json"
-
-
-def load_saved_ratings(path: str = RATINGS_PATH) -> Optional[Dict[str, object]]:
+def load_saved_ratings(path: str = "ratings.json") -> Optional[Dict[str, object]]:
     try:
         if not os.path.exists(path):
             return None
@@ -581,7 +699,7 @@ def load_saved_ratings(path: str = RATINGS_PATH) -> Optional[Dict[str, object]]:
         return None
 
 
-def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
+def save_ratings(model: Dict[str, object], path: str = "ratings.json") -> None:
     try:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(model, f, ensure_ascii=False, indent=2, sort_keys=True)
@@ -622,6 +740,231 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     return fixtures
 
 
+def load_manual_upset_flags(path: str = UPSET_MANUAL_PATH) -> Dict[Tuple[str, str, str], Dict[str, object]]:
+    """
+    Optional CSV columns:
+    date,home,away,upset_team,manual_upset_score,notes
+
+    Example:
+    2026-03-20,Roosters,Panthers,Roosters,1.5,Panthers missing key spine player
+    """
+    if not os.path.exists(path):
+        return {}
+
+    try:
+        df = pd.read_csv(path)
+    except Exception:
+        return {}
+
+    out = {}
+    for _, r in df.iterrows():
+        date = str(r.get("date", "")).strip()
+        home = norm_team(r.get("home", ""))
+        away = norm_team(r.get("away", ""))
+        upset_team = norm_team(r.get("upset_team", ""))
+        if not date or not home or not away:
+            continue
+
+        score = pd.to_numeric(r.get("manual_upset_score", 0.0), errors="coerce")
+        notes = str(r.get("notes", "")).strip()
+
+        out[(date, home, away)] = {
+            "upset_team": upset_team if upset_team in {home, away} else "",
+            "manual_upset_score": float(score) if pd.notna(score) else 0.0,
+            "notes": notes,
+        }
+    return out
+
+
+def build_recent_form_stats(results: pd.DataFrame, teams: List[str], recent_n: int = 5) -> Dict[str, Dict[str, float]]:
+    out = {t: {"recent_margin": 0.0, "recent_win_rate": 0.5, "games": 0.0} for t in teams}
+    if results is None or results.empty:
+        return out
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).sort_values("date")
+
+    rows = []
+    for _, r in df.iterrows():
+        home = r["home"]
+        away = r["away"]
+        hp = float(r["home_pts"])
+        ap = float(r["away_pts"])
+
+        rows.append({"date": r["date"], "team": home, "margin": hp - ap, "win": 1.0 if hp > ap else 0.0})
+        rows.append({"date": r["date"], "team": away, "margin": ap - hp, "win": 1.0 if ap > hp else 0.0})
+
+    tf = pd.DataFrame(rows)
+    for team in teams:
+        tdf = tf[tf["team"] == team].sort_values("date", ascending=False).head(recent_n).copy()
+        if tdf.empty:
+            continue
+
+        # slight preference to 2026 games in recent form summary too
+        tdf["yr_weight"] = tdf["date"].dt.year.map(lambda y: YEAR_WEIGHTS.get(int(y), 0.0)).fillna(0.0)
+        tdf = tdf[tdf["yr_weight"] > 0].copy()
+        if tdf.empty:
+            continue
+
+        weights = np.linspace(1.25, 0.85, len(tdf))
+        weights = weights * tdf["yr_weight"].values
+        if weights.sum() <= 0:
+            continue
+
+        out[team] = {
+            "recent_margin": float(np.average(tdf["margin"].values, weights=weights)),
+            "recent_win_rate": float(np.average(tdf["win"].values, weights=weights)),
+            "games": float(len(tdf)),
+        }
+    return out
+
+
+def recent_h2h_margin(results: pd.DataFrame, home: str, away: str, n_games: int = 4) -> float:
+    if results is None or results.empty:
+        return 0.0
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).sort_values("date", ascending=False)
+
+    margins = []
+    for _, r in df.iterrows():
+        if {r["home"], r["away"]} != {home, away}:
+            continue
+        if r["home"] == home:
+            margins.append(float(r["home_pts"]) - float(r["away_pts"]))
+        else:
+            margins.append(float(r["away_pts"]) - float(r["home_pts"]))
+        if len(margins) >= n_games:
+            break
+
+    if not margins:
+        return 0.0
+    return float(np.mean(margins))
+
+
+def compute_auto_upset_signal(
+    home: str,
+    away: str,
+    home_model_prob: float,
+    home_market_prob: float,
+    home_odds: float,
+    away_odds: float,
+    form_stats: Dict[str, Dict[str, float]],
+    h2h_margin_home: float,
+) -> Dict[str, object]:
+    # favourite by market fair probability where possible
+    if not math.isnan(home_market_prob):
+        fav = home if home_market_prob >= 0.50 else away
+    else:
+        fav = home if home_model_prob >= 0.50 else away
+    dog = away if fav == home else home
+
+    fav_stats = form_stats.get(fav, {})
+    dog_stats = form_stats.get(dog, {})
+
+    fav_recent_margin = float(fav_stats.get("recent_margin", 0.0))
+    dog_recent_margin = float(dog_stats.get("recent_margin", 0.0))
+    fav_recent_wr = float(fav_stats.get("recent_win_rate", 0.5))
+    dog_recent_wr = float(dog_stats.get("recent_win_rate", 0.5))
+
+    score = 0.0
+    reasons = []
+
+    # Dog in better recent shape
+    if (dog_recent_margin - fav_recent_margin) >= 6.0:
+        score += 1.0
+        reasons.append("dog_recent_margin")
+
+    if (dog_recent_wr - fav_recent_wr) >= 0.18:
+        score += 1.0
+        reasons.append("dog_recent_winrate")
+
+    # Fave looks shorter than model comfort
+    fav_market_prob = home_market_prob if fav == home else (1.0 - home_market_prob if not math.isnan(home_market_prob) else float("nan"))
+    fav_model_prob = home_model_prob if fav == home else 1.0 - home_model_prob
+    fav_odds = home_odds if fav == home else away_odds
+
+    if not math.isnan(fav_market_prob) and fav_market_prob >= 0.62 and fav_model_prob <= 0.56:
+        score += 1.0
+        reasons.append("fav_short_market_only")
+
+    if not math.isnan(fav_odds) and fav_odds <= 1.55 and fav_model_prob <= 0.55:
+        score += 0.5
+        reasons.append("very_short_favourite")
+
+    # Match-up history against market favourite
+    dog_h2h_edge = -h2h_margin_home if dog == away else h2h_margin_home
+    if dog_h2h_edge >= 4.0:
+        score += 1.0
+        reasons.append("h2h_dog_edge")
+
+    return {
+        "favourite_team": fav,
+        "underdog_team": dog,
+        "auto_upset_score": round(score, 2),
+        "auto_upset_reasons": "|".join(reasons),
+    }
+
+
+def apply_upset_probability_adjustment(
+    home_prob: float,
+    upset_team: str,
+    final_upset_score: float,
+    home: str,
+    away: str,
+) -> float:
+    if final_upset_score <= 0 or upset_team not in {home, away}:
+        return home_prob
+
+    shift = min(UPSET_PROB_SHIFT_CAP, final_upset_score * UPSET_PROB_SHIFT_PER_POINT)
+    if upset_team == home:
+        home_prob += shift
+    else:
+        home_prob -= shift
+
+    return min(0.95, max(0.05, home_prob))
+
+
+def kelly_stake_dollars(
+    side_prob: float,
+    decimal_odds: float,
+    bankroll: float,
+    confidence: float,
+    edge: float,
+    market_agreement: float,
+    upset_penalty_factor: float = 1.0,
+) -> float:
+    if decimal_odds <= 1.0 or side_prob <= 0.0 or side_prob >= 1.0:
+        return 0.0
+
+    b = decimal_odds - 1.0
+    p = side_prob
+    q = 1.0 - p
+    raw_kelly = ((b * p) - q) / b
+    if raw_kelly <= 0:
+        return 0.0
+
+    # More aggressive than old version, but still not reckless
+    frac = 0.45
+    stake_frac = raw_kelly * frac
+
+    conf_scale = max(0.70, min(1.08, confidence / 0.74))
+    edge_scale = max(0.60, min(1.35, edge / 0.06)) if edge > 0 else 0.60
+    agree_scale = max(0.75, min(1.10, market_agreement))
+
+    stake_frac *= conf_scale
+    stake_frac *= edge_scale
+    stake_frac *= agree_scale
+    stake_frac *= upset_penalty_factor
+
+    # practical cap before round cap is applied
+    stake_frac = min(stake_frac, MAX_SINGLE_BET / bankroll)
+
+    return round(max(0.0, bankroll * stake_frac), 2)
+
+
 def build_predictions() -> pd.DataFrame:
     fixtures: List[Match] = []
 
@@ -650,7 +993,12 @@ def build_predictions() -> pd.DataFrame:
         .drop_duplicates(subset=["date", "home", "away"], keep="last")
         .reset_index(drop=True)
     )
-    print(f"[debug] combined results rows={len(results)} (deduped)")
+    results["date"] = pd.to_datetime(results["date"], errors="coerce")
+    results = results.dropna(subset=["date"]).copy()
+    results = results[results["date"].dt.year >= 2025].copy()
+    results["date"] = results["date"].dt.strftime("%Y-%m-%d")
+
+    print(f"[debug] combined results rows={len(results)} (2025+ only, deduped)")
 
     fresh_model = fit_attack_defence(results, teams)
     if fresh_model:
@@ -663,6 +1011,8 @@ def build_predictions() -> pd.DataFrame:
 
     adj = load_adjustments()
     odds = load_odds()
+    manual_upsets = load_manual_upset_flags()
+    form_stats = build_recent_form_stats(results, teams)
 
     missing_keys = []
     for m in fixtures:
@@ -682,15 +1032,13 @@ def build_predictions() -> pd.DataFrame:
         raise SystemExit("Stopping because odds are missing. Update odds.csv then rerun.")
 
     rows = []
-    MIN_EDGE = 0.03
-    MIN_CONF = 0.55
 
     for m in fixtures:
         if ad_model:
-            win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue, adj)
+            model_home_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue, adj)
             rating_mode = "ATTACK_DEFENCE"
         else:
-            win_prob, exp_margin, exp_total, conf = 0.50, 0.0, 40.0, 0.45
+            model_home_prob, exp_margin, exp_total, conf = 0.50, 0.0, 40.0, 0.45
             rating_mode = "FALLBACK"
 
         key = (m.date, m.home, m.away)
@@ -698,46 +1046,130 @@ def build_predictions() -> pd.DataFrame:
         home_odds = o.get("home_odds", float("nan"))
         away_odds = o.get("away_odds", float("nan"))
 
-        home_edge = float("nan")
-        away_edge = float("nan")
+        market_home_prob, market_away_prob = fair_probs_from_odds(home_odds, away_odds)
+        if math.isnan(market_home_prob):
+            blended_home_prob = model_home_prob
+        else:
+            blended_home_prob = (MODEL_BLEND * model_home_prob) + (MARKET_BLEND * market_home_prob)
+
+        h2h_margin_home = recent_h2h_margin(results, m.home, m.away)
+        auto_upset = compute_auto_upset_signal(
+            home=m.home,
+            away=m.away,
+            home_model_prob=model_home_prob,
+            home_market_prob=market_home_prob,
+            home_odds=home_odds,
+            away_odds=away_odds,
+            form_stats=form_stats,
+            h2h_margin_home=h2h_margin_home,
+        )
+
+        manual_upset = manual_upsets.get(key, {"upset_team": "", "manual_upset_score": 0.0, "notes": ""})
+        manual_upset_team = manual_upset.get("upset_team", "")
+        manual_upset_score = float(manual_upset.get("manual_upset_score", 0.0))
+
+        upset_team = manual_upset_team if manual_upset_team in {m.home, m.away} else auto_upset["underdog_team"]
+        final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
+        final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
+
+        final_home_prob = apply_upset_probability_adjustment(
+            home_prob=blended_home_prob,
+            upset_team=upset_team,
+            final_upset_score=final_upset_score,
+            home=m.home,
+            away=m.away,
+        )
+
+        home_edge = value_edge(final_home_prob, home_odds)
+        away_edge = value_edge(1.0 - final_home_prob, away_odds)
+
         value_flag = ""
         pick = ""
         edge = float("nan")
         stake_units = 0.0
         stake_dollars = 0.0
+        market_agreement = 1.0
+
+        favourite_team = auto_upset["favourite_team"]
+        underdog_team = auto_upset["underdog_team"]
 
         if rating_mode != "ATTACK_DEFENCE":
             value_flag = "MODEL OFF (FALLBACK)"
         else:
-            if not math.isnan(home_odds):
-                home_edge = value_edge(win_prob, home_odds)
-            if not math.isnan(away_odds):
-                away_edge = value_edge(1 - win_prob, away_odds)
-
-            if not math.isnan(home_edge) and home_edge >= 0.03:
+            if not math.isnan(home_edge) and home_edge >= MIN_EDGE:
                 value_flag = f"HOME VALUE +{home_edge:.0%}"
-            elif not math.isnan(away_edge) and away_edge >= 0.03:
+            elif not math.isnan(away_edge) and away_edge >= MIN_EDGE:
                 value_flag = f"AWAY VALUE +{away_edge:.0%}"
 
             best_side = ""
             best_edge = float("-inf")
+            best_prob = 0.0
+            best_odds = float("nan")
+            side_team = ""
 
             if not math.isnan(home_edge) and home_edge > best_edge:
                 best_side = "HOME"
                 best_edge = home_edge
+                best_prob = final_home_prob
+                best_odds = home_odds
+                side_team = m.home
+
             if not math.isnan(away_edge) and away_edge > best_edge:
                 best_side = "AWAY"
                 best_edge = away_edge
+                best_prob = 1.0 - final_home_prob
+                best_odds = away_odds
+                side_team = m.away
 
-            if best_side and best_edge >= MIN_EDGE and conf >= MIN_CONF:
+            if best_side:
+                model_side_prob = model_home_prob if best_side == "HOME" else (1.0 - model_home_prob)
+                market_side_prob = market_home_prob if best_side == "HOME" else market_away_prob
+
+                if not math.isnan(market_side_prob):
+                    # if model and market are broadly aligned, allow slightly better staking
+                    prob_gap = abs(model_side_prob - market_side_prob)
+                    market_agreement = max(0.80, 1.08 - (prob_gap * 4.0))
+                else:
+                    market_agreement = 0.95
+
+            qualifies = bool(
+                best_side
+                and best_edge >= MIN_EDGE
+                and conf >= MIN_CONF
+            )
+
+            # additional filters
+            if qualifies and best_odds > 3.50:
+                qualifies = False
+            if qualifies and best_odds < 1.30:
+                qualifies = False
+
+            # favourite suppression if upset risk high
+            upset_penalty_factor = 1.0
+            if qualifies and side_team == favourite_team and final_upset_score >= UPSET_FLAG_THRESHOLD:
+                upset_penalty_factor = max(0.35, 1.0 - (0.18 * final_upset_score))
+
+                # if favourite edge is only modest and upset flag is strong, pass
+                if best_edge < 0.055 and final_upset_score >= 2.5:
+                    qualifies = False
+
+            # dog encouragement only if genuine edge exists
+            if qualifies and side_team == underdog_team and final_upset_score >= UPSET_FLAG_THRESHOLD:
+                upset_penalty_factor = min(1.10, 1.0 + (0.04 * final_upset_score))
+
+            if qualifies:
                 pick = best_side
                 edge = best_edge
-
-                if best_side == "HOME":
-                    stake_dollars = kelly_stake_dollars(win_prob, home_odds, BANKROLL, conf)
-                else:
-                    stake_dollars = kelly_stake_dollars(1 - win_prob, away_odds, BANKROLL, conf)
-
+                stake_dollars = kelly_stake_dollars(
+                    side_prob=best_prob,
+                    decimal_odds=best_odds,
+                    bankroll=BANKROLL,
+                    confidence=conf,
+                    edge=best_edge,
+                    market_agreement=market_agreement,
+                    upset_penalty_factor=upset_penalty_factor,
+                )
+                stake_dollars = min(stake_dollars, MAX_SINGLE_BET)
                 stake_units = round(stake_dollars / UNIT_SIZE, 2) if UNIT_SIZE > 0 else 0.0
 
         rows.append({
@@ -748,12 +1180,24 @@ def build_predictions() -> pd.DataFrame:
             "venue": m.venue,
             "home": m.home,
             "away": m.away,
-            "home_win_prob": round(win_prob, 3),
+            "model_home_win_prob": round(model_home_prob, 3),
+            "market_home_win_prob": round(market_home_prob, 3) if not math.isnan(market_home_prob) else np.nan,
+            "final_home_win_prob": round(final_home_prob, 3),
             "exp_margin_home": round(exp_margin, 1),
             "exp_total": round(exp_total, 1),
             "confidence": round(conf, 2),
             "home_odds": home_odds,
             "away_odds": away_odds,
+            "favourite_team": favourite_team,
+            "underdog_team": underdog_team,
+            "auto_upset_score": round(float(auto_upset["auto_upset_score"]), 2),
+            "auto_upset_reasons": auto_upset["auto_upset_reasons"],
+            "manual_upset_team": manual_upset_team,
+            "manual_upset_score": round(manual_upset_score, 2),
+            "manual_upset_notes": manual_upset.get("notes", ""),
+            "upset_team": upset_team,
+            "final_upset_score": round(final_upset_score, 2),
+            "upset_flag": final_upset_flag,
             "value_flag": value_flag,
             "pick": pick,
             "edge": round(edge, 3) if not math.isnan(edge) else 0.0,
@@ -783,7 +1227,10 @@ def build_predictions() -> pd.DataFrame:
 
         bet_mask = df["stake_dollars"] > 0
         bet_df = df[bet_mask].copy()
-        bet_df = bet_df.sort_values(["edge", "date", "kickoff_local"], ascending=[False, True, True]).reset_index()
+        bet_df = bet_df.sort_values(
+            ["edge", "confidence", "final_upset_score", "date", "kickoff_local"],
+            ascending=[False, False, True, True, True]
+        ).reset_index()
 
         running_exposure = 0.0
         keep_original_idx = []
