@@ -1022,6 +1022,7 @@ def load_manual_upset_flags(path: str = UPSET_MANUAL_PATH) -> Dict[Tuple[str, st
         if not date or not home or not away:
             continue
 
+            # unreachable in practice, left intentionally? no
         score = pd.to_numeric(r.get("manual_upset_score", 0.0), errors="coerce")
         notes = str(r.get("notes", "")).strip()
 
@@ -1416,7 +1417,14 @@ def build_predictions() -> pd.DataFrame:
                 )
 
                 if premium_home_fav:
-                    req_edge = max(0.020, req_edge - 0.018)
+                    if best_odds <= 1.60:
+                        req_edge = max(0.022, req_edge - 0.012)
+                    elif best_odds <= 1.85:
+                        req_edge = max(0.018, req_edge - 0.020)
+                    elif best_odds <= 2.15:
+                        req_edge = max(0.016, req_edge - 0.022)
+                    else:
+                        req_edge = max(0.020, req_edge - 0.015)
 
                 if weak_home_fav and best_odds < 1.90:
                     req_edge = max(req_edge, 0.050)
@@ -1438,8 +1446,8 @@ def build_predictions() -> pd.DataFrame:
                 and side_team == m.home
                 and side_team in PREMIUM_HOME_TEAMS
                 and home_odds <= away_odds
-                and conf >= 0.60
-                and best_edge >= 0.020
+                and conf >= 0.58
+                and best_edge >= 0.016
             )
 
             qualifies = bool(
@@ -1479,10 +1487,10 @@ def build_predictions() -> pd.DataFrame:
                 if best_edge < max(0.025, req_edge - 0.015):
                     minor_warn += 1
 
-                if market_agreement < 0.86:
+                if market_agreement < 0.84:
                     minor_warn += 1
 
-                fragile_favourite = 1 if ((major_warn >= 1 and minor_warn >= 1) or (minor_warn >= 3)) else 0
+                fragile_favourite = 1 if ((major_warn >= 1 and minor_warn >= 2) or (minor_warn >= 3)) else 0
 
             if qualifies and fragile_favourite:
                 upset_penalty_factor *= 0.75
@@ -1524,7 +1532,7 @@ def build_predictions() -> pd.DataFrame:
 
             if qualifies and side_team == favourite_team:
                 team_strength = outright_strength_score(side_team)
-                if best_odds < 1.90 and team_strength < 0.28:
+                if best_odds < 1.85 and side_team in WEAK_HOME_TEAMS and team_strength < 0.22:
                     best_edge -= 0.015
                     if best_edge < req_edge and not premium_home_lane:
                         qualifies = False
