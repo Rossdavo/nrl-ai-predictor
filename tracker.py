@@ -37,27 +37,51 @@ def _write_empty_outputs(message: str) -> None:
     print(message)
 
 
-def _load_prediction_file(path: str) -> pd.DataFrame:
+def _resolve_prob_column(df: pd.DataFrame) -> str | None:
+    for col in ["final_home_win_prob", "model_home_win_prob", "home_win_prob"]:
+        if col in df.columns:
+            return col
+    return None
+
+
+def _safe_read_csv(path: str) -> pd.DataFrame:
     if not os.path.exists(path):
         return pd.DataFrame()
 
+    # First try normal read
     try:
-        df = pd.read_csv(path)
-    except Exception as e:
-        print(f"[warn] Could not read {path}: {e}")
+        return pd.read_csv(path)
+    except Exception as e1:
+        print(f"[warn] Standard read failed for {path}: {e1}")
+
+    # Fallback: python engine, skip malformed lines
+    try:
+        return pd.read_csv(path, engine="python", on_bad_lines="skip")
+    except Exception as e2:
+        print(f"[warn] Fallback read failed for {path}: {e2}")
         return pd.DataFrame()
 
-    need_pred = {"date", "home", "away", "home_win_prob"}
-    if not need_pred.issubset(set(df.columns)):
-        print(f"[warn] {path} missing required columns.")
+
+def _load_prediction_file(path: str) -> pd.DataFrame:
+    df = _safe_read_csv(path)
+    if df.empty:
         return pd.DataFrame()
 
-    keep_cols = ["date", "home", "away", "home_win_prob", "exp_margin_home", "generated_at"]
+    prob_col = _resolve_prob_column(df)
+    if prob_col is None:
+        print(f"[warn] {path} missing probability column.")
+        return pd.DataFrame()
+
+    keep_cols = ["date", "home", "away", "exp_margin_home", "generated_at"]
+    if prob_col not in keep_cols:
+        keep_cols.insert(3, prob_col)
+
     for c in keep_cols:
         if c not in df.columns:
             df[c] = pd.NA
 
     df = df[keep_cols].copy()
+    df = df.rename(columns={prob_col: "home_win_prob"})
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["home"] = df["home"].map(_norm)
@@ -74,13 +98,8 @@ def _load_prediction_file(path: str) -> pd.DataFrame:
 
 
 def _load_results_file(path: str) -> pd.DataFrame:
-    if not os.path.exists(path):
-        return pd.DataFrame()
-
-    try:
-        df = pd.read_csv(path)
-    except Exception as e:
-        print(f"[warn] Could not read {path}: {e}")
+    df = _safe_read_csv(path)
+    if df.empty:
         return pd.DataFrame()
 
     need_res = {"date", "home", "away", "home_pts", "away_pts"}
