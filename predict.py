@@ -30,12 +30,6 @@ print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 MODE = "AUTO"
 
 # ----------------------------
-# Optional try scorer fallback control
-# ----------------------------
-FORCE_TRY_FALLBACK = False
-TRYSCORERS_CSV_PATH = "try_scorers.csv"
-
-# ----------------------------
 # Results source for ratings
 # ----------------------------
 RESULTS_URL = "https://fixturedownload.com/results/nrl-2026"
@@ -48,7 +42,6 @@ FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 
 TEAM_NAME_NORMALISE = {
-    # long -> short
     "Canterbury Bulldogs": "Bulldogs",
     "Canterbury-Bankstown Bulldogs": "Bulldogs",
     "St George Illawarra Dragons": "Dragons",
@@ -70,7 +63,6 @@ TEAM_NAME_NORMALISE = {
     "Dolphins": "Dolphins",
     "The Dolphins": "Dolphins",
     "Wests Tigers": "Wests Tigers",
-    # short -> short
     "Bulldogs": "Bulldogs",
     "Dragons": "Dragons",
     "Knights": "Knights",
@@ -96,9 +88,6 @@ def norm_team(name: str) -> str:
     return TEAM_NAME_NORMALISE.get(name, name)
 
 
-# ----------------------------
-# Regions
-# ----------------------------
 TEAM_REGION = {
     "Broncos": "QLD",
     "Cowboys": "QLD",
@@ -236,9 +225,6 @@ def _filter_current_round_fixtures(fixtures: List[Match]) -> List[Match]:
     return out
 
 
-# ----------------------------
-# RESULTS INGEST
-# ----------------------------
 def fetch_completed_results() -> pd.DataFrame:
     needed = {"date", "home", "away", "home_pts", "away_pts"}
 
@@ -529,92 +515,6 @@ def simulate_match_ad(
     return win_prob, exp_margin, exp_total, conf
 
 
-# ----------------------------
-# TRY SCORERS
-# ----------------------------
-def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
-    exp_tries = max(1.0, team_exp_points / 4.2)
-    buckets = [("Winger", 0.44), ("Centre", 0.28), ("Fullback", 0.12), ("Edge", 0.10), ("Other", 0.06)]
-
-    out = []
-    for name, share in buckets:
-        lam = exp_tries * share
-        p = 1 - math.exp(-lam)
-        out.append((name, p))
-
-    out.sort(key=lambda x: x[1], reverse=True)
-    return out[:3]
-
-
-def load_bookmaker_try_scorers(path: str = TRYSCORERS_CSV_PATH) -> Dict[Tuple[str, str, str], Dict[str, List[Tuple[str, float]]]]:
-    """
-    Reads:
-      date,home,away,team,player,odds,rank
-
-    Returns:
-      {
-        (date, home, away): {
-          "home": [(player, odds), ...],
-          "away": [(player, odds), ...],
-        }
-      }
-    """
-    if not os.path.exists(path):
-        print(f"[warn] try scorers file not found: {path}")
-        return {}
-
-    try:
-        df = pd.read_csv(path)
-    except Exception as e:
-        print(f"[warn] could not read {path}: {e}")
-        return {}
-
-    required = {"date", "home", "away", "team", "player", "odds"}
-    if not required.issubset(set(df.columns)):
-        print(f"[warn] {path} missing required columns. Need {sorted(required)}")
-        return {}
-
-    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    df["home"] = df["home"].astype(str).apply(norm_team)
-    df["away"] = df["away"].astype(str).apply(norm_team)
-    df["team"] = df["team"].astype(str).apply(norm_team)
-    df["player"] = df["player"].astype(str).str.strip()
-    df["odds"] = pd.to_numeric(df["odds"], errors="coerce")
-    df = df.dropna(subset=["date", "home", "away", "team", "player", "odds"])
-
-    if "rank" in df.columns:
-        df["rank"] = pd.to_numeric(df["rank"], errors="coerce")
-    else:
-        df["rank"] = np.nan
-
-    out: Dict[Tuple[str, str, str], Dict[str, List[Tuple[str, float]]]] = {}
-
-    for (date, home, away), g in df.groupby(["date", "home", "away"], dropna=False):
-        g = g.copy()
-
-        if g["rank"].notna().any():
-            g = g.sort_values(["team", "rank", "odds", "player"], ascending=[True, True, True, True])
-        else:
-            g = g.sort_values(["team", "odds", "player"], ascending=[True, True, True])
-
-        home_rows = g[g["team"] == home].head(3)
-        away_rows = g[g["team"] == away].head(3)
-
-        out[(date, home, away)] = {
-            "home": [(str(r["player"]), float(r["odds"])) for _, r in home_rows.iterrows()],
-            "away": [(str(r["player"]), float(r["odds"])) for _, r in away_rows.iterrows()],
-        }
-
-    print(f"[info] Loaded bookmaker try scorers: {path} ({len(out)} fixtures)")
-    return out
-
-
-def _format_try_scorers_bookmaker(rows: List[Tuple[str, float]]) -> str:
-    if not rows:
-        return ""
-    return " | ".join([f"{name} {odds:.2f}" for name, odds in rows[:3]])
-
-
 def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
     try:
         df = pd.read_csv(path)
@@ -663,9 +563,6 @@ def kelly_stake_dollars(model_prob: float, decimal_odds: float, bankroll: float,
     return round(bankroll * adj_kelly, 2)
 
 
-# ----------------------------
-# RATINGS PERSISTENCE
-# ----------------------------
 RATINGS_PATH = "ratings.json"
 
 
@@ -725,9 +622,6 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     return fixtures
 
 
-# ----------------------------
-# BUILD OUTPUT
-# ----------------------------
 def build_predictions() -> pd.DataFrame:
     fixtures: List[Match] = []
 
@@ -769,7 +663,6 @@ def build_predictions() -> pd.DataFrame:
 
     adj = load_adjustments()
     odds = load_odds()
-    bookmaker_try_scorers = load_bookmaker_try_scorers(TRYSCORERS_CSV_PATH)
 
     missing_keys = []
     for m in fixtures:
@@ -795,39 +688,12 @@ def build_predictions() -> pd.DataFrame:
     for m in fixtures:
         if ad_model:
             win_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue, adj)
-            exp_home_pts = (exp_total + exp_margin) / 2.0
-            exp_away_pts = (exp_total - exp_margin) / 2.0
             rating_mode = "ATTACK_DEFENCE"
         else:
             win_prob, exp_margin, exp_total, conf = 0.50, 0.0, 40.0, 0.45
-            exp_home_pts = exp_total / 2.0
-            exp_away_pts = exp_total / 2.0
             rating_mode = "FALLBACK"
 
         key = (m.date, m.home, m.away)
-        bm_try = bookmaker_try_scorers.get(key, {})
-
-        if FORCE_TRY_FALLBACK:
-            home_named = _try_profiles_fallback(exp_home_pts)
-            away_named = _try_profiles_fallback(exp_away_pts)
-            home_top_try_str = " | ".join([f"{n} {p:.0%}" for n, p in home_named])
-            away_top_try_str = " | ".join([f"{n} {p:.0%}" for n, p in away_named])
-            try_scorer_source = "forced fallback"
-        else:
-            home_bm = bm_try.get("home", [])
-            away_bm = bm_try.get("away", [])
-
-            if home_bm and away_bm:
-                home_top_try_str = _format_try_scorers_bookmaker(home_bm)
-                away_top_try_str = _format_try_scorers_bookmaker(away_bm)
-                try_scorer_source = "bookmaker try scorers"
-            else:
-                home_named = _try_profiles_fallback(exp_home_pts)
-                away_named = _try_profiles_fallback(exp_away_pts)
-                home_top_try_str = " | ".join([f"{n} {p:.0%}" for n, p in home_named])
-                away_top_try_str = " | ".join([f"{n} {p:.0%}" for n, p in away_named])
-                try_scorer_source = "fallback (no bookmaker try scorers)"
-
         o = odds.get(key, {})
         home_odds = o.get("home_odds", float("nan"))
         away_odds = o.get("away_odds", float("nan"))
@@ -899,9 +765,6 @@ def build_predictions() -> pd.DataFrame:
                 if stake_dollars > 0 and pick in {"HOME", "AWAY"}
                 else "No Bet"
             ),
-            "home_top_try": home_top_try_str,
-            "away_top_try": away_top_try_str,
-            "try_scorer_source": try_scorer_source,
             "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
         })
 
