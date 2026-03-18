@@ -1,4 +1,5 @@
 print("[predict] predict.py loaded")
+
 import gzip
 import math
 import random
@@ -8,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 from io import StringIO
+
 import numpy as np
 import pandas as pd
 import requests
@@ -19,16 +21,15 @@ import html as ihtml
 BANKROLL = 200.0
 UNIT_PCT = 0.05
 UNIT_SIZE = round(BANKROLL * UNIT_PCT, 2)
-
 MAX_ROUND_EXPOSURE_PCT = 0.40
 MAX_ROUND_EXPOSURE = BANKROLL * MAX_ROUND_EXPOSURE_PCT
-print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 
+print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 
 # ----------------------------
 # RUN MODE
 # "TRIALS" = use hardcoded fixtures (not used in this version)
-# "AUTO"   = pull upcoming fixtures automatically
+# "AUTO" = pull upcoming fixtures automatically
 # ----------------------------
 MODE = "AUTO"
 
@@ -69,7 +70,6 @@ TEAM_NAME_NORMALISE = {
     "South Sydney Rabbitohs": "Rabbitohs",
     "Dolphins": "Dolphins",
     "Wests Tigers": "Wests Tigers",
-
     # short -> short (safe)
     "Bulldogs": "Bulldogs",
     "Dragons": "Dragons",
@@ -89,9 +89,11 @@ TEAM_NAME_NORMALISE = {
     "Wests Tigers": "Wests Tigers",
 }
 
+
 def norm_team(name: str) -> str:
     name = str(name).strip()
     return TEAM_NAME_NORMALISE.get(name, name)
+
 
 # ----------------------------
 # Regions (must use SHORT names only)
@@ -118,6 +120,7 @@ TEAM_REGION = {
 
 ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
 
+
 @dataclass
 class Match:
     date: str  # YYYY-MM-DD
@@ -125,6 +128,7 @@ class Match:
     home: str
     away: str
     venue: str
+
 
 # ----------------------------
 # TRIAL FIXTURES (kept, but unused in AUTO)
@@ -139,6 +143,7 @@ FIXTURES: List[Match] = [
     Match("2026-02-14", "20:00", "Dragons", "Rabbitohs", "Netstrata Jubilee Stadium"),
     Match("2026-02-15", "16:00", "Sharks", "Eels", "PointsBet Stadium"),
 ]
+
 
 def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, float]:
     """
@@ -159,7 +164,6 @@ def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, f
     if a_reg == "NZ" and h_reg != "NZ":
         away_delta -= 1.6
         home_delta += 0.2
-
     if h_reg == "NZ" and a_reg != "NZ":
         away_delta -= 1.2
         home_delta += 0.2
@@ -177,6 +181,7 @@ def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, f
 
     return home_delta, away_delta
 
+
 def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
     now = datetime.now(SYDNEY_TZ)
     end = now + pd.Timedelta(days=days_ahead)
@@ -190,7 +195,6 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
         dt_str = item.get("date") or item.get("Date") or item.get("startDate") or item.get("StartDate")
         if not dt_str:
             continue
-
         try:
             dt = pd.to_datetime(dt_str, utc=True).tz_convert(SYDNEY_TZ)
         except Exception:
@@ -202,7 +206,6 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
         home = item.get("home") or item.get("Home") or item.get("homeTeam") or item.get("HomeTeam")
         away = item.get("away") or item.get("Away") or item.get("awayTeam") or item.get("AwayTeam")
         venue = item.get("location") or item.get("Location") or item.get("venue") or item.get("Venue") or ""
-
         if not home or not away:
             continue
 
@@ -221,6 +224,7 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
 
     matches.sort(key=lambda m: (m.date, m.kickoff_local))
     return matches
+
 
 # ----------------------------
 # TEAM LIST SCRAPE (optional; may fallback)
@@ -261,6 +265,7 @@ TEAM_CANONICAL_PATTERNS = [
     ("Rabbitohs", "Rabbitohs"),
 ]
 
+
 def _clean_text(s: str) -> str:
     if s is None:
         return ""
@@ -274,6 +279,7 @@ def _clean_text(s: str) -> str:
     s = re.sub(r"^[\s\u2022\*\-\u25cf\u25e6]+", "", s)
     s = re.sub(r"\s+", " ", s)
     return s.strip()
+
 
 def _strip_html_to_text(html: str) -> str:
     html = re.sub(r"<!--[\s\S]*?-->", " ", html)
@@ -295,10 +301,12 @@ def _strip_html_to_text(html: str) -> str:
     text = re.sub(r"[ \t]{2,}", " ", text)
     return text.strip()
 
+
 def _html_to_lines(html: str) -> List[str]:
     text = _strip_html_to_text(html)
     lines = [_clean_text(x) for x in text.splitlines()]
     return [x for x in lines if x]
+
 
 def _resolve_team_name(raw: str) -> str:
     raw_clean = _clean_text(raw)
@@ -310,7 +318,6 @@ def _resolve_team_name(raw: str) -> str:
         return direct
 
     raw_low = raw_clean.lower()
-
     for alias, short in sorted(TEAM_CANONICAL_PATTERNS, key=lambda x: len(x[0]), reverse=True):
         if alias.lower() in raw_low:
             return short
@@ -322,6 +329,7 @@ def _resolve_team_name(raw: str) -> str:
         return direct2
 
     return ""
+
 
 def _clean_player_name(name_raw: str) -> str:
     s = _clean_text(name_raw)
@@ -343,37 +351,32 @@ def _clean_player_name(name_raw: str) -> str:
         re.I,
     ):
         return ""
-
     return s
+
 
 def _parse_player_line(line: str) -> Optional[Tuple[int, str]]:
     s = _clean_text(line)
     m = re.match(r"^(\d{1,2})[\.\)]?\s+(.+)$", s)
     if not m:
         return None
-
     try:
         num = int(m.group(1))
     except Exception:
         return None
-
     if not (1 <= num <= 13):
         return None
-
     name = _clean_player_name(m.group(2))
     if not name or len(name.split()) < 2:
         return None
-
     return num, name
+
 
 def _score_team_candidate(players: Dict[int, str]) -> int:
     if not players:
         return 0
-
     score = 0
     score += sum(8 for n in range(1, 14) if n in players)
     score += sum(1 for n in players if 1 <= n <= 13)
-
     for name in players.values():
         if len(name.split()) >= 2:
             score += 2
@@ -381,15 +384,14 @@ def _score_team_candidate(players: Dict[int, str]) -> int:
             score -= 20
         if len(name) < 4:
             score -= 10
-
     return score
+
 
 def _merge_best_team_map(base: Dict[str, Dict[int, str]], incoming: Dict[str, Dict[int, str]]) -> Dict[str, Dict[int, str]]:
     out = dict(base)
     for team, players in incoming.items():
         if team not in ALL_TEAMS:
             continue
-
         current = out.get(team, {})
         if _score_team_candidate(players) > _score_team_candidate(current):
             out[team] = players
@@ -397,26 +399,23 @@ def _merge_best_team_map(base: Dict[str, Dict[int, str]], incoming: Dict[str, Di
             out[team] = players
     return out
 
+
 def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     """
     Parses line-by-line match-centre rows like:
-      Fullback for Broncos is number 1
-      Reece Walsh
+    Fullback for Broncos is number 1 Reece Walsh
 
     and also split-name variants like:
-      Fullback for Eels is number 1
-      Isaiah
-      Iongi
+    Fullback for Eels is number 1
+    Isaiah Iongi
     """
     out: Dict[str, Dict[int, str]] = {}
-
     pat_full = re.compile(
         r"^(?:[\u2022\*\-]\s*)?"
         r"(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
         r"\s+for\s+(.+?)\s+is\s+number\s+(\d{1,2})\s+(.+)$",
         re.IGNORECASE,
     )
-
     pat_prefix = re.compile(
         r"^(?:[\u2022\*\-]\s*)?"
         r"(Fullback|Wing(?:er)?|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Back Row|Lock|Interchange|Reserve|Replacement)"
@@ -453,27 +452,20 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
         """
         parts: List[str] = []
         j = start_idx
-
         while j < len(lines) and len(parts) < 3:
             piece = _clean_text(lines[j])
-
             if not looks_like_name_piece(piece):
                 break
-
             parts.append(piece)
-
             candidate = _clean_player_name(" ".join(parts))
             if len(candidate.split()) >= 2:
                 return candidate, j + 1
-
             j += 1
-
         candidate = _clean_player_name(" ".join(parts))
         return candidate, j
 
     i = 0
     n = len(lines)
-
     while i < n:
         s = _clean_text(lines[i])
 
@@ -491,7 +483,6 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
                     num = int(num_s)
                 except Exception:
                     num = 0
-
                 if 1 <= num <= 13:
                     name = _clean_player_name(name_raw)
                     if len(name.split()) >= 2:
@@ -505,12 +496,10 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
         if m:
             _pos, team_raw, num_s = m.groups()
             team = _resolve_team_name(team_raw)
-
             try:
                 num = int(num_s)
             except Exception:
                 num = 0
-
             if team and 1 <= num <= 13:
                 name, next_i = consume_name(i + 1)
                 if len(name.split()) >= 2:
@@ -522,13 +511,15 @@ def _parse_match_centre_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
         i += 1
 
     return out
+
+
 def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     """
     Backup parser for article-style blocks like:
-      Broncos
-      1 Reece Walsh
-      2 Jesse Arthars
-      ...
+    Broncos
+    1 Reece Walsh
+    2 Jesse Arthars
+    ...
     """
     out: Dict[str, Dict[int, str]] = {}
     i = 0
@@ -537,7 +528,6 @@ def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
     while i < n:
         line = _clean_text(lines[i])
         team = _resolve_team_name(line)
-
         if not team or len(line.split()) > 6:
             i += 1
             continue
@@ -548,8 +538,8 @@ def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
 
         while j < n:
             nxt = _clean_text(lines[j])
-            next_team = _resolve_team_name(nxt)
 
+            next_team = _resolve_team_name(nxt)
             if next_team and next_team != team and len(players) >= 5 and len(nxt.split()) <= 6:
                 break
 
@@ -567,8 +557,9 @@ def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
                     pass
                 else:
                     non_player_run += 1
-                    if len(players) >= 7 and non_player_run >= 4:
-                        break
+
+                if len(players) >= 7 and non_player_run >= 4:
+                    break
 
             j += 1
 
@@ -580,6 +571,7 @@ def _parse_team_heading_blocks(lines: List[str]) -> Dict[str, Dict[int, str]]:
         i += 1
 
     return out
+
 
 def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
     """
@@ -600,7 +592,6 @@ def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
             rf"{re.escape(alias)}(?P<body>.*?)(?={team_stop}\b|$)",
             re.IGNORECASE | re.DOTALL,
         )
-
         for m in pat.finditer(text):
             body = _clean_text(m.group("body"))
             if not body:
@@ -615,14 +606,12 @@ def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
                     num = int(pm.group(1))
                 except Exception:
                     continue
-
                 if not (1 <= num <= 13):
                     continue
 
                 name = _clean_player_name(pm.group(2))
                 if not name or len(name.split()) < 2:
                     continue
-
                 players[num] = name
 
             if len(players) >= 7:
@@ -632,10 +621,15 @@ def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
 
     return out
 
+
 def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
     """
     Attempts to scrape named starters from an NRL team list article.
-    Returns: { "TeamShortName": {1:"Name", 2:"Name", ... 13:"Name"} }
+
+    Returns:
+        {
+          "TeamShortName": {1:"Name", 2:"Name", ... 13:"Name"}
+        }
     """
     try:
         r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
@@ -648,11 +642,11 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         shown = 0
         for idx, line in enumerate(lines):
             if "for " in line and " is number " in line:
-                print("   ", repr(line))
+                print(" ", repr(line))
                 if idx + 1 < len(lines):
-                    print("      next:", repr(lines[idx + 1]))
+                    print(" next:", repr(lines[idx + 1]))
                 if idx + 2 < len(lines):
-                    print("      next2:", repr(lines[idx + 2]))
+                    print(" next2:", repr(lines[idx + 2]))
                 shown += 1
                 if shown >= 6:
                     break
@@ -660,8 +654,7 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         parsed_mc = _parse_match_centre_blocks(lines)
         print(
             "[debug] match-centre parsed teams:",
-            ", ".join(f"{t}:{len(p)}" for t, p in sorted(parsed_mc.items()))
-            if parsed_mc else "(none)"
+            ", ".join(f"{t}:{len(p)}" for t, p in sorted(parsed_mc.items())) if parsed_mc else "(none)"
         )
 
         parsed_heading = _parse_team_heading_blocks(lines)
@@ -686,24 +679,23 @@ def fetch_starters_by_team(url: str) -> Dict[str, Dict[int, str]]:
         if starters:
             sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:16]
             print("[info] teamlist scrape sample:", ", ".join([f"{t}:{len(p)}" for t, p in sample]))
-
             missing = [t for t in ALL_TEAMS if len(starters.get(t, {})) < 7]
             if missing:
                 print("[warn] teamlist teams with weak/missing scrape:", ", ".join(missing))
-
             for team in sorted(ALL_TEAMS):
                 print(f"[debug] scrape team {team}: starters={len(starters.get(team, {}))}")
         else:
             print("[warn] teamlist scrape returned 0 teams")
             print("[debug] first 40 teamlist lines:")
             for line in lines[:40]:
-                print("   ", line)
+                print(" ", line)
 
         return starters
 
     except Exception as e:
         print(f"[warn] teamlist scrape failed: {e}")
         return {}
+
 
 # ----------------------------
 # MANUAL TEAMLIST OVERRIDES
@@ -734,7 +726,6 @@ def load_manual_teamlists(path: str = TEAMLISTS_CSV_PATH) -> Dict[str, Dict[str,
     df["team"] = df["team"].astype(str).apply(norm_team)
     df["num"] = pd.to_numeric(df["num"], errors="coerce")
     df["name"] = df["name"].astype(str).str.strip()
-
     df = df.dropna(subset=["date", "team", "num", "name"])
     df = df[(df["num"] >= 1) & (df["num"] <= 17)]
 
@@ -749,12 +740,14 @@ def load_manual_teamlists(path: str = TEAMLISTS_CSV_PATH) -> Dict[str, Dict[str,
     print(f"[info] Loaded manual teamlists: {path} (dates={len(manual_by_date)})")
     return manual_by_date
 
+
 # ----------------------------
 # RESULTS INGEST (for Attack/Defence fitting)
 # ----------------------------
 def fetch_completed_results() -> pd.DataFrame:
     """
-    Returns dataframe with columns: date, home, away, home_pts, away_pts
+    Returns dataframe with columns:
+      date, home, away, home_pts, away_pts
 
     Fixed behaviour:
     - Load cache if present (even if valid)
@@ -812,7 +805,6 @@ def fetch_completed_results() -> pd.DataFrame:
 
     df = tables[0].copy()
     cols = set(df.columns)
-
     out = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
     if {"Home", "Away", "HomeScore", "AwayScore"}.issubset(cols):
@@ -851,7 +843,6 @@ def fetch_completed_results() -> pd.DataFrame:
             "home_pts": scores.apply(lambda t: t[0]),
             "away_pts": scores.apply(lambda t: t[1]),
         })
-
     else:
         print(f"[warn] Results table missing required columns. Found cols={list(df.columns)} -> using cache only")
         return cache.reset_index(drop=True)
@@ -861,7 +852,6 @@ def fetch_completed_results() -> pd.DataFrame:
     out["home_pts"] = pd.to_numeric(out["home_pts"], errors="coerce")
     out["away_pts"] = pd.to_numeric(out["away_pts"], errors="coerce")
     out = out.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
-
     print(f"[info] Web fetched results rows={len(out)}")
 
     merged = pd.concat([cache, out], ignore_index=True)
@@ -881,6 +871,7 @@ def fetch_completed_results() -> pd.DataFrame:
 
     return merged
 
+
 def fit_attack_defence(
     results: pd.DataFrame,
     teams: List[str],
@@ -888,8 +879,9 @@ def fit_attack_defence(
 ) -> Optional[Dict[str, object]]:
     """
     Weighted ridge least squares fit:
+
       HomePts = mu + home_adv + atk_home - def_away
-      AwayPts = mu          + atk_away - def_home
+      AwayPts = mu + atk_away - def_home
     """
     if results is None or results.empty:
         return None
@@ -897,12 +889,10 @@ def fit_attack_defence(
     results = results.dropna(subset=["home", "away", "home_pts", "away_pts"]).copy()
     if results.empty:
         return None
-
     if len(results) < 4:
         return None
 
     now = pd.Timestamp.now(tz=None).normalize()
-
     if "date" in results.columns:
         d = pd.to_datetime(results["date"], errors="coerce")
         age_days = (now - d).dt.days
@@ -920,7 +910,6 @@ def fit_attack_defence(
     w_vals = []
 
     weights_by_pos = list(weights)
-
     for pos, (_, rrow) in enumerate(results.iterrows()):
         h = rrow["home"]
         a = rrow["away"]
@@ -967,7 +956,6 @@ def fit_attack_defence(
 
     mu = float(beta[0])
     home_adv = float(beta[1])
-
     atk = beta[2:2 + n_teams].copy()
     dfn = beta[2 + n_teams:2 + 2 * n_teams].copy()
 
@@ -979,9 +967,11 @@ def fit_attack_defence(
 
     return {"mu": mu, "home_adv": home_adv, "atk": atk_map, "dfn": dfn_map}
 
+
 def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float]]:
     """
-    Returns: {team: {"atk": float, "def": float, "notes": str}}
+    Returns:
+      {team: {"atk": float, "def": float, "notes": str}}
     """
     try:
         df = pd.read_csv(path)
@@ -999,7 +989,14 @@ def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float
     except Exception:
         return {}
 
-def expected_points(model: Dict[str, object], home: str, away: str, venue: str, adj: Dict[str, Dict[str, float]]) -> Tuple[float, float]:
+
+def expected_points(
+    model: Dict[str, object],
+    home: str,
+    away: str,
+    venue: str,
+    adj: Dict[str, Dict[str, float]],
+) -> Tuple[float, float]:
     mu = model["mu"]
     ha = model["home_adv"]
     atk = model["atk"]
@@ -1023,6 +1020,7 @@ def expected_points(model: Dict[str, object], home: str, away: str, venue: str, 
         max(4.0, min(40.0, away_pts)),
     )
 
+
 def simulate_match_ad(
     model: Dict[str, object],
     home: str,
@@ -1030,7 +1028,7 @@ def simulate_match_ad(
     venue: str,
     adj: Dict[str, Dict[str, float]],
     n: int = 20000,
-    seed: int = 7
+    seed: int = 7,
 ) -> Tuple[float, float, float, float]:
     random.seed(seed)
     hw = 0
@@ -1052,7 +1050,9 @@ def simulate_match_ad(
     exp_margin = sum(margins) / n
     exp_total = sum(totals) / n
     conf = min(0.80, 0.50 + abs(win_prob - 0.5) * 0.9)
+
     return win_prob, exp_margin, exp_total, conf
+
 
 # ----------------------------
 # TRY SCORERS (optional; will fallback if scrape fails)
@@ -1081,20 +1081,25 @@ def _try_probs_named(starters: Dict[int, str], team_exp_points: float) -> List[T
     out.sort(key=lambda x: x[1], reverse=True)
     return out[:3]
 
+
 def _try_profiles_fallback(team_exp_points: float) -> List[Tuple[str, float]]:
     exp_tries = max(1.0, team_exp_points / 4.2)
     buckets = [("Winger", 0.44), ("Centre", 0.28), ("Fullback", 0.12), ("Edge", 0.10), ("Other", 0.06)]
+
     out = []
     for name, share in buckets:
         lam = exp_tries * share
         p = 1 - math.exp(-lam)
         out.append((name, p))
+
     out.sort(key=lambda x: x[1], reverse=True)
     return out[:3]
+
 
 def _has_valid_named_teamlist(starters_by_team: Dict[str, Dict[int, str]], team: str) -> bool:
     players = starters_by_team.get(team, {})
     return isinstance(players, dict) and len(players) >= 7
+
 
 def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, float]]:
     try:
@@ -1104,7 +1109,6 @@ def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, fl
             date = str(r.get("date", "")).strip()
             home = norm_team(r.get("home", ""))
             away = norm_team(r.get("away", ""))
-
             if not date or not home or not away:
                 continue
 
@@ -1119,10 +1123,13 @@ def load_odds(path: str = "odds.csv") -> Dict[Tuple[str, str, str], Dict[str, fl
     except Exception:
         return {}
 
+
 def value_edge(model_prob: float, decimal_odds: float) -> float:
     if decimal_odds <= 1.0:
         return float("nan")
     return model_prob - (1.0 / decimal_odds)
+
+
 def kelly_stake_dollars(model_prob: float, decimal_odds: float, bankroll: float, confidence: float) -> float:
     """
     Quarter-Kelly staking with confidence scaling and hard cap.
@@ -1134,9 +1141,7 @@ def kelly_stake_dollars(model_prob: float, decimal_odds: float, bankroll: float,
     b = decimal_odds - 1.0
     p = model_prob
     q = 1.0 - p
-
     raw_kelly = ((b * p) - q) / b
-
     if raw_kelly <= 0:
         return 0.0
 
@@ -1153,10 +1158,12 @@ def kelly_stake_dollars(model_prob: float, decimal_odds: float, bankroll: float,
 
     return round(bankroll * adj_kelly, 2)
 
+
 # ----------------------------
 # RATINGS PERSISTENCE
 # ----------------------------
 RATINGS_PATH = "ratings.json"
+
 
 def load_saved_ratings(path: str = RATINGS_PATH) -> Optional[Dict[str, object]]:
     try:
@@ -1172,6 +1179,7 @@ def load_saved_ratings(path: str = RATINGS_PATH) -> Optional[Dict[str, object]]:
     except Exception:
         return None
 
+
 def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
     try:
         with open(path, "w", encoding="utf-8") as f:
@@ -1179,9 +1187,11 @@ def save_ratings(model: Dict[str, object], path: str = RATINGS_PATH) -> None:
     except Exception:
         pass
 
+
 def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     if not os.path.exists(path):
         return []
+
     try:
         o = pd.read_csv(path)
     except Exception:
@@ -1196,7 +1206,6 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
         date = str(r.get("date", "")).strip()
         home = norm_team(r.get("home", ""))
         away = norm_team(r.get("away", ""))
-
         if not date or not home or not away:
             continue
 
@@ -1205,13 +1214,15 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
             kickoff_local="",
             home=home,
             away=away,
-            venue=""
+            venue="",
         ))
 
     fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
     return fixtures
 
+
 SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
+
 
 def fetch_latest_teamlist_url() -> str:
     """
@@ -1227,8 +1238,8 @@ def fetch_latest_teamlist_url() -> str:
     def fetch_xml(url: str) -> str:
         r = requests.get(url, timeout=30, headers=headers)
         r.raise_for_status()
-
         content = r.content
+
         is_gz = url.lower().endswith(".gz") or content[:2] == b"\x1f\x8b"
         if is_gz:
             try:
@@ -1250,15 +1261,12 @@ def fetch_latest_teamlist_url() -> str:
         score = 0
         if ("team-lists" in loc_low) or ("nrl-team-lists" in loc_low):
             score += 10
-
         if "nrl-team-lists-round-" in loc_low or "team-lists-round-" in loc_low:
             score += 200
         elif "round-" in loc_low:
             score += 80
-
         if "las-vegas" in loc_low:
             score -= 120
-
         if "nrl-team-lists" in loc_low:
             score += 20
 
@@ -1269,7 +1277,6 @@ def fetch_latest_teamlist_url() -> str:
             score -= 200
         elif year and year < current_year - 1:
             score -= 500
-
         return score
 
     try:
@@ -1279,7 +1286,6 @@ def fetch_latest_teamlist_url() -> str:
 
         sitemap_locs = re.findall(r"<loc>\s*([^<]+)\s*</loc>", idx_xml, flags=re.IGNORECASE)
         print(f"[debug] sitemap index locs={len(sitemap_locs)}")
-
         if not sitemap_locs:
             return ""
 
@@ -1287,7 +1293,6 @@ def fetch_latest_teamlist_url() -> str:
         best_lastmod = ""
         best_score = -10_000
         hits = 0
-
         current_year = datetime.now(SYDNEY_TZ).year
 
         for sm_url in sitemap_locs:
@@ -1314,14 +1319,12 @@ def fetch_latest_teamlist_url() -> str:
                         continue
 
                     hits += 1
-
                     year = extract_year_from_news_url(loc_low)
                     if year and year != current_year:
                         continue
 
                     m_mod = re.search(r"<lastmod>\s*([^<]+)\s*</lastmod>", blk, flags=re.IGNORECASE)
                     lastmod = m_mod.group(1).strip() if m_mod else ""
-
                     s = score_url(loc_low, year)
 
                     if (s > best_score) or (s == best_score and lastmod > best_lastmod):
@@ -1334,12 +1337,12 @@ def fetch_latest_teamlist_url() -> str:
 
         print(f"[debug] teamlist hits={hits}")
         print(f"[debug] best_teamlist_url={best_url!r} score={best_score} lastmod={best_lastmod!r}")
-
         return best_url or ""
 
     except Exception as e:
         print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap index: {e}")
         return ""
+
 
 # ----------------------------
 # BUILD OUTPUT
@@ -1349,10 +1352,8 @@ def build_predictions() -> pd.DataFrame:
 
     if MODE == "AUTO":
         fixtures = fixtures_from_odds_csv("odds.csv")
-
         if not fixtures:
             fixtures = fetch_upcoming_fixtures(days_ahead=21)
-
         if not fixtures:
             raise SystemExit("[stop] No upcoming fixtures found from odds.csv or the fixture feed. Not showing trial games.")
     else:
@@ -1361,7 +1362,6 @@ def build_predictions() -> pd.DataFrame:
     teams = sorted(list(TEAM_REGION.keys()))
 
     saved_model = load_saved_ratings()
-
     results = fetch_completed_results()
     results = (
         results
@@ -1371,7 +1371,6 @@ def build_predictions() -> pd.DataFrame:
     print(f"[debug] combined results rows={len(results)} (deduped)")
 
     fresh_model = fit_attack_defence(results, teams)
-
     if fresh_model:
         ad_model = fresh_model
         save_ratings(ad_model)
@@ -1388,6 +1387,7 @@ def build_predictions() -> pd.DataFrame:
 
     starters_by_team = fetch_starters_by_team(teamlist_url) if teamlist_url else {}
     print("[debug] starters_by_team keys sample:", list(sorted(starters_by_team.keys()))[:30])
+
     for m in fixtures:
         print(f"[debug] {m.home} home_len={len(starters_by_team.get(m.home, {}))} | {m.away} away_len={len(starters_by_team.get(m.away, {}))}")
 
@@ -1396,7 +1396,6 @@ def build_predictions() -> pd.DataFrame:
         manual_for_date = manual_by_date.get(m.date, {})
         if not manual_for_date:
             continue
-
         if m.home in manual_for_date:
             starters_by_team.setdefault(m.home, {}).update(manual_for_date[m.home])
         if m.away in manual_for_date:
@@ -1419,11 +1418,10 @@ def build_predictions() -> pd.DataFrame:
     if missing_keys:
         print("⚠️ Missing odds for these fixtures (date, home, away):")
         for k in missing_keys:
-            print("  ", k)
+            print(" ", k)
         raise SystemExit("Stopping because odds are missing. Update odds.csv (or wait until Tuesday) then rerun.")
 
     rows = []
-
     MIN_EDGE = 0.03
     MIN_CONF = 0.55
 
@@ -1594,10 +1592,12 @@ def build_predictions() -> pd.DataFrame:
     print(f"[predict] current round fixtures={len(df)} bets={bet_count} exposure=${exposure:.2f} avg_edge={avg_edge:.3f}")
 
     return df
+
+
 def load_results_csv(path: str) -> pd.DataFrame:
     """
     Loads results from a manual CSV like:
-    date,home,away,home_pts,away_pts
+      date,home,away,home_pts,away_pts
     """
     if not os.path.exists(path):
         print(f"[warn] results file not found: {path}")
@@ -1619,11 +1619,11 @@ def load_results_csv(path: str) -> pd.DataFrame:
     df["away"] = df["away"].astype(str).apply(norm_team)
     df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
     df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
-
     df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
 
     print(f"[info] Loaded {path}: {len(df)} rows")
     return df[["date", "home", "away", "home_pts", "away_pts"]]
+
 
 if __name__ == "__main__":
     df = build_predictions()
