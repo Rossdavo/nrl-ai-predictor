@@ -23,6 +23,8 @@ PRED_HISTORY_COLS = [
     "stake",
     "stake_dollars",
     "recommended_bet",
+    "home_top_try",
+    "away_top_try",
     "generated_at",
 ]
 
@@ -74,6 +76,8 @@ def _prepare_prediction_history(df: pd.DataFrame, run_id: str) -> pd.DataFrame:
     out["stake_dollars"] = pd.to_numeric(out["stake_dollars"], errors="coerce")
     out["pick"] = out["pick"].astype(str).replace("nan", "").str.strip()
     out["recommended_bet"] = out["recommended_bet"].astype(str).replace("nan", "").str.strip()
+    out["home_top_try"] = out["home_top_try"].astype(str).replace("nan", "").str.strip()
+    out["away_top_try"] = out["away_top_try"].astype(str).replace("nan", "").str.strip()
     out["generated_at"] = out["generated_at"].astype(str).replace("nan", "").str.strip()
 
     out = out.dropna(subset=["date", "home", "away", "home_win_prob"]).copy()
