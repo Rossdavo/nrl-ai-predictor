@@ -526,9 +526,7 @@
         "pick",
         "recommended_bet",
         "stake_dollars",
-        "exp_margin_home",
-        "home_top_try",
-        "away_top_try"
+        "exp_margin_home"
       ].filter(h => useRows.some(r => h in r));
 
       const formatters = {
@@ -685,7 +683,6 @@
       let wins = null;
       let losses = null;
       let pending = null;
-      let totalStake = null;
 
       if (betSummary) {
         profit = toNumber(betSummary.units_profit);
@@ -697,11 +694,11 @@
 
         const totalStake = toNumber(betSummary.total_stake);
 
-      if (profit !== null && totalStake && totalStake > 0) {
-        roi = (profit * 10) / totalStake;   // ✅ REAL ROI (dollars)
-      } else {
-        roi = null;
-      }
+        if (profit !== null && totalStake && totalStake > 0) {
+          roi = (profit * 10) / totalStake;
+        } else {
+          roi = null;
+        }
 
       } else {
         const latestPerf = perfRows.length ? perfRows[perfRows.length - 1] : null;
@@ -713,7 +710,7 @@
         const totalStake = toNumber(latestPerf?.total_stake);
 
         if (profit !== null && totalStake && totalStake > 0) {
-          roi = (profit * 10) / totalStake;   // ✅ fallback ROI
+          roi = (profit * 10) / totalStake;
         } else {
           roi = null;
         }
@@ -737,7 +734,7 @@
                 : ((profit * 10) >= 0
                 ? `$${Math.abs(profit * 10).toFixed(2)}`
                 : `-$${Math.abs(profit * 10).toFixed(2)}`)
-          }</div>
+            }</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Bankroll</div>
@@ -760,10 +757,10 @@
       if (profit !== null) {
         const profitDollars = profit * 10;
         summaryRows.push({
-        metric: "Profit ($)",
-        value: profitDollars >= 0
-          ? `$${Math.abs(profitDollars).toFixed(2)}`
-          : `-$${Math.abs(profitDollars).toFixed(2)}`
+          metric: "Profit ($)",
+          value: profitDollars >= 0
+            ? `$${Math.abs(profitDollars).toFixed(2)}`
+            : `-$${Math.abs(profitDollars).toFixed(2)}`
         });
       }
       if (bankroll !== null) summaryRows.push({ metric: "Closing Bankroll", value: formatMoney(bankroll, 2) });
@@ -881,82 +878,78 @@
     }
 
     function renderBetHistory(rows) {
-  const el = document.getElementById("bet-history-table");
-  const meta = document.getElementById("bet-history-meta");
+      const el = document.getElementById("bet-history-table");
+      const meta = document.getElementById("bet-history-meta");
 
-  if (!rows.length) {
-    meta.textContent = "0 rows";
-    el.innerHTML = '<div class="empty">No bet history available yet.</div>';
-    return;
-  }
+      if (!rows.length) {
+        meta.textContent = "0 rows";
+        el.innerHTML = '<div class="empty">No bet history available yet.</div>';
+        return;
+      }
 
-  const settledRows = rows
-    .filter(r => ["WIN", "LOSS", "DRAW", "PENDING"].includes(String(r.bet_status || "").toUpperCase()))
-    .sort((a, b) => {
-      const ak = `${a.date || ""} ${a.kickoff_local || ""}`;
-      const bk = `${b.date || ""} ${b.kickoff_local || ""}`;
-      return bk.localeCompare(ak);
-    })
-    .slice(0, 20);
+      const settledRows = rows
+        .filter(r => ["WIN", "LOSS", "DRAW", "PENDING"].includes(String(r.bet_status || "").toUpperCase()))
+        .sort((a, b) => {
+          const ak = `${a.date || ""} ${a.kickoff_local || ""}`;
+          const bk = `${b.date || ""} ${b.kickoff_local || ""}`;
+          return bk.localeCompare(ak);
+        })
+        .slice(0, 20);
 
-  meta.textContent = `${rows.length} tracked row${rows.length === 1 ? "" : "s"}`;
+      meta.textContent = `${rows.length} tracked row${rows.length === 1 ? "" : "s"}`;
 
-  const headers = [
-    "date",
-    "home",
-    "away",
-    "pick",
-    "bet_odds",
-    "stake_dollars",
-    "bet_status",
-    "profit_units",   // KEEP THIS
-    "bankroll_after"
-  ].filter(h => settledRows.some(r => h in r));
+      const headers = [
+        "date",
+        "home",
+        "away",
+        "pick",
+        "bet_odds",
+        "stake_dollars",
+        "bet_status",
+        "profit_units",
+        "bankroll_after"
+      ].filter(h => settledRows.some(r => h in r));
 
-  const formatters = {
-    pick: v => {
-      if (!v) return "";
-      const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
-      return `<span class="${klass}">${escapeHtml(v)}</span>`;
-    },
-    bet_status: v => {
-      const val = String(v || "").toUpperCase();
-      let klass = "pill pill-amber";
-      if (val === "WIN") klass = "pill pill-green";
-      if (val === "LOSS" || val === "DRAW") klass = "pill pill-red";
-      if (val === "PENDING") klass = "pill pill-blue";
-      return `<span class="${klass}">${escapeHtml(val)}</span>`;
-    },
-    bet_odds: v => escapeHtml(formatFixed(v, 2)),
+      const formatters = {
+        pick: v => {
+          if (!v) return "";
+          const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
+          return `<span class="${klass}">${escapeHtml(v)}</span>`;
+        },
+        bet_status: v => {
+          const val = String(v || "").toUpperCase();
+          let klass = "pill pill-amber";
+          if (val === "WIN") klass = "pill pill-green";
+          if (val === "LOSS" || val === "DRAW") klass = "pill pill-red";
+          if (val === "PENDING") klass = "pill pill-blue";
+          return `<span class="${klass}">${escapeHtml(val)}</span>`;
+        },
+        bet_odds: v => escapeHtml(formatFixed(v, 2)),
+        stake_dollars: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
+          return `<span class="mono">${escapeHtml(formatMoney(n, 2))}</span>`;
+        },
+        profit_units: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
 
-    stake_dollars: v => {
-      const n = toNumber(v);
-      if (n === null) return "";
-      return `<span class="mono">${escapeHtml(formatMoney(n, 2))}</span>`;
-    },
+          const dollars = n * 10;
+          const klass = dollars >= 0 ? "positive" : "negative";
+          const absVal = Math.abs(dollars).toFixed(2);
+          const formatted = dollars >= 0 ? `$${absVal}` : `-$${absVal}`;
 
-    // ✅ THIS IS THE FIX
-    profit_units: v => {
-      const n = toNumber(v);
-      if (n === null) return "";
+          return `<span class="${klass}">${formatted}</span>`;
+        },
+        bankroll_after: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
+          return `<span class="mono">${escapeHtml(formatMoney(n, 2))}</span>`;
+        }
+      };
 
-      const dollars = n * 10;
-      const klass = dollars >= 0 ? "positive" : "negative";
-      const absVal = Math.abs(dollars).toFixed(2);
-      const formatted = dollars >= 0 ? `$${absVal}` : `-$${absVal}`;
-
-      return `<span class="${klass}">${formatted}</span>`;
-    },
-
-    bankroll_after: v => {
-      const n = toNumber(v);
-      if (n === null) return "";
-      return `<span class="mono">${escapeHtml(formatMoney(n, 2))}</span>`;
+      el.innerHTML = makeTable(headers, settledRows, formatters);
     }
-  };
-
-  el.innerHTML = makeTable(headers, settledRows, formatters);
-}
 
     function renderCLV(clvSummaryRows, clvHistoryRows, clvResultsRows) {
       const elMeta = document.getElementById("clv-meta");
