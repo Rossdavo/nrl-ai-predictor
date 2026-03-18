@@ -54,6 +54,7 @@ SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 TEAM_NAME_NORMALISE = {
     # long -> short
     "Canterbury Bulldogs": "Bulldogs",
+    "Canterbury-Bankstown Bulldogs": "Bulldogs",
     "St George Illawarra Dragons": "Dragons",
     "Newcastle Knights": "Knights",
     "North Queensland Cowboys": "Cowboys",
@@ -64,11 +65,14 @@ TEAM_NAME_NORMALISE = {
     "Brisbane Broncos": "Broncos",
     "Penrith Panthers": "Panthers",
     "Cronulla Sutherland Sharks": "Sharks",
+    "Cronulla-Sutherland Sharks": "Sharks",
     "Gold Coast Titans": "Titans",
     "Manly Warringah Sea Eagles": "Sea Eagles",
+    "Manly-Warringah Sea Eagles": "Sea Eagles",
     "Canberra Raiders": "Raiders",
     "South Sydney Rabbitohs": "Rabbitohs",
     "Dolphins": "Dolphins",
+    "The Dolphins": "Dolphins",
     "Wests Tigers": "Wests Tigers",
     # short -> short
     "Bulldogs": "Bulldogs",
@@ -231,6 +235,7 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
 # TEAM LIST SCRAPE
 # ----------------------------
 TEAM_CANONICAL_PATTERNS = [
+    ("Canterbury-Bankstown Bulldogs", "Bulldogs"),
     ("Canterbury Bulldogs", "Bulldogs"),
     ("St George Illawarra Dragons", "Dragons"),
     ("Newcastle Knights", "Knights"),
@@ -241,13 +246,16 @@ TEAM_CANONICAL_PATTERNS = [
     ("Sydney Roosters", "Roosters"),
     ("Brisbane Broncos", "Broncos"),
     ("Penrith Panthers", "Panthers"),
+    ("Cronulla-Sutherland Sharks", "Sharks"),
     ("Cronulla Sutherland Sharks", "Sharks"),
     ("Gold Coast Titans", "Titans"),
+    ("Manly-Warringah Sea Eagles", "Sea Eagles"),
     ("Manly Warringah Sea Eagles", "Sea Eagles"),
     ("Canberra Raiders", "Raiders"),
     ("South Sydney Rabbitohs", "Rabbitohs"),
-    ("Wests Tigers", "Wests Tigers"),
+    ("The Dolphins", "Dolphins"),
     ("Dolphins", "Dolphins"),
+    ("Wests Tigers", "Wests Tigers"),
     # short forms too
     ("Bulldogs", "Bulldogs"),
     ("Dragons", "Dragons"),
@@ -309,6 +317,40 @@ def _html_to_lines(html: str) -> List[str]:
     text = _strip_html_to_text(html)
     lines = [_clean_text(x) for x in text.splitlines()]
     return [x for x in lines if x]
+
+
+def _normalize_blob(s: str) -> str:
+    if s is None:
+        return ""
+    s = ihtml.unescape(str(s))
+    s = s.replace("\\u002F", "/")
+    s = s.replace("\\u0026", "&")
+    s = s.replace("\\u2019", "'").replace("\\u2018", "'")
+    s = s.replace("\\u201c", '"').replace("\\u201d", '"')
+    s = s.replace("\\n", " ").replace("\\r", " ").replace("\\t", " ")
+    s = s.replace('\\"', '"')
+    s = s.replace("\xa0", " ")
+    s = s.replace("–", "-").replace("—", "-")
+    s = re.sub(r"\s+", " ", s)
+    return s.strip()
+
+
+def _extract_raw_blob_from_html(html: str) -> str:
+    """
+    Keep BOTH visible HTML text and script content.
+    NRL lineup strings may live inside hydration/script blobs.
+    """
+    if not html:
+        return ""
+
+    script_bits = re.findall(
+        r"<script[^>]*>([\s\S]*?)</script>",
+        html,
+        flags=re.IGNORECASE,
+    )
+    visible = re.sub(r"<[^>]+>", " ", html)
+    blob = " ".join([visible] + script_bits)
+    return _normalize_blob(blob)
 
 
 def _resolve_team_name(raw: str) -> str:
@@ -578,10 +620,10 @@ def _parse_compact_team_runs(text: str) -> Dict[str, Dict[int, str]]:
     out: Dict[str, Dict[int, str]] = {}
 
     team_stop = (
-        r"(?:Canterbury Bulldogs|St George Illawarra Dragons|Newcastle Knights|North Queensland Cowboys|"
+        r"(?:Canterbury-Bankstown Bulldogs|Canterbury Bulldogs|St George Illawarra Dragons|Newcastle Knights|North Queensland Cowboys|"
         r"Melbourne Storm|Parramatta Eels|New Zealand Warriors|Sydney Roosters|Brisbane Broncos|"
-        r"Penrith Panthers|Cronulla Sutherland Sharks|Gold Coast Titans|Manly Warringah Sea Eagles|"
-        r"Canberra Raiders|South Sydney Rabbitohs|Wests Tigers|Dolphins|Bulldogs|Dragons|Knights|"
+        r"Penrith Panthers|Cronulla-Sutherland Sharks|Cronulla Sutherland Sharks|Gold Coast Titans|Manly-Warringah Sea Eagles|Manly Warringah Sea Eagles|"
+        r"Canberra Raiders|South Sydney Rabbitohs|The Dolphins|Dolphins|Wests Tigers|Bulldogs|Dragons|Knights|"
         r"Cowboys|Storm|Eels|Warriors|Roosters|Broncos|Panthers|Sharks|Titans|Sea Eagles|Raiders|Rabbitohs)"
     )
 
@@ -639,6 +681,123 @@ def _is_prose_teamlist_article(lines: List[str]) -> bool:
     has_old_match_centre = any(" is number " in x and " for " in x for x in lines[:200])
 
     return has_match_heading and has_team_paragraph and not has_old_match_centre
+
+
+def _parse_embedded_named_teamlists(blob: str) -> Dict[str, Dict[int, str]]:
+    """
+    Parse lineup strings directly from raw/hydrated HTML/script content.
+
+    Handles BOTH styles:
+      1) 'Fullback for Bulldogs is number 1 Connor Tracey'
+      2) 'Team list for Canterbury-Bankstown Bulldogs ... At Fullback: number 1, Connor Tracey ...'
+    """
+    out: Dict[str, Dict[int, str]] = {}
+
+    if not blob:
+        return out
+
+    # Style A: explicit team names
+    pat_explicit = re.compile(
+        r"(Fullback|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)"
+        r"\s+for\s+(.+?)\s+is\s+number\s+(\d{1,2})\s+"
+        r"([A-Z][A-Za-z' .\-]+?)"
+        r"(?=\s+(?:Fullback|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)\s+for\s+|"
+        r"\s+Team list for\s+|"
+        r"\s+###\s+|$)",
+        flags=re.IGNORECASE,
+    )
+
+    for _role, team_raw, num_s, name_raw in pat_explicit.findall(blob):
+        team = _resolve_team_name(team_raw)
+        if not team:
+            continue
+        try:
+            num = int(num_s)
+        except Exception:
+            continue
+        if not (1 <= num <= 13):
+            continue
+        name = _clean_player_name(name_raw)
+        if len(name.split()) < 2:
+            continue
+        out.setdefault(team, {})
+        out[team][num] = name
+
+    # Style B: team header + "At X: number N, Name"
+    team_header_pat = re.compile(
+        r"Team list for\s+(.+?)(?=\s+Team list for\s+|$)",
+        flags=re.IGNORECASE,
+    )
+
+    slot_pat = re.compile(
+        r"At\s+"
+        r"(Fullback|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)"
+        r":\s*number\s+(\d{1,2})\s*,\s*(?:the captain,\s*)?"
+        r"([A-Z][A-Za-z' .\-]+?)"
+        r"(?=\s+At\s+(?:Fullback|Winger|Centre|Five[- ]?Eighth|Halfback|Prop|Hooker|Second Row|2nd Row|Lock)"
+        r":|\s+Interchange|\s+Reserves|\s+Team list for\s+|$)",
+        flags=re.IGNORECASE,
+    )
+
+    for tm in team_header_pat.finditer(blob):
+        team_raw = tm.group(1)
+        team = _resolve_team_name(team_raw)
+        if not team:
+            continue
+
+        section = tm.group(0)
+        for _role, num_s, name_raw in slot_pat.findall(section):
+            try:
+                num = int(num_s)
+            except Exception:
+                continue
+            if not (1 <= num <= 13):
+                continue
+            name = _clean_player_name(name_raw)
+            if len(name.split()) < 2:
+                continue
+            out.setdefault(team, {})
+            out[team][num] = name
+
+    return out
+
+
+def _dedupe_fixtures(fixtures: List[Match]) -> List[Match]:
+    seen = set()
+    out: List[Match] = []
+    for m in sorted(fixtures, key=lambda x: (x.date, x.kickoff_local, x.home, x.away)):
+        key = (m.date, m.home, m.away)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(m)
+    return out
+
+
+def _filter_current_round_fixtures(fixtures: List[Match]) -> List[Match]:
+    """
+    Keep only the current round window before team-list scraping.
+    Prevents trying later fixtures against the current-round source.
+    """
+    if not fixtures:
+        return fixtures
+
+    dates = pd.to_datetime([m.date for m in fixtures], errors="coerce")
+    if len(dates) == 0:
+        return fixtures
+
+    round_start = dates.min()
+    round_end = round_start + pd.Timedelta(days=3)
+
+    out = []
+    for m in fixtures:
+        d = pd.to_datetime(m.date, errors="coerce")
+        if pd.isna(d):
+            continue
+        if round_start <= d <= round_end:
+            out.append(m)
+
+    return out
 
 
 def slugify_team(team: str) -> str:
@@ -704,6 +863,8 @@ def _parse_modern_match_centre(lines: List[str], expected_home: str, expected_aw
         raw_low = raw.lower()
         long_map = {
             "canberra raiders": "Raiders",
+            "canterbury-bulldogs": "Bulldogs",
+            "canterbury-bankstown bulldogs": "Bulldogs",
             "canterbury bulldogs": "Bulldogs",
             "st george illawarra dragons": "Dragons",
             "newcastle knights": "Knights",
@@ -714,11 +875,14 @@ def _parse_modern_match_centre(lines: List[str], expected_home: str, expected_aw
             "sydney roosters": "Roosters",
             "brisbane broncos": "Broncos",
             "penrith panthers": "Panthers",
+            "cronulla-sutherland sharks": "Sharks",
             "cronulla sutherland sharks": "Sharks",
             "gold coast titans": "Titans",
+            "manly-warringah sea eagles": "Sea Eagles",
             "manly warringah sea eagles": "Sea Eagles",
             "south sydney rabbitohs": "Rabbitohs",
             "wests tigers": "Wests Tigers",
+            "the dolphins": "Dolphins",
             "dolphins": "Dolphins",
         }
         mapped = long_map.get(raw_low, "")
@@ -759,27 +923,17 @@ def _legacy_article_scrape(url: str) -> Dict[str, Dict[int, str]]:
         r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
 
+        raw_blob = _extract_raw_blob_from_html(r.text)
         text = _strip_html_to_text(r.text)
         lines = _html_to_lines(r.text)
 
-        print("[debug] relevant teamlist lines sample:")
-        shown = 0
-        for idx, line in enumerate(lines):
-            if "for " in line and " is number " in line:
-                print(" ", repr(line))
-                if idx + 1 < len(lines):
-                    print(" next:", repr(lines[idx + 1]))
-                if idx + 2 < len(lines):
-                    print(" next2:", repr(lines[idx + 2]))
-                shown += 1
-                if shown >= 6:
-                    break
-
+        parsed_embedded = _parse_embedded_named_teamlists(raw_blob)
         parsed_mc = _parse_match_centre_blocks(lines)
         parsed_heading = _parse_team_heading_blocks(lines)
         parsed_compact = _parse_compact_team_runs(text)
 
         candidates: List[Dict[str, Dict[int, str]]] = [
+            parsed_embedded,
             parsed_mc,
             parsed_heading,
             parsed_compact,
@@ -795,19 +949,18 @@ def _legacy_article_scrape(url: str) -> Dict[str, Dict[int, str]]:
             if sum(1 for n in range(1, 14) if n in players) >= 7
         }
 
+        print(
+            "[debug] embedded/article parsed teams:",
+            ", ".join(f"{t}:{len(p)}" for t, p in sorted(starters.items())) if starters else "(none)"
+        )
+
         if starters:
             sample = sorted(starters.items(), key=lambda x: (-len(x[1]), x[0]))[:16]
             print("[info] legacy article scrape sample:", ", ".join([f"{t}:{len(p)}" for t, p in sample]))
-            missing = [t for t in ALL_TEAMS if len(starters.get(t, {})) < 7]
-            if missing:
-                print("[warn] teamlist teams with weak/missing scrape:", ", ".join(missing))
-            for team in sorted(ALL_TEAMS):
-                print(f"[debug] scrape team {team}: starters={len(starters.get(team, {}))}")
             return starters
 
         if _is_prose_teamlist_article(lines):
-            print("[warn] team list article is prose-style and does not expose full named 1-13 lineups in scrapeable text.")
-            print("[warn] Using fixture match-centre scraping first; article scrape is not sufficient by itself.")
+            print("[warn] team list article body is prose-only; no full 1-13 found in fetched content.")
             print("[debug] first 40 teamlist lines:")
             for line in lines[:40]:
                 print(" ", line)
@@ -848,7 +1001,7 @@ def detect_season_and_round(fixtures: List[Match], teamlist_url: str = "") -> Tu
 def fetch_starters_for_fixture(match: Match, season: int, round_no: int, round_article_url: str = "") -> Dict[str, Dict[int, str]]:
     """
     Primary source: fixture match-centre page
-    Fallback: round team-list article using existing parsers
+    Fallback: round team-list article
     """
     starters: Dict[str, Dict[int, str]] = {}
 
@@ -858,10 +1011,14 @@ def fetch_starters_for_fixture(match: Match, season: int, round_no: int, round_a
         r = requests.get(mc_url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
 
+        raw_blob = _extract_raw_blob_from_html(r.text)
         lines = _html_to_lines(r.text)
+
+        parsed_embedded = _parse_embedded_named_teamlists(raw_blob)
         parsed_modern = _parse_modern_match_centre(lines, match.home, match.away)
         parsed_legacy = _parse_match_centre_blocks(lines)
 
+        starters = _merge_best_team_map(starters, parsed_embedded)
         starters = _merge_best_team_map(starters, parsed_modern)
         starters = _merge_best_team_map(starters, parsed_legacy)
 
@@ -1576,6 +1733,13 @@ def build_predictions() -> pd.DataFrame:
             fixtures = fetch_upcoming_fixtures(days_ahead=21)
         if not fixtures:
             raise SystemExit("[stop] No upcoming fixtures found from odds.csv or the fixture feed. Not showing trial games.")
+
+        fixtures = _dedupe_fixtures(fixtures)
+        fixtures = _filter_current_round_fixtures(fixtures)
+
+        print(f"[debug] fixtures after dedupe/current-round filter: {len(fixtures)}")
+        for m in fixtures:
+            print(f"[debug] current-round fixture: {m.date} {m.home} v {m.away}")
     else:
         raise SystemExit("[stop] MODE is not AUTO. Not publishing trial fixtures.")
 
