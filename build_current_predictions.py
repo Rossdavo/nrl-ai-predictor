@@ -21,8 +21,6 @@ EXPECTED_COLS = [
     "stake",
     "stake_dollars",
     "recommended_bet",
-    "home_top_try",
-    "away_top_try",
     "generated_at",
 ]
 
@@ -47,25 +45,25 @@ def _load_and_repair_history(path: str) -> pd.DataFrame:
     # skip existing header, whatever shape it is
     data_rows = rows[1:]
 
-    for i, row in enumerate(data_rows, start=2):
+    for row in data_rows:
         if not row:
             continue
 
-        # old format: 16 fields
-        if len(row) == 16:
-            row = row[:15] + ["", ""] + [row[15]]
+        # old format with try-scorer columns: 18 fields
+        if len(row) == 18:
+            row = row[:15] + [row[17]]
 
-        # new format: 18 fields
-        elif len(row) == 18:
+        # already cleaned format: 16 fields
+        elif len(row) == 16:
             pass
 
         # too short: pad
-        elif len(row) < 18:
-            row = row + [""] * (18 - len(row))
+        elif len(row) < 16:
+            row = row + [""] * (16 - len(row))
 
         # too long: trim
-        elif len(row) > 18:
-            row = row[:18]
+        elif len(row) > 16:
+            row = row[:16]
 
         repaired_rows.append(row)
 
@@ -106,8 +104,6 @@ def main():
     df["home"] = df["home"].map(_norm)
     df["away"] = df["away"].map(_norm)
     df["kickoff_local"] = df["kickoff_local"].astype(str).replace("nan", "").str.strip()
-    df["home_top_try"] = df["home_top_try"].astype(str).replace("nan", "").str.strip()
-    df["away_top_try"] = df["away_top_try"].astype(str).replace("nan", "").str.strip()
 
     run_meta = (
         df.groupby("run_id", dropna=False)["generated_at"]
