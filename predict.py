@@ -61,8 +61,9 @@ SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 MIN_EDGE = 0.035
 MIN_CONF = 0.54
 
-MODEL_BLEND = 0.57
-MARKET_BLEND = 0.43
+# Market is the stronger guide, especially on short favourites
+MODEL_BLEND = 0.45
+MARKET_BLEND = 0.55
 
 YEAR_WEIGHTS = {
     2026: 1.00,
@@ -546,6 +547,46 @@ def fit_attack_defence(
     }
 
 
+def build_team_home_ground_edges(results: pd.DataFrame, teams: List[str]) -> Dict[str, float]:
+    """
+    Team-specific home-ground edge from 2025 + 2026.
+    Uses weighted home win% minus away win% and converts it to a modest points bonus.
+    """
+    out = {t: 0.0 for t in teams}
+    if results is None or results.empty:
+        return out
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).copy()
+    df["season_year"] = df["date"].dt.year
+
+    for team in teams:
+        home = df[df["home"] == team].copy()
+        away = df[df["away"] == team].copy()
+
+        if home.empty or away.empty:
+            continue
+
+        home["w"] = home["season_year"].map(lambda y: YEAR_WEIGHTS.get(int(y), 0.0)).fillna(0.0)
+        away["w"] = away["season_year"].map(lambda y: YEAR_WEIGHTS.get(int(y), 0.0)).fillna(0.0)
+
+        home = home[home["w"] > 0].copy()
+        away = away[away["w"] > 0].copy()
+
+        if len(home) < 3 or len(away) < 3:
+            continue
+
+        home_win = np.average((home["home_pts"] > home["away_pts"]).astype(float), weights=home["w"])
+        away_win = np.average((away["away_pts"] > away["home_pts"]).astype(float), weights=away["w"])
+
+        delta = float(home_win - away_win)
+        pts = delta * 6.0
+        out[team] = float(max(-1.5, min(2.5, pts)))
+
+    return out
+
+
 def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float]]:
     try:
         df = pd.read_csv(path)
@@ -575,6 +616,7 @@ def expected_points(
     ha = model["home_adv"]
     atk = model["atk"]
     dfn = model["dfn"]
+    home_ground_edges = model.get("team_home_edge", {})
 
     home_pts = mu + ha + atk.get(home, 0.0) - dfn.get(away, 0.0)
     away_pts = mu + atk.get(away, 0.0) - dfn.get(home, 0.0)
@@ -582,6 +624,10 @@ def expected_points(
     h_adj, a_adj = travel_points_adjustment(home, away, venue)
     home_pts += h_adj
     away_pts += a_adj
+
+    hge = float(home_ground_edges.get(home, 0.0))
+    home_pts += hge
+    away_pts -= hge * 0.15
 
     home_pts += adj.get(home, {}).get("atk", 0.0)
     away_pts += adj.get(away, {}).get("atk", 0.0)
@@ -673,24 +719,23 @@ def value_edge(model_prob: float, decimal_odds: float) -> float:
 
 
 def compress_prob(p: float) -> float:
-    if p >= 0.60:
-        return 0.60 + (p - 0.60) * 0.60
-    if p <= 0.40:
-        return 0.40 + (p - 0.40) * 0.60
+    if p >= 0.67:
+        return 0.67 + (p - 0.67) * 0.78
+    if p <= 0.33:
+        return 0.33 + (p - 0.33) * 0.78
     return p
 
 
 def dynamic_required_edge(decimal_odds: float) -> float:
-    req = MIN_EDGE
-    if decimal_odds < 1.55:
-        req = 0.08
+    if decimal_odds < 1.50:
+        return 0.055
     elif decimal_odds < 1.70:
-        req = 0.065
-    elif decimal_odds < 1.90:
-        req = 0.05
-    elif decimal_odds > 2.60:
-        req = 0.045
-    return req
+        return 0.050
+    elif decimal_odds < 2.00:
+        return 0.045
+    elif decimal_odds < 2.80:
+        return 0.040
+    return 0.050
 
 
 def single_bet_cap_by_odds(decimal_odds: float) -> float:
@@ -741,7 +786,6 @@ def stake_band_dollars(
     if stake <= 0:
         return 0.0
 
-    # Positive nudges for especially strong favourites
     if decimal_odds < 1.50 and edge >= 0.10 and confidence >= 0.64 and exp_margin >= 10.0:
         stake = max(stake, 40.0)
     if decimal_odds < 1.45 and edge >= 0.14 and confidence >= 0.66 and exp_margin >= 12.0:
@@ -1075,6 +1119,10 @@ def build_predictions() -> pd.DataFrame:
     manual_upsets = load_manual_upset_flags()
     form_stats = build_recent_form_stats(results, teams)
     team_volatility = build_team_volatility(results, teams)
+    team_home_edge = build_team_home_ground_edges(results, teams)
+
+    if ad_model is not None:
+        ad_model["team_home_edge"] = team_home_edge
 
     missing_keys = []
     for m in fixtures:
@@ -1211,30 +1259,40 @@ def build_predictions() -> pd.DataFrame:
 
             upset_penalty_factor = 1.0
 
+            fragile_score = 0
             if qualifies and side_team == favourite_team:
-                if best_odds <= 1.70 and best_prob < 0.66:
-                    fragile_favourite = 1
-                if best_odds <= 1.60 and best_edge < 0.08:
-                    fragile_favourite = 1
+                fav_market_prob = market_home_prob if side_team == m.home else market_away_prob
+
+                if best_odds < 1.70 and not math.isnan(fav_market_prob) and best_prob < (fav_market_prob - 0.05):
+                    fragile_score += 1
                 if final_upset_score >= 1.5:
-                    fragile_favourite = 1
-                if exp_margin < 6.0 and best_odds <= 1.70:
-                    fragile_favourite = 1
-                if team_volatility.get(side_team, 0.0) >= 10.0 and best_odds <= 1.80:
-                    fragile_favourite = 1
+                    fragile_score += 1
+                if exp_margin < 5.0 and best_odds < 1.70:
+                    fragile_score += 1
+                if team_volatility.get(side_team, 0.0) >= 10.5:
+                    fragile_score += 1
+
+                fragile_favourite = 1 if fragile_score >= 2 else 0
 
             if qualifies and fragile_favourite:
-                upset_penalty_factor *= 0.55
-                if best_edge < max(req_edge, 0.06):
-                    qualifies = False
-
-            if qualifies and side_team == favourite_team and final_upset_score >= UPSET_FLAG_THRESHOLD:
-                upset_penalty_factor *= max(0.45, 1.0 - (0.14 * final_upset_score))
-                if best_edge < 0.065 and final_upset_score >= 2.5:
+                upset_penalty_factor *= 0.75
+                if best_odds < 1.70 and best_edge < max(req_edge, 0.055):
                     qualifies = False
 
             if qualifies and side_team == underdog_team and final_upset_score >= UPSET_FLAG_THRESHOLD:
-                upset_penalty_factor *= min(1.08, 1.0 + (0.03 * final_upset_score))
+                upset_penalty_factor *= min(1.10, 1.0 + (0.04 * final_upset_score))
+
+            # manual upset / outsider value override
+            if qualifies and manual_upset_team in {m.home, m.away}:
+                if side_team == manual_upset_team and side_team == underdog_team:
+                    best_edge += 0.01
+                    upset_penalty_factor *= 1.08
+
+                if side_team == favourite_team and manual_upset_team == underdog_team:
+                    if best_edge < 0.07:
+                        qualifies = False
+                    else:
+                        upset_penalty_factor *= 0.85
 
             home_games = float(form_stats.get(m.home, {}).get("games", 0.0))
             away_games = float(form_stats.get(m.away, {}).get("games", 0.0))
