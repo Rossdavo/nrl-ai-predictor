@@ -1212,15 +1212,12 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
     return fixtures
 
 SITEMAP_INDEX = "https://www.nrl.com/sitemap/sitemap.xml"
-CURRENT_SITEMAP = "https://www.nrl.com/sitemap/current.xml.gz"
 
 def fetch_latest_teamlist_url() -> str:
     """
-    Fast path first:
-    - scan current.xml.gz only
-    - if no good match, fall back to the full sitemap index scan
-
-    Keeps the flexible team-list parsing unchanged.
+    Find the best team lists article by walking NRL's sitemap index.
+    Strongly prefers current-season round-based team list articles.
+    Handles .xml.gz child sitemaps properly (gzip decompress).
     """
     headers = {
         "User-Agent": "Mozilla/5.0",
@@ -1251,8 +1248,7 @@ def fetch_latest_teamlist_url() -> str:
 
     def score_url(loc_low: str, year: int) -> int:
         score = 0
-
-        if ("team-lists" in loc_low) or ("nrl-team-lists" in loc_low) or ("team-list" in loc_low):
+        if ("team-lists" in loc_low) or ("nrl-team-lists" in loc_low):
             score += 10
 
         if "nrl-team-lists-round-" in loc_low or "team-lists-round-" in loc_low:
@@ -1276,61 +1272,13 @@ def fetch_latest_teamlist_url() -> str:
 
         return score
 
-    def find_best_in_xml(xml: str) -> str:
-        current_year = datetime.now(SYDNEY_TZ).year
-        best_url = ""
-        best_lastmod = ""
-        best_score = -10_000
-
-        for blk in re.findall(r"<url>.*?</url>", xml, flags=re.DOTALL | re.IGNORECASE):
-            m_loc = re.search(r"<loc>\s*([^<]+)\s*</loc>", blk, flags=re.IGNORECASE)
-            if not m_loc:
-                continue
-
-            loc = m_loc.group(1).strip()
-            loc_low = loc.lower()
-
-            if "/news/" not in loc_low:
-                continue
-            if ("team-lists" not in loc_low) and ("nrl-team-lists" not in loc_low) and ("team-list" not in loc_low):
-                continue
-
-            year = extract_year_from_news_url(loc_low)
-            if year and year != current_year:
-                continue
-
-            m_mod = re.search(r"<lastmod>\s*([^<]+)\s*</lastmod>", blk, flags=re.IGNORECASE)
-            lastmod = m_mod.group(1).strip() if m_mod else ""
-
-            s = score_url(loc_low, year)
-
-            if (s > best_score) or (s == best_score and lastmod > best_lastmod):
-                best_score = s
-                best_lastmod = lastmod
-                best_url = loc
-
-        if best_url:
-            print(f"[debug] best_teamlist_url={best_url!r} score={best_score} lastmod={best_lastmod!r}")
-
-        return best_url
-
     try:
-        # Fast path: current sitemap only
-        try:
-            print(f"[debug] fetching current sitemap: {CURRENT_SITEMAP}")
-            current_xml = fetch_xml(CURRENT_SITEMAP)
-            fast_url = find_best_in_xml(current_xml)
-            if fast_url:
-                print("[info] teamlist URL found via current sitemap")
-                return fast_url
-            print("[warn] no teamlist URL found in current sitemap, falling back to full sitemap scan")
-        except Exception as e:
-            print(f"[warn] current sitemap lookup failed: {e} -- falling back to full sitemap scan")
-
-        # Fallback path: full sitemap index
         print(f"[debug] fetching sitemap index: {SITEMAP_INDEX}")
         idx_xml = fetch_xml(SITEMAP_INDEX)
+        print(f"[debug] sitemap index chars={len(idx_xml)}")
+
         sitemap_locs = re.findall(r"<loc>\s*([^<]+)\s*</loc>", idx_xml, flags=re.IGNORECASE)
+        print(f"[debug] sitemap index locs={len(sitemap_locs)}")
 
         if not sitemap_locs:
             return ""
@@ -1338,17 +1286,19 @@ def fetch_latest_teamlist_url() -> str:
         best_url = ""
         best_lastmod = ""
         best_score = -10_000
+        hits = 0
+
+        current_year = datetime.now(SYDNEY_TZ).year
 
         for sm_url in sitemap_locs:
             try:
                 print(f"[debug] scanning child sitemap: {sm_url}")
                 sm_xml = fetch_xml(sm_url)
                 sm_low = sm_xml.lower()
+                print(f"[debug] child chars={len(sm_xml)} has_team_terms={('team-lists' in sm_low) or ('team list' in sm_low)}")
 
                 if ("team-lists" not in sm_low) and ("team list" not in sm_low) and ("nrl-team-lists" not in sm_low):
                     continue
-
-                current_year = datetime.now(SYDNEY_TZ).year
 
                 for blk in re.findall(r"<url>.*?</url>", sm_xml, flags=re.DOTALL | re.IGNORECASE):
                     m_loc = re.search(r"<loc>\s*([^<]+)\s*</loc>", blk, flags=re.IGNORECASE)
@@ -1362,6 +1312,8 @@ def fetch_latest_teamlist_url() -> str:
                         continue
                     if ("team-lists" not in loc_low) and ("nrl-team-lists" not in loc_low) and ("team-list" not in loc_low):
                         continue
+
+                    hits += 1
 
                     year = extract_year_from_news_url(loc_low)
                     if year and year != current_year:
@@ -1380,11 +1332,13 @@ def fetch_latest_teamlist_url() -> str:
             except Exception as e:
                 print(f"[warn] sitemap child fetch failed: {sm_url} err={e}")
 
+        print(f"[debug] teamlist hits={hits}")
         print(f"[debug] best_teamlist_url={best_url!r} score={best_score} lastmod={best_lastmod!r}")
+
         return best_url or ""
 
     except Exception as e:
-        print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap search: {e}")
+        print(f"[warn] Could not auto-find TEAMLIST_URL via sitemap index: {e}")
         return ""
 
 # ----------------------------
