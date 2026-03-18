@@ -685,21 +685,38 @@
       let wins = null;
       let losses = null;
       let pending = null;
+      let totalStake = null;
 
       if (betSummary) {
-        roi = toNumber(betSummary.roi);
         profit = toNumber(betSummary.units_profit);
         bankroll = toNumber(betSummary.closing_bankroll);
         settled = toNumber(betSummary.bets_settled);
         wins = toNumber(betSummary.wins);
         losses = toNumber(betSummary.losses);
         pending = toNumber(betSummary.pending);
+
+        const totalStake = toNumber(betSummary.total_stake);
+
+      if (profit !== null && totalStake && totalStake > 0) {
+        roi = (profit * 10) / totalStake;   // ✅ REAL ROI (dollars)
+      } else {
+        roi = null;
+      }
+
       } else {
         const latestPerf = perfRows.length ? perfRows[perfRows.length - 1] : null;
         const latestBank = bankRows.length ? bankRows[bankRows.length - 1] : null;
-        roi = toNumber(latestPerf?.roi_pct ?? latestPerf?.roi);
+
         profit = toNumber(latestPerf?.profit_units ?? latestPerf?.profit);
         bankroll = toNumber(latestBank?.bankroll ?? latestBank?.current_bankroll);
+
+        const totalStake = toNumber(latestPerf?.total_stake);
+
+        if (profit !== null && totalStake && totalStake > 0) {
+          roi = (profit * 10) / totalStake;   // ✅ fallback ROI
+        } else {
+          roi = null;
+        }
       }
 
       elMeta.textContent = betSummary
