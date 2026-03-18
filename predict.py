@@ -61,7 +61,6 @@ SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 MIN_EDGE = 0.035
 MIN_CONF = 0.54
 
-# Market is the stronger guide, but not so strong it crushes quality home favourites
 MODEL_BLEND = 0.45
 MARKET_BLEND = 0.55
 
@@ -199,10 +198,8 @@ def apply_outright_strength_adjustment(home_prob: float, home: str, away: str) -
     away_s = outright_strength_score(away)
     diff = home_s - away_s
 
-    # Soft prior only
     home_prob += diff * 0.045
 
-    # Extra home premium for elite/premium environments
     if home in ELITE_HOME_TEAMS:
         home_prob += 0.012
     elif home in PREMIUM_HOME_TEAMS:
@@ -670,10 +667,6 @@ def fit_attack_defence(
 
 
 def build_team_home_ground_edges(results: pd.DataFrame, teams: List[str]) -> Dict[str, float]:
-    """
-    Team-specific home-ground edge from 2025 + 2026.
-    Uses weighted home win% minus away win% and converts it to a modest points bonus.
-    """
     out = {t: 0.0 for t in teams}
     if results is None or results.empty:
         return out
@@ -864,16 +857,18 @@ def compress_prob(p: float) -> float:
 
 def dynamic_required_edge(decimal_odds: float) -> float:
     if decimal_odds < 1.50:
-        return 0.038
-    elif decimal_odds < 1.65:
         return 0.036
+    elif decimal_odds < 1.65:
+        return 0.035
     elif decimal_odds < 1.85:
-        return 0.040
+        return 0.039
     elif decimal_odds < 2.05:
-        return 0.043
+        return 0.045
+    elif decimal_odds < 2.30:
+        return 0.055
     elif decimal_odds < 2.80:
-        return 0.040
-    return 0.050
+        return 0.065
+    return 0.075
 
 
 def single_bet_cap_by_odds(decimal_odds: float) -> float:
@@ -1421,10 +1416,22 @@ def build_predictions() -> pd.DataFrame:
                 )
 
                 if premium_home_fav:
-                    req_edge = max(0.025, req_edge - 0.012)
+                    req_edge = max(0.020, req_edge - 0.018)
 
                 if weak_home_fav and best_odds < 1.90:
                     req_edge = max(req_edge, 0.050)
+
+                weak_vs_weak_match = (
+                    OUTRIGHT_ODDS.get(m.home, 34.0) >= 60
+                    and OUTRIGHT_ODDS.get(m.away, 34.0) >= 60
+                )
+                if weak_vs_weak_match and best_odds >= 2.20:
+                    req_edge += 0.015
+
+                if best_side == "AWAY" and best_odds >= 2.20:
+                    conf = min(conf, 0.60)
+                if best_side == "HOME" and best_odds >= 2.20:
+                    conf = min(conf, 0.58)
 
             premium_home_lane = bool(
                 best_side == "HOME"
@@ -1432,7 +1439,7 @@ def build_predictions() -> pd.DataFrame:
                 and side_team in PREMIUM_HOME_TEAMS
                 and home_odds <= away_odds
                 and conf >= 0.60
-                and best_edge >= 0.025
+                and best_edge >= 0.020
             )
 
             qualifies = bool(
@@ -1466,10 +1473,10 @@ def build_predictions() -> pd.DataFrame:
                 if team_volatility.get(side_team, 0.0) >= 11.5:
                     major_warn += 1
 
-                if exp_margin < 4.5 and best_odds < 1.75:
+                if exp_margin < 3.5 and best_odds < 1.70:
                     minor_warn += 1
 
-                if best_edge < max(0.03, req_edge - 0.01):
+                if best_edge < max(0.025, req_edge - 0.015):
                     minor_warn += 1
 
                 if market_agreement < 0.86:
@@ -1485,7 +1492,6 @@ def build_predictions() -> pd.DataFrame:
             if qualifies and side_team == underdog_team and final_upset_score >= UPSET_FLAG_THRESHOLD:
                 upset_penalty_factor *= min(1.10, 1.0 + (0.04 * final_upset_score))
 
-            # manual upset / outsider value override
             if qualifies and manual_upset_team in {m.home, m.away}:
                 if side_team == manual_upset_team and side_team == underdog_team:
                     best_edge += 0.01
