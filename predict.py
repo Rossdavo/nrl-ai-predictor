@@ -61,7 +61,7 @@ SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 MIN_EDGE = 0.035
 MIN_CONF = 0.54
 
-# Market is the stronger guide, especially on short favourites
+# Market is the stronger guide, but not so strong it crushes quality home favourites
 MODEL_BLEND = 0.45
 MARKET_BLEND = 0.55
 
@@ -138,10 +138,132 @@ TEAM_REGION = {
 
 ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
 
+# ----------------------------
+# Futures market prior / team tiers
+# ----------------------------
+OUTRIGHT_ODDS = {
+    "Panthers": 5.20,
+    "Storm": 6.00,
+    "Broncos": 8.50,
+    "Roosters": 8.50,
+    "Bulldogs": 13.00,
+    "Sharks": 16.00,
+    "Warriors": 16.00,
+    "Rabbitohs": 18.00,
+    "Raiders": 20.00,
+    "Dolphins": 31.00,
+    "Eels": 34.00,
+    "Wests Tigers": 34.00,
+    "Knights": 51.00,
+    "Sea Eagles": 81.00,
+    "Cowboys": 81.00,
+    "Dragons": 81.00,
+    "Titans": 101.00,
+}
+
+PREMIUM_HOME_TEAMS = {"Storm", "Raiders", "Sharks", "Eels", "Warriors", "Knights"}
+ELITE_HOME_TEAMS = {"Storm", "Raiders"}
+WEAK_HOME_TEAMS = {"Cowboys", "Titans", "Dragons", "Sea Eagles"}
+
+TEAM_HOME_EDGE_FLOOR = {
+    "Storm": 1.80,
+    "Raiders": 1.45,
+    "Sharks": 1.00,
+    "Eels": 1.00,
+    "Warriors": 1.10,
+    "Knights": 0.75,
+}
+
+TEAM_HOME_EDGE_CAP = {
+    "Cowboys": 0.60,
+    "Titans": 0.45,
+    "Dragons": 0.60,
+    "Sea Eagles": 0.75,
+}
+
 
 def norm_team(name: str) -> str:
     name = str(name).strip()
     return TEAM_NAME_NORMALISE.get(name, name)
+
+
+def outright_strength_score(team: str) -> float:
+    odds = float(OUTRIGHT_ODDS.get(team, 34.0))
+    min_odds = min(OUTRIGHT_ODDS.values())
+    max_odds = max(OUTRIGHT_ODDS.values())
+    return (math.log(max_odds) - math.log(odds)) / (math.log(max_odds) - math.log(min_odds))
+
+
+def apply_outright_strength_adjustment(home_prob: float, home: str, away: str) -> float:
+    home_s = outright_strength_score(home)
+    away_s = outright_strength_score(away)
+    diff = home_s - away_s
+
+    # Soft prior only
+    home_prob += diff * 0.045
+
+    # Extra home premium for elite/premium environments
+    if home in ELITE_HOME_TEAMS:
+        home_prob += 0.012
+    elif home in PREMIUM_HOME_TEAMS:
+        home_prob += 0.006
+
+    return min(0.92, max(0.08, home_prob))
+
+
+def build_current_season_record(results: pd.DataFrame, season_year: int = 2026) -> Dict[str, Dict[str, float]]:
+    out = {t: {"wins": 0.0, "games": 0.0} for t in ALL_TEAMS}
+    if results is None or results.empty:
+        return out
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).copy()
+    df = df[df["date"].dt.year == season_year].copy()
+
+    for _, r in df.iterrows():
+        home = r["home"]
+        away = r["away"]
+        hp = float(r["home_pts"])
+        ap = float(r["away_pts"])
+
+        if home in out:
+            out[home]["games"] += 1.0
+            if hp > ap:
+                out[home]["wins"] += 1.0
+
+        if away in out:
+            out[away]["games"] += 1.0
+            if ap > hp:
+                out[away]["wins"] += 1.0
+
+    return out
+
+
+def apply_early_season_matchup_moderation(
+    home_prob: float,
+    home: str,
+    away: str,
+    season_record: Dict[str, Dict[str, float]],
+) -> float:
+    h = season_record.get(home, {"wins": 0.0, "games": 0.0})
+    a = season_record.get(away, {"wins": 0.0, "games": 0.0})
+
+    h_wins, h_games = float(h["wins"]), float(h["games"])
+    a_wins, a_games = float(a["wins"]), float(a["games"])
+
+    both_winless = h_games >= 2 and a_games >= 2 and h_wins == 0 and a_wins == 0
+    weak_vs_weak = OUTRIGHT_ODDS.get(home, 34.0) >= 60 and OUTRIGHT_ODDS.get(away, 34.0) >= 60
+
+    if both_winless:
+        home_prob = 0.5 + (home_prob - 0.5) * 0.60
+
+        if weak_vs_weak:
+            home_prob = min(max(home_prob, 0.46), 0.54)
+        else:
+            home_prob = min(max(home_prob, 0.44), 0.56)
+
+    return min(0.92, max(0.08, home_prob))
 
 
 @dataclass
@@ -581,8 +703,16 @@ def build_team_home_ground_edges(results: pd.DataFrame, teams: List[str]) -> Dic
         away_win = np.average((away["away_pts"] > away["home_pts"]).astype(float), weights=away["w"])
 
         delta = float(home_win - away_win)
-        pts = delta * 6.0
-        out[team] = float(max(-1.5, min(2.5, pts)))
+        pts = delta * 5.0
+        pts = float(max(-1.2, min(2.2, pts)))
+
+        if team in TEAM_HOME_EDGE_FLOOR:
+            pts = max(pts, TEAM_HOME_EDGE_FLOOR[team])
+
+        if team in TEAM_HOME_EDGE_CAP:
+            pts = min(pts, TEAM_HOME_EDGE_CAP[team])
+
+        out[team] = pts
 
     return out
 
@@ -719,20 +849,28 @@ def value_edge(model_prob: float, decimal_odds: float) -> float:
 
 
 def compress_prob(p: float) -> float:
-    if p >= 0.67:
-        return 0.67 + (p - 0.67) * 0.78
-    if p <= 0.33:
-        return 0.33 + (p - 0.33) * 0.78
-    return p
+    p = min(0.95, max(0.05, p))
+    dist = abs(p - 0.5)
+
+    if dist < 0.06:
+        factor = 0.94
+    elif dist < 0.12:
+        factor = 0.91
+    else:
+        factor = 0.88
+
+    return min(0.95, max(0.05, 0.5 + (p - 0.5) * factor))
 
 
 def dynamic_required_edge(decimal_odds: float) -> float:
     if decimal_odds < 1.50:
-        return 0.055
-    elif decimal_odds < 1.70:
-        return 0.050
-    elif decimal_odds < 2.00:
-        return 0.045
+        return 0.038
+    elif decimal_odds < 1.65:
+        return 0.036
+    elif decimal_odds < 1.85:
+        return 0.040
+    elif decimal_odds < 2.05:
+        return 0.043
     elif decimal_odds < 2.80:
         return 0.040
     return 0.050
@@ -1120,6 +1258,7 @@ def build_predictions() -> pd.DataFrame:
     form_stats = build_recent_form_stats(results, teams)
     team_volatility = build_team_volatility(results, teams)
     team_home_edge = build_team_home_ground_edges(results, teams)
+    season_record = build_current_season_record(results, 2026)
 
     if ad_model is not None:
         ad_model["team_home_edge"] = team_home_edge
@@ -1160,7 +1299,24 @@ def build_predictions() -> pd.DataFrame:
         if math.isnan(market_home_prob):
             blended_home_prob = model_home_prob
         else:
-            blended_home_prob = (MODEL_BLEND * model_home_prob) + (MARKET_BLEND * market_home_prob)
+            fav_odds = min(home_odds, away_odds)
+
+            if fav_odds <= 1.60:
+                market_w = 0.60
+            elif fav_odds <= 1.85:
+                market_w = 0.58
+            elif fav_odds <= 2.10:
+                market_w = 0.56
+            else:
+                market_w = 0.54
+
+            model_w = 1.0 - market_w
+            blended_home_prob = (model_w * model_home_prob) + (market_w * market_home_prob)
+
+        blended_home_prob = apply_outright_strength_adjustment(blended_home_prob, m.home, m.away)
+        blended_home_prob = apply_early_season_matchup_moderation(
+            blended_home_prob, m.home, m.away, season_record
+        )
 
         h2h_margin_home = recent_h2h_margin(results, m.home, m.away)
         auto_upset = compute_auto_upset_signal(
@@ -1234,6 +1390,10 @@ def build_predictions() -> pd.DataFrame:
                 best_odds = away_odds
                 side_team = m.away
 
+            premium_home_lane = False
+            premium_home_fav = False
+            weak_home_fav = False
+
             if best_side:
                 model_side_prob = model_home_prob if best_side == "HOME" else (1.0 - model_home_prob)
                 market_side_prob = market_home_prob if best_side == "HOME" else market_away_prob
@@ -1246,10 +1406,42 @@ def build_predictions() -> pd.DataFrame:
 
                 req_edge = dynamic_required_edge(best_odds)
 
+                premium_home_fav = (
+                    best_side == "HOME"
+                    and side_team == m.home
+                    and side_team in PREMIUM_HOME_TEAMS
+                    and home_odds <= away_odds
+                )
+
+                weak_home_fav = (
+                    best_side == "HOME"
+                    and side_team == m.home
+                    and side_team in WEAK_HOME_TEAMS
+                    and home_odds <= away_odds
+                )
+
+                if premium_home_fav:
+                    req_edge = max(0.025, req_edge - 0.012)
+
+                if weak_home_fav and best_odds < 1.90:
+                    req_edge = max(req_edge, 0.050)
+
+            premium_home_lane = bool(
+                best_side == "HOME"
+                and side_team == m.home
+                and side_team in PREMIUM_HOME_TEAMS
+                and home_odds <= away_odds
+                and conf >= 0.60
+                and best_edge >= 0.025
+            )
+
             qualifies = bool(
                 best_side and
-                best_edge >= req_edge and
-                conf >= MIN_CONF
+                conf >= MIN_CONF and
+                (
+                    best_edge >= req_edge
+                    or premium_home_lane
+                )
             )
 
             if qualifies and best_odds > 3.50:
@@ -1259,20 +1451,31 @@ def build_predictions() -> pd.DataFrame:
 
             upset_penalty_factor = 1.0
 
-            fragile_score = 0
             if qualifies and side_team == favourite_team:
                 fav_market_prob = market_home_prob if side_team == m.home else market_away_prob
 
-                if best_odds < 1.70 and not math.isnan(fav_market_prob) and best_prob < (fav_market_prob - 0.05):
-                    fragile_score += 1
-                if final_upset_score >= 1.5:
-                    fragile_score += 1
-                if exp_margin < 5.0 and best_odds < 1.70:
-                    fragile_score += 1
-                if team_volatility.get(side_team, 0.0) >= 10.5:
-                    fragile_score += 1
+                major_warn = 0
+                minor_warn = 0
 
-                fragile_favourite = 1 if fragile_score >= 2 else 0
+                if best_odds < 1.70 and not math.isnan(fav_market_prob) and best_prob < (fav_market_prob - 0.07):
+                    major_warn += 1
+
+                if final_upset_score >= 2.0:
+                    major_warn += 1
+
+                if team_volatility.get(side_team, 0.0) >= 11.5:
+                    major_warn += 1
+
+                if exp_margin < 4.5 and best_odds < 1.75:
+                    minor_warn += 1
+
+                if best_edge < max(0.03, req_edge - 0.01):
+                    minor_warn += 1
+
+                if market_agreement < 0.86:
+                    minor_warn += 1
+
+                fragile_favourite = 1 if ((major_warn >= 1 and minor_warn >= 1) or (minor_warn >= 3)) else 0
 
             if qualifies and fragile_favourite:
                 upset_penalty_factor *= 0.75
@@ -1312,6 +1515,13 @@ def build_predictions() -> pd.DataFrame:
                 volatility_penalty = 0.82
             elif side_vol >= 8.5:
                 volatility_penalty = 0.90
+
+            if qualifies and side_team == favourite_team:
+                team_strength = outright_strength_score(side_team)
+                if best_odds < 1.90 and team_strength < 0.28:
+                    best_edge -= 0.015
+                    if best_edge < req_edge and not premium_home_lane:
+                        qualifies = False
 
             if qualifies:
                 stake_dollars = stake_band_dollars(
