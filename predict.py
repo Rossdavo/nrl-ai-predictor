@@ -23,13 +23,14 @@ BANKROLL = 200.0
 UNIT_PCT = 0.05
 UNIT_SIZE = round(BANKROLL * UNIT_PCT, 2)
 
-# User update: usable bankroll per round = 50%
 MAX_ROUND_EXPOSURE_PCT = 0.50
 MAX_ROUND_EXPOSURE = round(BANKROLL * MAX_ROUND_EXPOSURE_PCT, 2)
 
-# General single game discipline
 MAX_SINGLE_BET_PCT = 0.25
 MAX_SINGLE_BET = round(BANKROLL * MAX_SINGLE_BET_PCT, 2)
+
+MIN_BET_SHORT = 20.0   # odds < 2.00
+MIN_BET_DOG = 10.0     # odds >= 2.00
 
 print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 print(f"[predict] max_round_exposure=${MAX_ROUND_EXPOSURE} | max_single_bet=${MAX_SINGLE_BET}")
@@ -41,9 +42,6 @@ MODE = "AUTO"
 
 # ----------------------------
 # Results sources for ratings
-# 2026 = primary
-# 2025 = secondary anchor
-# older years excluded
 # ----------------------------
 RESULTS_URLS = {
     2026: "https://fixturedownload.com/results/nrl-2026",
@@ -63,18 +61,15 @@ SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 MIN_EDGE = 0.035
 MIN_CONF = 0.54
 
-# Stronger market use
 MODEL_BLEND = 0.57
 MARKET_BLEND = 0.43
 
-# Results weighting
 YEAR_WEIGHTS = {
     2026: 1.00,
     2025: 0.32,
 }
 RECENCY_HALF_LIFE_DAYS = 35
 
-# Upset logic
 UPSET_MANUAL_PATH = "upset_flags.csv"
 UPSET_PROB_SHIFT_PER_POINT = 0.0125
 UPSET_PROB_SHIFT_CAP = 0.05
@@ -271,14 +266,13 @@ def _extract_results_table(df: pd.DataFrame) -> pd.DataFrame:
         else:
             date_series = pd.Series([pd.NaT] * len(df))
 
-        out = pd.DataFrame({
+        return pd.DataFrame({
             "date": date_series.dt.strftime("%Y-%m-%d"),
             "home": df["Home"].astype(str).apply(norm_team),
             "away": df["Away"].astype(str).apply(norm_team),
             "home_pts": pd.to_numeric(df["HomeScore"], errors="coerce"),
             "away_pts": pd.to_numeric(df["AwayScore"], errors="coerce"),
         })
-        return out
 
     if {"Home Team", "Away Team", "Result"}.issubset(cols):
         def extract_scores(x: object) -> Tuple[float, float]:
@@ -289,20 +283,18 @@ def _extract_results_table(df: pd.DataFrame) -> pd.DataFrame:
             return (float(m.group(1)), float(m.group(2)))
 
         scores = df["Result"].apply(extract_scores)
-
         if "Date" in cols:
             date_series = pd.to_datetime(df["Date"], errors="coerce")
         else:
             date_series = pd.Series([pd.NaT] * len(df))
 
-        out = pd.DataFrame({
+        return pd.DataFrame({
             "date": date_series.dt.strftime("%Y-%m-%d"),
             "home": df["Home Team"].astype(str).apply(norm_team),
             "away": df["Away Team"].astype(str).apply(norm_team),
             "home_pts": scores.apply(lambda t: t[0]),
             "away_pts": scores.apply(lambda t: t[1]),
         })
-        return out
 
     if {"Date", "Home Team", "Away Team", "Result"}.issubset(cols):
         def extract_scores_2(x: object) -> Tuple[float, float]:
@@ -313,14 +305,13 @@ def _extract_results_table(df: pd.DataFrame) -> pd.DataFrame:
             return (float(m.group(1)), float(m.group(2)))
 
         scores = df["Result"].apply(extract_scores_2)
-        out = pd.DataFrame({
+        return pd.DataFrame({
             "date": pd.to_datetime(df["Date"], errors="coerce", dayfirst=True).dt.strftime("%Y-%m-%d"),
             "home": df["Home Team"].astype(str).apply(norm_team),
             "away": df["Away Team"].astype(str).apply(norm_team),
             "home_pts": scores.apply(lambda t: t[0]),
             "away_pts": scores.apply(lambda t: t[1]),
         })
-        return out
 
     colmap = {str(c).strip().lower(): c for c in df.columns}
     required = {"date", "home team", "away team", "result"}
@@ -333,14 +324,13 @@ def _extract_results_table(df: pd.DataFrame) -> pd.DataFrame:
             return (float(m.group(1)), float(m.group(2)))
 
         scores = df[colmap["result"]].apply(extract_scores_3)
-        out = pd.DataFrame({
+        return pd.DataFrame({
             "date": pd.to_datetime(df[colmap["date"]], errors="coerce", dayfirst=True).dt.strftime("%Y-%m-%d"),
             "home": df[colmap["home team"]].astype(str).apply(norm_team),
             "away": df[colmap["away team"]].astype(str).apply(norm_team),
             "home_pts": scores.apply(lambda t: t[0]),
             "away_pts": scores.apply(lambda t: t[1]),
         })
-        return out
 
     return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts"])
 
@@ -633,8 +623,6 @@ def simulate_match_ad(
     win_prob = hw / n
     exp_margin = sum(margins) / n
     exp_total = sum(totals) / n
-
-    # Lower and less generous confidence
     conf = min(0.75, 0.50 + abs(win_prob - 0.5) * 0.70)
 
     return win_prob, exp_margin, exp_total, conf
@@ -685,7 +673,6 @@ def value_edge(model_prob: float, decimal_odds: float) -> float:
 
 
 def compress_prob(p: float) -> float:
-    # Stronger compression so fragile favourites don't get oversized edges
     if p >= 0.60:
         return 0.60 + (p - 0.60) * 0.60
     if p <= 0.40:
@@ -707,14 +694,81 @@ def dynamic_required_edge(decimal_odds: float) -> float:
 
 
 def single_bet_cap_by_odds(decimal_odds: float) -> float:
-    cap = MAX_SINGLE_BET
     if decimal_odds < 1.55:
-        cap = 20.0
-    elif decimal_odds < 1.70:
-        cap = 25.0
-    elif decimal_odds < 1.90:
-        cap = 30.0
-    return min(cap, MAX_SINGLE_BET)
+        return 50.0
+    if decimal_odds < 1.70:
+        return 50.0
+    if decimal_odds < 1.90:
+        return 40.0
+    if decimal_odds < 2.60:
+        return 30.0
+    return min(40.0, MAX_SINGLE_BET)
+
+
+def stake_band_dollars(
+    decimal_odds: float,
+    edge: float,
+    confidence: float,
+    fragile_favourite: int,
+    upset_penalty_factor: float,
+    sample_scale: float,
+    volatility_penalty: float,
+    exp_margin: float,
+) -> float:
+    if decimal_odds < 2.0:
+        if edge >= 0.16:
+            stake = 50.0
+        elif edge >= 0.12:
+            stake = 40.0
+        elif edge >= 0.08:
+            stake = 30.0
+        elif edge >= 0.05:
+            stake = 20.0
+        else:
+            stake = 0.0
+    else:
+        if edge >= 0.14:
+            stake = 40.0
+        elif edge >= 0.10:
+            stake = 30.0
+        elif edge >= 0.07:
+            stake = 20.0
+        elif edge >= 0.04:
+            stake = 10.0
+        else:
+            stake = 0.0
+
+    if stake <= 0:
+        return 0.0
+
+    # Positive nudges for especially strong favourites
+    if decimal_odds < 1.50 and edge >= 0.10 and confidence >= 0.64 and exp_margin >= 10.0:
+        stake = max(stake, 40.0)
+    if decimal_odds < 1.45 and edge >= 0.14 and confidence >= 0.66 and exp_margin >= 12.0:
+        stake = max(stake, 50.0)
+
+    multiplier = 1.0
+
+    if confidence >= 0.68:
+        multiplier *= 1.15
+    elif confidence < 0.58:
+        multiplier *= 0.90
+
+    if fragile_favourite:
+        multiplier *= 0.75
+
+    multiplier *= upset_penalty_factor
+    multiplier *= sample_scale
+    multiplier *= volatility_penalty
+
+    stake *= multiplier
+
+    floor = MIN_BET_SHORT if decimal_odds < 2.0 else MIN_BET_DOG
+    if stake > 0:
+        stake = max(floor, stake)
+
+    stake = min(stake, single_bet_cap_by_odds(decimal_odds), MAX_SINGLE_BET)
+    return round(stake, 2)
 
 
 def load_saved_ratings(path: str = "ratings.json") -> Optional[Dict[str, object]]:
@@ -817,7 +871,6 @@ def build_recent_form_stats(results: pd.DataFrame, teams: List[str], recent_n: i
         away = r["away"]
         hp = float(r["home_pts"])
         ap = float(r["away_pts"])
-
         rows.append({"date": r["date"], "team": home, "margin": hp - ap, "win": 1.0 if hp > ap else 0.0})
         rows.append({"date": r["date"], "team": away, "margin": ap - hp, "win": 1.0 if ap > hp else 0.0})
 
@@ -926,7 +979,6 @@ def compute_auto_upset_signal(
     if (dog_recent_margin - fav_recent_margin) >= 6.0:
         score += 1.0
         reasons.append("dog_recent_margin")
-
     if (dog_recent_wr - fav_recent_wr) >= 0.18:
         score += 1.0
         reasons.append("dog_recent_winrate")
@@ -938,7 +990,6 @@ def compute_auto_upset_signal(
     if not math.isnan(fav_market_prob) and fav_market_prob >= 0.62 and fav_model_prob <= 0.56:
         score += 1.0
         reasons.append("fav_short_market_only")
-
     if not math.isnan(fav_odds) and fav_odds <= 1.55 and fav_model_prob <= 0.55:
         score += 0.5
         reasons.append("very_short_favourite")
@@ -973,55 +1024,6 @@ def apply_upset_probability_adjustment(
         home_prob -= shift
 
     return min(0.95, max(0.05, home_prob))
-
-
-def kelly_stake_dollars(
-    side_prob: float,
-    decimal_odds: float,
-    bankroll: float,
-    confidence: float,
-    edge: float,
-    market_agreement: float,
-    upset_penalty_factor: float = 1.0,
-    sample_scale: float = 1.0,
-    volatility_penalty: float = 1.0,
-) -> float:
-    if decimal_odds <= 1.0 or side_prob <= 0.0 or side_prob >= 1.0:
-        return 0.0
-
-    b = decimal_odds - 1.0
-    p = side_prob
-    q = 1.0 - p
-    raw_kelly = ((b * p) - q) / b
-    if raw_kelly <= 0:
-        return 0.0
-
-    frac = 0.30
-    stake_frac = raw_kelly * frac
-
-    conf_scale = max(0.68, min(1.00, confidence / 0.72))
-    edge_scale = max(0.55, min(1.20, edge / 0.07)) if edge > 0 else 0.55
-    agree_scale = max(0.75, min(1.05, market_agreement))
-
-    odds_scale = 1.0
-    if decimal_odds < 1.50:
-        odds_scale = 0.72
-    elif decimal_odds < 1.65:
-        odds_scale = 0.82
-    elif decimal_odds < 1.80:
-        odds_scale = 0.92
-
-    stake_frac *= conf_scale
-    stake_frac *= edge_scale
-    stake_frac *= agree_scale
-    stake_frac *= odds_scale
-    stake_frac *= upset_penalty_factor
-    stake_frac *= sample_scale
-    stake_frac *= volatility_penalty
-
-    stake_frac = min(stake_frac, MAX_SINGLE_BET / bankroll)
-
-    return round(max(0.0, bankroll * stake_frac), 2)
 
 
 def build_predictions() -> pd.DataFrame:
@@ -1197,9 +1199,9 @@ def build_predictions() -> pd.DataFrame:
                 req_edge = dynamic_required_edge(best_odds)
 
             qualifies = bool(
-                best_side
-                and best_edge >= req_edge
-                and conf >= MIN_CONF
+                best_side and
+                best_edge >= req_edge and
+                conf >= MIN_CONF
             )
 
             if qualifies and best_odds > 3.50:
@@ -1209,7 +1211,6 @@ def build_predictions() -> pd.DataFrame:
 
             upset_penalty_factor = 1.0
 
-            # Fragile favourite logic
             if qualifies and side_team == favourite_team:
                 if best_odds <= 1.70 and best_prob < 0.66:
                     fragile_favourite = 1
@@ -1235,7 +1236,6 @@ def build_predictions() -> pd.DataFrame:
             if qualifies and side_team == underdog_team and final_upset_score >= UPSET_FLAG_THRESHOLD:
                 upset_penalty_factor *= min(1.08, 1.0 + (0.03 * final_upset_score))
 
-            # Sample size scale
             home_games = float(form_stats.get(m.home, {}).get("games", 0.0))
             away_games = float(form_stats.get(m.away, {}).get("games", 0.0))
             min_games = min(home_games, away_games)
@@ -1246,7 +1246,6 @@ def build_predictions() -> pd.DataFrame:
             elif min_games < 5:
                 sample_scale = 0.88
 
-            # Volatility penalty
             side_vol = float(team_volatility.get(side_team, 0.0))
             volatility_penalty = 1.0
             if side_vol >= 12.0:
@@ -1257,20 +1256,16 @@ def build_predictions() -> pd.DataFrame:
                 volatility_penalty = 0.90
 
             if qualifies:
-                stake_dollars = kelly_stake_dollars(
-                    side_prob=best_prob,
+                stake_dollars = stake_band_dollars(
                     decimal_odds=best_odds,
-                    bankroll=BANKROLL,
-                    confidence=conf,
                     edge=best_edge,
-                    market_agreement=market_agreement,
+                    confidence=conf,
+                    fragile_favourite=fragile_favourite,
                     upset_penalty_factor=upset_penalty_factor,
                     sample_scale=sample_scale,
                     volatility_penalty=volatility_penalty,
+                    exp_margin=exp_margin,
                 )
-
-                stake_cap = single_bet_cap_by_odds(best_odds)
-                stake_dollars = min(stake_dollars, stake_cap)
 
                 if stake_dollars > 0:
                     pick = best_side
@@ -1350,8 +1345,6 @@ def build_predictions() -> pd.DataFrame:
 
             if running_exposure + stake_amt > MAX_ROUND_EXPOSURE:
                 continue
-
-            # no huge favourite round concentration
             if is_short_fav and (short_fav_exposure + stake_amt) > (MAX_ROUND_EXPOSURE * 0.60):
                 continue
 
