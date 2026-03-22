@@ -256,13 +256,15 @@
   <div class="wrap">
     <div class="card">
       <h1>NRL AI Predictions</h1>
-      <p class="small">INDEX VERSION: LIVE CSV LOADER + NEW SCHEMA SUPPORT</p>
+      <p class="small">INDEX VERSION: CURRENT + COMPLETED ROUND FILES</p>
       <p class="lead">Automated predictions, staking, results tracking, performance reporting, and closing line value from the latest generated CSV files.</p>
 
       <div class="downloads" style="margin-top:16px;">
         <h2>Downloads</h2>
         <ul>
-          <li><a href="predictions.csv" target="_blank" rel="noopener">Predictions CSV</a></li>
+          <li><a href="current_predictions.csv" target="_blank" rel="noopener">Current Predictions CSV</a></li>
+          <li><a href="latest_completed_round.csv" target="_blank" rel="noopener">Latest Completed Round CSV</a></li>
+          <li><a href="predictions.csv" target="_blank" rel="noopener">Raw Predictions CSV</a></li>
           <li><a href="odds.csv" target="_blank" rel="noopener">Odds CSV</a></li>
           <li><a href="accuracy.csv" target="_blank" rel="noopener">Accuracy CSV</a></li>
           <li><a href="accuracy_summary.csv" target="_blank" rel="noopener">Accuracy Summary CSV</a></li>
@@ -349,7 +351,7 @@
         <h2>Latest Closed Results</h2>
         <span class="small" id="results-meta">Loading…</span>
       </div>
-      <div id="results-table" class="empty">Loading results cache…</div>
+      <div id="results-table" class="empty">Loading latest completed round…</div>
     </div>
 
     <div class="card" style="margin-top:16px;">
@@ -511,6 +513,7 @@
     }
 
     function resolveProbField(rows) {
+      if (rows.some(r => "win_probability" in r)) return "win_probability";
       if (rows.some(r => "final_home_win_prob" in r)) return "final_home_win_prob";
       if (rows.some(r => "model_home_win_prob" in r)) return "model_home_win_prob";
       if (rows.some(r => "home_win_prob" in r)) return "home_win_prob";
@@ -527,12 +530,13 @@
         "date",
         "home",
         "away",
+        "predicted_winner",
         probField,
-        "confidence",
+        "confidence_band",
+        "bet_grade",
         "home_odds",
         "away_odds",
-        "value_flag",
-        "pick",
+        "predicted_winner_odds",
         "recommended_bet",
         "stake_dollars",
         "exp_margin_home",
@@ -541,27 +545,40 @@
       ].filter(h => h && useRows.some(r => h in r));
 
       const formatters = {
+        win_probability: v => escapeHtml(formatPct(v, 1)),
         final_home_win_prob: v => escapeHtml(formatPct(v, 1)),
         model_home_win_prob: v => escapeHtml(formatPct(v, 1)),
         home_win_prob: v => escapeHtml(formatPct(v, 1)),
         confidence: v => escapeHtml(formatPct(v, 0)),
         home_odds: v => escapeHtml(formatFixed(v, 2)),
         away_odds: v => escapeHtml(formatFixed(v, 2)),
+        predicted_winner_odds: v => escapeHtml(formatFixed(v, 2)),
         stake_dollars: v => {
           const n = toNumber(v);
           if (n === null) return "";
           return `<span class="mono">$${n.toFixed(2)}</span>`;
         },
         exp_margin_home: v => escapeHtml(formatSigned(v, 1)),
-        pick: v => {
+        predicted_winner: v => {
           if (!v) return "";
-          const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
-          return `<span class="${klass}">${escapeHtml(v)}</span>`;
+          return `<span class="pill pill-blue">${escapeHtml(v)}</span>`;
         },
-        value_flag: v => {
-          if (!v) return "";
-          const klass = /VALUE/i.test(v) ? "pill pill-green" : "pill pill-amber";
-          return `<span class="${klass}">${escapeHtml(v)}</span>`;
+        confidence_band: v => {
+          const val = String(v || "").trim();
+          let klass = "pill pill-amber";
+          if (val === "High") klass = "pill pill-green";
+          if (val === "Medium") klass = "pill pill-blue";
+          if (val === "Low") klass = "pill pill-amber";
+          return val ? `<span class="${klass}">${escapeHtml(val)}</span>` : "";
+        },
+        bet_grade: v => {
+          const val = String(v || "").trim();
+          let klass = "pill pill-red";
+          if (val === "Strong Bet") klass = "pill pill-green";
+          if (val === "Small Bet") klass = "pill pill-blue";
+          if (val === "Lean") klass = "pill pill-amber";
+          if (val === "No Bet") klass = "pill pill-red";
+          return val ? `<span class="${klass}">${escapeHtml(val)}</span>` : "";
         },
         recommended_bet: v => {
           const text = String(v || "").trim();
@@ -585,7 +602,7 @@
       };
 
       const totalExposure = useRows.reduce((s, r) => s + (toNumber(r.stake_dollars) ?? 0), 0);
-      const betCount = useRows.filter(r => (toNumber(r.stake_dollars) ?? 0) > 0 && String(r.pick || "").trim() !== "").length;
+      const betCount = useRows.filter(r => (toNumber(r.stake_dollars) ?? 0) > 0).length;
 
       document.getElementById("pred-meta").textContent =
         `${useRows.length} rows | ${betCount} bets | exposure ${formatMoney(totalExposure, 2)}`;
@@ -807,33 +824,23 @@
       if (iso >= "2026-03-05" && iso <= "2026-03-08") return "Round 1";
       if (iso >= "2026-03-12" && iso <= "2026-03-15") return "Round 2";
       if (iso >= "2026-03-19" && iso <= "2026-03-22") return "Round 3";
+      if (iso >= "2026-03-26" && iso <= "2026-03-29") return "Round 4";
 
       return "Other";
     }
 
-    function renderRoundDashboard(accuracyRows, betHistoryRows) {
+    function renderRoundDashboard(accuracyRows, betHistoryRows, completedRows) {
       const meta = document.getElementById("round-meta");
       const el = document.getElementById("round-summary");
 
-      if (!accuracyRows.length) {
-        meta.textContent = "No settled rounds yet";
-        el.innerHTML = '<div class="empty">No completed round data available yet.</div>';
-        return;
+      let latestRound = "Unknown round";
+      if (completedRows.length) {
+        latestRound = getRoundLabel(completedRows[0].date);
+      } else if (accuracyRows.length) {
+        latestRound = getRoundLabel(accuracyRows[accuracyRows.length - 1].date);
       }
 
-      const roundMap = {};
-      for (const r of accuracyRows) {
-        const round = getRoundLabel(r.date);
-        if (!roundMap[round]) roundMap[round] = [];
-        roundMap[round].push(r);
-      }
-
-      const orderedRounds = ["Round 1", "Round 2", "Round 3", "Other"];
-      const availableRounds = orderedRounds.filter(r => roundMap[r] && roundMap[r].length);
-
-      const latestRound = availableRounds.length ? availableRounds[availableRounds.length - 1] : "Other";
-      const modelRows = roundMap[latestRound] || [];
-
+      const modelRows = accuracyRows.filter(r => getRoundLabel(r.date) === latestRound);
       const modelWins = modelRows.filter(r => Number(r.winner_correct) === 1).length;
       const modelLosses = modelRows.length - modelWins;
 
@@ -854,7 +861,7 @@
         <div class="grid grid-3">
           <div class="kpi">
             <div class="kpi-label">Model Record</div>
-            <div class="kpi-value">${modelWins}-${modelLosses}</div>
+            <div class="kpi-value">${modelRows.length ? `${modelWins}-${modelLosses}` : "—"}</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">Bet Record</div>
@@ -883,25 +890,65 @@
       `;
     }
 
-    function renderResultsCache(rows) {
+    function renderCompletedRound(rows) {
       const el = document.getElementById("results-table");
       const meta = document.getElementById("results-meta");
 
       if (!rows.length) {
-        meta.textContent = "0 rows";
-        el.innerHTML = '<div class="empty">No results cache available.</div>';
+        meta.textContent = "No completed round file found";
+        el.innerHTML = '<div class="empty">No latest completed round available yet.</div>';
         return;
       }
 
-      meta.textContent = `${rows.length} total result row${rows.length === 1 ? "" : "s"}`;
+      const roundLabel = getRoundLabel(rows[0].date);
+      meta.textContent = `${roundLabel} | ${rows.length} matches`;
 
-      const tableRows = rows
-        .slice()
-        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
-        .slice(0, 20);
+      const tableRows = rows.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
 
-      const headers = ["date", "home", "away", "home_pts", "away_pts"].filter(h => tableRows.some(r => h in r));
-      el.innerHTML = makeTable(headers, tableRows, {});
+      const headers = [
+        "date",
+        "home",
+        "away",
+        "predicted_winner",
+        "winner",
+        "home_pts",
+        "away_pts",
+        "bet_grade",
+        "recommended_bet",
+        "stake_dollars"
+      ].filter(h => tableRows.some(r => h in r));
+
+      const formatters = {
+        predicted_winner: v => v ? `<span class="pill pill-blue">${escapeHtml(v)}</span>` : "",
+        winner: v => {
+          const val = String(v || "").trim();
+          if (!val) return "";
+          const klass = val === "DRAW" ? "pill pill-amber" : "pill pill-green";
+          return `<span class="${klass}">${escapeHtml(val)}</span>`;
+        },
+        bet_grade: v => {
+          const val = String(v || "").trim();
+          let klass = "pill pill-red";
+          if (val === "Strong Bet") klass = "pill pill-green";
+          if (val === "Small Bet") klass = "pill pill-blue";
+          if (val === "Lean") klass = "pill pill-amber";
+          return val ? `<span class="${klass}">${escapeHtml(val)}</span>` : "";
+        },
+        recommended_bet: v => {
+          const text = String(v || "").trim();
+          if (!text || text === "No Bet") {
+            return `<span class="pill pill-red">No Bet</span>`;
+          }
+          return `<span class="pill pill-green">${escapeHtml(text)}</span>`;
+        },
+        stake_dollars: v => {
+          const n = toNumber(v);
+          if (n === null) return "";
+          return `<span class="mono">$${n.toFixed(2)}</span>`;
+        }
+      };
+
+      el.innerHTML = makeTable(headers, tableRows, formatters);
     }
 
     function renderBetHistory(rows) {
@@ -960,12 +1007,10 @@
         profit_units: v => {
           const n = toNumber(v);
           if (n === null) return "";
-
           const dollars = n * 10;
           const klass = dollars >= 0 ? "positive" : "negative";
           const absVal = Math.abs(dollars).toFixed(2);
           const formatted = dollars >= 0 ? `$${absVal}` : `-$${absVal}`;
-
           return `<span class="${klass}">${formatted}</span>`;
         },
         bankroll_after: v => {
@@ -1080,12 +1125,12 @@
 
     (async () => {
       try {
-        const predText = await loadText("predictions.csv");
+        const predText = await loadText("current_predictions.csv");
         const predRows = parseCSV(predText).rows;
         renderPredictions(predRows);
       } catch (e) {
         document.getElementById("pred-meta").textContent = "Load failed";
-        document.getElementById("pred-table").innerHTML = '<div class="empty">Could not load predictions.csv</div>';
+        document.getElementById("pred-table").innerHTML = '<div class="empty">Could not load current_predictions.csv</div>';
         console.error(e);
       }
 
@@ -1096,7 +1141,7 @@
         betHistoryRows,
         perfRows,
         bankRows,
-        resultsRows,
+        completedRows,
         clvSummaryRows,
         clvHistoryRows,
         clvResultsRows
@@ -1107,7 +1152,7 @@
         loadOptionalCSV("bet_history.csv"),
         loadOptionalCSV("performance.csv"),
         loadOptionalCSV("bankroll_status.csv"),
-        loadOptionalCSV("results_cache.csv"),
+        loadOptionalCSV("latest_completed_round.csv"),
         loadOptionalCSV("clv_summary.csv"),
         loadOptionalCSV("clv_history.csv"),
         loadOptionalCSV("clv_results.csv")
@@ -1115,8 +1160,8 @@
 
       renderAccuracy(accuracyRows, accuracySummaryRows);
       renderPerformance(betSummaryRows, betHistoryRows, perfRows, bankRows);
-      renderRoundDashboard(accuracyRows, betHistoryRows);
-      renderResultsCache(resultsRows);
+      renderRoundDashboard(accuracyRows, betHistoryRows, completedRows);
+      renderCompletedRound(completedRows);
       renderBetHistory(betHistoryRows);
       renderCLV(clvSummaryRows, clvHistoryRows, clvResultsRows);
     })();
