@@ -5,7 +5,7 @@ import random
 import re
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Tuple, Optional
 from io import StringIO
 import json
@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import requests
 from zoneinfo import ZoneInfo
+
 
 # ----------------------------
 # BANKROLL / STAKING
@@ -38,10 +39,12 @@ TARGET_MAX_BETS = 5
 print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 print(f"[predict] max_round_exposure=${MAX_ROUND_EXPOSURE} | max_single_bet=${MAX_SINGLE_BET}")
 
+
 # ----------------------------
 # RUN MODE
 # ----------------------------
 MODE = "AUTO"
+
 
 # ----------------------------
 # Results sources for ratings
@@ -51,12 +54,15 @@ RESULTS_URLS = {
     2025: "https://fixturedownload.com/results/nrl-2025",
 }
 RESULTS_CACHE_PATH = "results_cache.csv"
+MANUAL_RESULTS_2026_PATH = "results_2026.csv"
+
 
 # ----------------------------
 # AUTO FIXTURE PULL
 # ----------------------------
 FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
+
 
 # ----------------------------
 # MODEL SETTINGS
@@ -71,6 +77,7 @@ UPSET_MANUAL_PATH = "upset_flags.csv"
 UPSET_PROB_SHIFT_PER_POINT = 0.0125
 UPSET_PROB_SHIFT_CAP = 0.05
 UPSET_FLAG_THRESHOLD = 2.0
+
 
 TEAM_NAME_NORMALISE = {
     "Canterbury Bulldogs": "Bulldogs",
@@ -134,6 +141,7 @@ TEAM_REGION = {
 
 ALL_TEAMS = sorted(list(TEAM_REGION.keys()))
 
+
 # ----------------------------
 # Futures market prior / team tiers
 # ----------------------------
@@ -185,6 +193,14 @@ class Match:
     home: str
     away: str
     venue: str
+
+
+def utc_now_str() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def make_run_id() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
 
 
 def norm_team(name: str) -> str:
@@ -296,7 +312,7 @@ def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, f
     return home_delta, away_delta
 
 
-def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
+def fetch_upcoming_fixtures(days_ahead: int = 21) -> List[Match]:
     now = datetime.now(SYDNEY_TZ)
     end = now + pd.Timedelta(days=days_ahead)
 
@@ -340,6 +356,39 @@ def fetch_upcoming_fixtures(days_ahead: int = 7) -> List[Match]:
     return matches
 
 
+def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
+    if not os.path.exists(path):
+        return []
+
+    try:
+        o = pd.read_csv(path)
+    except Exception:
+        return []
+
+    needed = {"date", "home", "away"}
+    if not needed.issubset(set(o.columns)):
+        return []
+
+    fixtures: List[Match] = []
+    for _, r in o.iterrows():
+        date = str(r.get("date", "")).strip()
+        home = norm_team(r.get("home", ""))
+        away = norm_team(r.get("away", ""))
+        if not date or not home or not away:
+            continue
+
+        fixtures.append(Match(
+            date=date,
+            kickoff_local="",
+            home=home,
+            away=away,
+            venue="",
+        ))
+
+    fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
+    return fixtures
+
+
 def _dedupe_fixtures(fixtures: List[Match]) -> List[Match]:
     seen = set()
     out: List[Match] = []
@@ -357,7 +406,8 @@ def _filter_current_round_fixtures(fixtures: List[Match]) -> List[Match]:
         return fixtures
 
     dates = pd.to_datetime([m.date for m in fixtures], errors="coerce")
-    if len(dates) == 0:
+    dates = pd.Series(dates).dropna().sort_values()
+    if dates.empty:
         return fixtures
 
     round_start = dates.min()
@@ -407,23 +457,6 @@ def _extract_results_table(df: pd.DataFrame) -> pd.DataFrame:
 
         return pd.DataFrame({
             "date": date_series.dt.strftime("%Y-%m-%d"),
-            "home": df["Home Team"].astype(str).apply(norm_team),
-            "away": df["Away Team"].astype(str).apply(norm_team),
-            "home_pts": scores.apply(lambda t: t[0]),
-            "away_pts": scores.apply(lambda t: t[1]),
-        })
-
-    if {"Date", "Home Team", "Away Team", "Result"}.issubset(cols):
-        def extract_scores_2(x: object) -> Tuple[float, float]:
-            s = str(x)
-            m = re.search(r"(\d+)\s*[-–]\s*(\d+)", s)
-            if not m:
-                return (np.nan, np.nan)
-            return (float(m.group(1)), float(m.group(2)))
-
-        scores = df["Result"].apply(extract_scores_2)
-        return pd.DataFrame({
-            "date": pd.to_datetime(df["Date"], errors="coerce", dayfirst=True).dt.strftime("%Y-%m-%d"),
             "home": df["Home Team"].astype(str).apply(norm_team),
             "away": df["Away Team"].astype(str).apply(norm_team),
             "home_pts": scores.apply(lambda t: t[0]),
@@ -502,6 +535,34 @@ def fetch_results_for_year(year: int, url: str) -> pd.DataFrame:
     return best
 
 
+def load_manual_results_2026(path: str = MANUAL_RESULTS_2026_PATH) -> pd.DataFrame:
+    if not os.path.exists(path):
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts", "season_year"])
+
+    try:
+        df = pd.read_csv(path)
+    except Exception as e:
+        print(f"[warn] Could not load {path}: {e}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts", "season_year"])
+
+    needed = {"date", "home", "away", "home_pts", "away_pts"}
+    if not needed.issubset(set(df.columns)):
+        print(f"[warn] {path} missing required columns: {sorted(needed)}")
+        return pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts", "season_year"])
+
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    df["home"] = df["home"].astype(str).apply(norm_team)
+    df["away"] = df["away"].astype(str).apply(norm_team)
+    df["home_pts"] = pd.to_numeric(df["home_pts"], errors="coerce")
+    df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
+    df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
+    df["season_year"] = 2026
+
+    print(f"[info] Loaded manual {path} ({len(df)} rows)")
+    return df
+
+
 def fetch_completed_results() -> pd.DataFrame:
     needed = {"date", "home", "away", "home_pts", "away_pts"}
     cache = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts", "season_year"])
@@ -538,7 +599,9 @@ def fetch_completed_results() -> pd.DataFrame:
     else:
         web_df = pd.DataFrame(columns=["date", "home", "away", "home_pts", "away_pts", "season_year"])
 
-    merged = pd.concat([cache, web_df], ignore_index=True)
+    manual_2026_df = load_manual_results_2026()
+
+    merged = pd.concat([cache, web_df, manual_2026_df], ignore_index=True)
     merged["date"] = pd.to_datetime(merged["date"], errors="coerce").dt.strftime("%Y-%m-%d")
     merged["season_year"] = pd.to_datetime(merged["date"], errors="coerce").dt.year
     merged["home"] = merged["home"].astype(str).apply(norm_team)
@@ -547,6 +610,8 @@ def fetch_completed_results() -> pd.DataFrame:
     merged["away_pts"] = pd.to_numeric(merged["away_pts"], errors="coerce")
     merged = merged.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
     merged = merged[merged["season_year"].fillna(0) >= 2025].copy()
+
+    # Keep later concatenated sources (manual file) over older cache/web rows
     merged = merged.drop_duplicates(subset=["date", "home", "away"], keep="last").reset_index(drop=True)
     merged = merged.sort_values(["date", "home", "away"]).reset_index(drop=True)
 
@@ -789,8 +854,6 @@ def simulate_match_ad(
     win_prob = hw / n
     exp_margin = sum(margins) / n
     exp_total = sum(totals) / n
-
-    # confidence is not the same as win probability
     conf = min(0.78, 0.50 + abs(win_prob - 0.5) * 0.72)
 
     return win_prob, exp_margin, exp_total, conf
@@ -854,18 +917,6 @@ def compress_prob(p: float) -> float:
     return min(0.95, max(0.05, 0.5 + (p - 0.5) * factor))
 
 
-def single_bet_cap_by_odds(decimal_odds: float) -> float:
-    if decimal_odds < 1.55:
-        return 50.0
-    if decimal_odds < 1.70:
-        return 50.0
-    if decimal_odds < 1.90:
-        return 40.0
-    if decimal_odds < 2.60:
-        return 30.0
-    return min(40.0, MAX_SINGLE_BET)
-
-
 def load_saved_ratings(path: str = "ratings.json") -> Optional[Dict[str, object]]:
     try:
         if not os.path.exists(path):
@@ -887,39 +938,6 @@ def save_ratings(model: Dict[str, object], path: str = "ratings.json") -> None:
             json.dump(model, f, ensure_ascii=False, indent=2, sort_keys=True)
     except Exception:
         pass
-
-
-def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
-    if not os.path.exists(path):
-        return []
-
-    try:
-        o = pd.read_csv(path)
-    except Exception:
-        return []
-
-    needed = {"date", "home", "away"}
-    if not needed.issubset(set(o.columns)):
-        return []
-
-    fixtures: List[Match] = []
-    for _, r in o.iterrows():
-        date = str(r.get("date", "")).strip()
-        home = norm_team(r.get("home", ""))
-        away = norm_team(r.get("away", ""))
-        if not date or not home or not away:
-            continue
-
-        fixtures.append(Match(
-            date=date,
-            kickoff_local="",
-            home=home,
-            away=away,
-            venue="",
-        ))
-
-    fixtures.sort(key=lambda m: (m.date, m.kickoff_local))
-    return fixtures
 
 
 def load_manual_upset_flags(path: str = UPSET_MANUAL_PATH) -> Dict[Tuple[str, str, str], Dict[str, object]]:
@@ -1122,8 +1140,6 @@ def apply_upset_probability_adjustment(
 
 
 def confidence_band(prob: float, conf: float, abs_margin: float) -> str:
-    edge_from_coinflip = abs(prob - 0.50)
-
     if prob >= 0.66 and conf >= 0.64 and abs_margin >= 7.0:
         return "High"
     if prob >= 0.58 and conf >= 0.57 and abs_margin >= 3.5:
@@ -1171,7 +1187,6 @@ def score_bet_opportunity(
     min_games: float,
 ) -> float:
     score = 0.0
-
     score += max(0.0, (pick_prob - 0.50) * 100.0)
     score += max(0.0, edge * 140.0)
     score += max(0.0, (conf - 0.50) * 80.0)
@@ -1239,27 +1254,13 @@ def assign_bet_grade(
         min_games=min_games,
     )
 
-    if (
-        edge >= req_edge + 0.020
-        and pick_prob >= 0.60
-        and conf >= 0.60
-        and score >= 22.0
-    ):
+    if edge >= req_edge + 0.020 and pick_prob >= 0.60 and conf >= 0.60 and score >= 22.0:
         return "Strong Bet"
 
-    if (
-        edge >= req_edge
-        and pick_prob >= 0.56
-        and conf >= 0.56
-        and score >= 14.0
-    ):
+    if edge >= req_edge and pick_prob >= 0.56 and conf >= 0.56 and score >= 14.0:
         return "Small Bet"
 
-    if (
-        edge >= max(0.0, req_edge - 0.010)
-        and pick_prob >= 0.53
-        and score >= 8.0
-    ):
+    if edge >= max(0.0, req_edge - 0.010) and pick_prob >= 0.53 and score >= 8.0:
         return "Lean"
 
     return "No Bet"
@@ -1310,6 +1311,8 @@ def apply_round_exposure_cap(df: pd.DataFrame) -> pd.DataFrame:
     work.loc[excluded_mask, "bet_grade"] = "Lean"
     work.loc[excluded_mask, "stake_dollars"] = 0.0
     work.loc[excluded_mask, "stake_units"] = 0.0
+    work.loc[excluded_mask, "stake"] = 0.0
+    work.loc[excluded_mask, "pick"] = ""
     work.loc[excluded_mask, "recommended_bet"] = "No Bet"
 
     print(f"[predict] exposure cap applied: ${running_exposure:.2f} / ${MAX_ROUND_EXPOSURE:.2f}")
@@ -1336,14 +1339,12 @@ def build_predictions() -> pd.DataFrame:
         raise SystemExit("[stop] MODE is not AUTO.")
 
     teams = sorted(list(TEAM_REGION.keys()))
+    run_id = make_run_id()
+    run_utc = utc_now_str()
 
     saved_model = load_saved_ratings()
     results = fetch_completed_results()
-    results = (
-        results
-        .drop_duplicates(subset=["date", "home", "away"], keep="last")
-        .reset_index(drop=True)
-    )
+    results = results.drop_duplicates(subset=["date", "home", "away"], keep="last").reset_index(drop=True)
     results["date"] = pd.to_datetime(results["date"], errors="coerce")
     results = results.dropna(subset=["date"]).copy()
     results = results[results["date"].dt.year >= 2025].copy()
@@ -1392,7 +1393,6 @@ def build_predictions() -> pd.DataFrame:
             blended_home_prob = model_home_prob
         else:
             fav_odds = min(home_odds, away_odds)
-
             if fav_odds <= 1.60:
                 market_w = 0.62
             elif fav_odds <= 1.85:
@@ -1475,7 +1475,14 @@ def build_predictions() -> pd.DataFrame:
         if math.isnan(pick_edge):
             bet_grade = "No Bet"
             stake_dollars = 0.0
+            required_edge = np.nan
         else:
+            required_edge = dynamic_required_edge(
+                decimal_odds=pick_odds,
+                side_team=predicted_winner,
+                is_home=is_home,
+                is_favourite=is_favourite,
+            )
             bet_grade = assign_bet_grade(
                 pick_prob=win_probability,
                 edge=pick_edge,
@@ -1491,19 +1498,18 @@ def build_predictions() -> pd.DataFrame:
             )
             stake_dollars = stake_from_grade(bet_grade, pick_odds)
 
-        # Leans are still predictions, but not actual bets
         if bet_grade == "Lean":
             stake_dollars = 0.0
 
+        pick = pick_side if stake_dollars > 0 else ""
         stake_units = round(stake_dollars / UNIT_SIZE, 2) if UNIT_SIZE > 0 else 0.0
-
-        recommended_bet = (
-            f"${stake_dollars:.2f} {predicted_winner}"
-            if stake_dollars > 0
-            else "No Bet"
-        )
+        recommended_bet = f"${stake_dollars:.2f} {predicted_winner}" if stake_dollars > 0 else "No Bet"
+        value_flag = f"{bet_grade} {predicted_winner}" if bet_grade != "No Bet" else ""
+        fragile_favourite = int(is_favourite and final_upset_score >= UPSET_FLAG_THRESHOLD and pick_odds < 1.70)
 
         rows.append({
+            "run_id": run_id,
+            "run_utc": run_utc,
             "mode": MODE,
             "rating_mode": rating_mode,
             "date": m.date,
@@ -1542,10 +1548,16 @@ def build_predictions() -> pd.DataFrame:
             "final_upset_score": round(final_upset_score, 2),
             "upset_flag": final_upset_flag,
 
+            # compatibility fields for old downstream scripts
+            "fragile_favourite": fragile_favourite,
+            "required_edge": round(required_edge, 3) if pd.notna(required_edge) else np.nan,
+            "value_flag": value_flag,
+            "pick": pick,
+            "stake": float(stake_units),
             "stake_units": float(stake_units),
             "stake_dollars": float(stake_dollars),
             "recommended_bet": recommended_bet,
-            "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         })
 
     df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"]).reset_index(drop=True)
@@ -1560,7 +1572,6 @@ def build_predictions() -> pd.DataFrame:
 
     df = apply_round_exposure_cap(df)
 
-    # Optional: keep number of real bets near desired range by downgrading weakest small bets
     real_bets = df[df["stake_dollars"] > 0].copy()
     if len(real_bets) > TARGET_MAX_BETS:
         real_bets = real_bets.sort_values(
@@ -1571,8 +1582,10 @@ def build_predictions() -> pd.DataFrame:
         keep_idx = set(real_bets.head(TARGET_MAX_BETS)["index"].tolist())
         excess_mask = (df["stake_dollars"] > 0) & (~df.index.isin(keep_idx))
         df.loc[excess_mask, "bet_grade"] = "Lean"
+        df.loc[excess_mask, "stake"] = 0.0
         df.loc[excess_mask, "stake_units"] = 0.0
         df.loc[excess_mask, "stake_dollars"] = 0.0
+        df.loc[excess_mask, "pick"] = ""
         df.loc[excess_mask, "recommended_bet"] = "No Bet"
 
     df["date"] = df["date"].dt.strftime("%Y-%m-%d")
@@ -1580,7 +1593,6 @@ def build_predictions() -> pd.DataFrame:
     round_label = f"Round window {round_start.strftime('%Y-%m-%d')} to {round_end.strftime('%Y-%m-%d')}"
     bet_count = int((pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0) > 0).sum())
     exposure = float(pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0).sum())
-
     avg_edge_series = pd.to_numeric(df.get("edge", np.nan), errors="coerce").dropna()
     avg_edge = float(avg_edge_series.mean()) if not avg_edge_series.empty else 0.0
 
