@@ -45,7 +45,7 @@ jobs:
           python -u predict.py
 
           echo "=== RUN: staking.py ==="
-          python -u staking.py
+          python -u staking.py || true
 
           echo "=== RUN: archive.py ==="
           python -u archive.py
@@ -55,6 +55,13 @@ jobs:
             python -u build_current_predictions.py
           else
             echo "=== SKIP: build_current_predictions.py not found ==="
+          fi
+
+          if [ -f build_completed_round.py ]; then
+            echo "=== RUN: build_completed_round.py ==="
+            python -u build_completed_round.py
+          else
+            echo "=== SKIP: build_completed_round.py not found ==="
           fi
 
           echo "=== RUN: tracker.py ==="
@@ -98,6 +105,9 @@ jobs:
         run: |
           mkdir -p site
           cp index.html site/index.html
+
+          if [ -f current_predictions.csv ]; then cp current_predictions.csv site/current_predictions.csv; fi
+          if [ -f latest_completed_round.csv ]; then cp latest_completed_round.csv site/latest_completed_round.csv; fi
 
           if [ -f predictions.csv ]; then cp predictions.csv site/predictions.csv; fi
           if [ -f odds.csv ]; then cp odds.csv site/odds.csv; fi
