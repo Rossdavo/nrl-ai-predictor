@@ -3,7 +3,6 @@ import pandas as pd
 
 EXPECTED = ["date", "home", "away", "home_pts", "away_pts"]
 CACHE_PATH = "results_cache.csv"
-BOOTSTRAP_CANDIDATES = ["results_2025.csv", "data/results_2025.csv"]
 
 
 def _empty_results() -> pd.DataFrame:
@@ -28,6 +27,11 @@ def _normalise_results_df(df: pd.DataFrame, dayfirst: bool = False) -> pd.DataFr
     df["away_pts"] = pd.to_numeric(df["away_pts"], errors="coerce")
 
     df = df.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
+    df = (
+        df.drop_duplicates(subset=["date", "home", "away"], keep="last")
+        .sort_values(["date", "home", "away"])
+        .reset_index(drop=True)
+    )
     return df
 
 
@@ -89,40 +93,23 @@ def read_results_file(path: str, dayfirst: bool = False) -> pd.DataFrame:
 
 
 def main():
-    # 1) Load existing cache first — this is the main source of truth
+    # report.py should NEVER backfill or modify the cache from other files.
+    # It should only validate / normalise the existing results_cache.csv.
+
     if os.path.exists(CACHE_PATH):
-        existing = read_results_file(CACHE_PATH, dayfirst=False)
         print(f"Reading cache: {CACHE_PATH}")
+        existing = read_results_file(CACHE_PATH, dayfirst=False)
     else:
         existing = _empty_results()
-        print("No existing results_cache.csv found. Starting fresh.")
+        print("No existing results_cache.csv found. Writing empty cache.")
 
-    # 2) Optionally backfill from 2025 file if present
-    bootstrap_src = next((c for c in BOOTSTRAP_CANDIDATES if os.path.exists(c)), None)
-
-    if bootstrap_src:
-        print(f"Backfilling from: {bootstrap_src}")
-        df_2025 = read_results_file(bootstrap_src, dayfirst=True)
-    else:
-        df_2025 = _empty_results()
-        print("No results_2025.csv found for backfill.")
-
-    # 3) Merge safely and never wipe current cache
-    combined = pd.concat([existing, df_2025], ignore_index=True)
-
-    if combined.empty:
+    if existing.empty:
         _empty_results().to_csv(CACHE_PATH, index=False)
         print("No results available. Wrote empty results_cache.csv")
         return
 
-    combined = (
-        combined.drop_duplicates(subset=["date", "home", "away"], keep="last")
-        .sort_values(["date", "home", "away"])
-        .reset_index(drop=True)
-    )
-
-    combined.to_csv(CACHE_PATH, index=False)
-    print(f"Loaded {len(combined)} total results into {CACHE_PATH}")
+    existing.to_csv(CACHE_PATH, index=False)
+    print(f"Validated {len(existing)} total results in {CACHE_PATH}")
 
 
 if __name__ == "__main__":
