@@ -49,11 +49,8 @@ MODE = "AUTO"
 # ----------------------------
 # Results sources for ratings
 # ----------------------------
-RESULTS_URLS = {
-    2026: "https://fixturedownload.com/results/nrl-2026",
-    2025: "https://fixturedownload.com/results/nrl-2025",
-}
-RESULTS_CACHE_PATH = "results_cache.csv"
+RESULTS_URLS = {}
+
 MANUAL_RESULTS_2026_PATH = "results_2026.csv"
 
 
