@@ -48,10 +48,11 @@ MODE = "AUTO"
 
 # ----------------------------
 # Results sources for ratings
+# Web fetches disabled on purpose while we clean 2026 ladder input
 # ----------------------------
 RESULTS_URLS = {}
 RESULTS_CACHE_PATH = "results_cache.csv"
-MANUAL_RESULTS_2026_PATH = "results_2026.csv
+MANUAL_RESULTS_2026_PATH = "results_2026.csv"
 
 
 # ----------------------------
@@ -1309,7 +1310,7 @@ def load_manual_upset_flags(path: str = UPSET_MANUAL_PATH) -> Dict[Tuple[str, st
         if not date or not home or not away:
             continue
 
-        score = pd.to_numeric(r.get("manual_upset_score", 0.0), errors="coerce")
+            score = pd.to_numeric(r.get("manual_upset_score", 0.0), errors="coerce")
         notes = str(r.get("notes", "")).strip()
 
         out[(date, home, away)] = {
