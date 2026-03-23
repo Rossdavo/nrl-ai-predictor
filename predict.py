@@ -1723,13 +1723,29 @@ def build_predictions() -> pd.DataFrame:
         final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
         final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
 
-        final_home_prob = apply_upset_probability_adjustment(
+       final_home_prob = apply_upset_probability_adjustment(
             home_prob=blended_home_prob,
             upset_team=upset_team,
             final_upset_score=final_upset_score,
             home=m.home,
             away=m.away,
         )
+
+        # --- ELITE TEAM BOUNCE BACK BOOST ---
+        elite_teams = {"Storm", "Panthers", "Roosters"}
+
+        recent_form_home = form_stats.get(m.home, {})
+        recent_form_away = form_stats.get(m.away, {})
+
+        home_recent_margin = recent_form_home.get("recent_margin", 0.0)
+        away_recent_margin = recent_form_away.get("recent_margin", 0.0)
+
+        if m.home in elite_teams and home_recent_margin < 0:
+            final_home_prob += 0.015
+
+        if m.away in elite_teams and away_recent_margin < 0:
+            final_home_prob -= 0.015
+
         final_home_prob = compress_prob(final_home_prob)
 
         home_win_prob = final_home_prob
