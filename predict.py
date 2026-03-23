@@ -30,8 +30,8 @@ MAX_ROUND_EXPOSURE = round(BANKROLL * MAX_ROUND_EXPOSURE_PCT, 2)
 MAX_SINGLE_BET_PCT = 0.25
 MAX_SINGLE_BET = round(BANKROLL * MAX_SINGLE_BET_PCT, 2)
 
-MIN_BET_SHORT = 20.0   # odds < 2.00
-MIN_BET_DOG = 10.0     # odds >= 2.00
+MIN_BET_SHORT = 20.0
+MIN_BET_DOG = 10.0
 
 TARGET_MIN_BETS = 3
 TARGET_MAX_BETS = 5
@@ -48,7 +48,6 @@ MODE = "AUTO"
 
 # ----------------------------
 # Results sources for ratings
-# Web fetches disabled on purpose while we clean 2026 ladder input
 # ----------------------------
 RESULTS_URLS = {}
 RESULTS_CACHE_PATH = "results_cache.csv"
@@ -78,14 +77,14 @@ UPSET_FLAG_THRESHOLD = 2.0
 
 ADJUSTMENTS_PATH = "adjustments.csv"
 
-# Bookmaker anchoring
-MARKET_BLEND_MIN = 0.56
-MARKET_BLEND_MAX = 0.72
+# Market anchoring (more aggressive than previous version)
+MARKET_BLEND_MIN = 0.50
+MARKET_BLEND_MAX = 0.67
 MARKET_STRONG_FAV_THRESHOLD = 1.60
 MARKET_MED_FAV_THRESHOLD = 1.85
 MARKET_CLOSE_THRESHOLD = 2.10
-MARKET_ANCHOR_MAX_SHIFT = 0.085
-MARKET_DISAGREEMENT_NO_BET = 0.115
+MARKET_ANCHOR_MAX_SHIFT = 0.11
+MARKET_DISAGREEMENT_NO_BET = 0.14
 
 # Ladder / form / injury weighting
 LADDER_ADJ_CAP = 4.5
@@ -98,6 +97,9 @@ AWAY_DOG_EXTRA_EDGE = 0.020
 AWAY_TEAM_EXTRA_EDGE = 0.010
 VOLATILE_TEAM_EXTRA_EDGE = 0.010
 INJURED_TEAM_EXTRA_EDGE = 0.015
+
+AGGRESSIVE_HOME_TEAMS = {"Bulldogs", "Storm", "Warriors"}
+ELITE_BOUNCE_TEAMS = {"Storm", "Panthers", "Roosters"}
 
 
 TEAM_NAME_NORMALISE = {
@@ -386,7 +388,6 @@ def ladder_strength_adjustment(home: str, away: str, ladder: Dict[str, Dict[str,
     a_games = float(a.get("games", 0.0))
 
     games_scale = min(1.0, min(h_games, a_games) / 6.0)
-
     margin_diff = (h_margin - a_margin) * 0.18
     win_diff = (h_win - a_win) * 4.0
 
@@ -859,7 +860,7 @@ def build_team_home_ground_edges(results: pd.DataFrame, teams: List[str]) -> Dic
         home = home[home["w"] > 0].copy()
         away = away[away["w"] > 0].copy()
 
-        if len(home) < 3 or len(away) < 3:
+        if len(home) < 2 or len(away) < 2:
             continue
 
         home_win = np.average((home["home_pts"] > home["away_pts"]).astype(float), weights=home["w"])
@@ -1095,11 +1096,11 @@ def team_injury_impact(team: str, adj: Dict[str, Dict[str, float]]) -> float:
     def_delta = float(a.get("def", 0.0))
 
     impact = 0.0
-    impact += spine_out * 1.7
-    impact += key_out * 0.8
-    impact += market_concern * 0.9
-    impact += max(0.0, -atk_delta) * 0.35
-    impact += max(0.0, -def_delta) * 0.25
+    impact += spine_out * 1.9
+    impact += key_out * 0.9
+    impact += market_concern * 1.0
+    impact += max(0.0, -atk_delta) * 0.40
+    impact += max(0.0, -def_delta) * 0.30
 
     return max(0.0, min(INJURY_IMPACT_CAP, impact))
 
@@ -1178,7 +1179,7 @@ def simulate_match_ad(
     win_prob = hw / n
     exp_margin = sum(margins) / n
     exp_total = sum(totals) / n
-    conf = min(0.80, 0.50 + abs(win_prob - 0.5) * 0.74)
+    conf = min(0.82, 0.50 + abs(win_prob - 0.5) * 0.78)
 
     return win_prob, exp_margin, exp_total, conf
 
@@ -1232,11 +1233,11 @@ def compress_prob(p: float) -> float:
     dist = abs(p - 0.5)
 
     if dist < 0.06:
-        factor = 0.94
+        factor = 0.95
     elif dist < 0.12:
-        factor = 0.91
+        factor = 0.93
     else:
-        factor = 0.88
+        factor = 0.90
 
     return min(0.95, max(0.05, 0.5 + (p - 0.5) * factor))
 
@@ -1250,9 +1251,9 @@ def market_weight_from_prices(home_odds: float, away_odds: float) -> float:
     if fav_odds <= MARKET_STRONG_FAV_THRESHOLD:
         return MARKET_BLEND_MAX
     if fav_odds <= MARKET_MED_FAV_THRESHOLD:
-        return 0.68
-    if fav_odds <= MARKET_CLOSE_THRESHOLD:
         return 0.63
+    if fav_odds <= MARKET_CLOSE_THRESHOLD:
+        return 0.58
     return MARKET_BLEND_MIN
 
 
@@ -1310,7 +1311,7 @@ def load_manual_upset_flags(path: str = UPSET_MANUAL_PATH) -> Dict[Tuple[str, st
         if not date or not home or not away:
             continue
 
-            score = pd.to_numeric(r.get("manual_upset_score", 0.0), errors="coerce")
+        score = pd.to_numeric(r.get("manual_upset_score", 0.0), errors="coerce")
         notes = str(r.get("notes", "")).strip()
 
         out[(date, home, away)] = {
@@ -1415,24 +1416,28 @@ def dynamic_required_edge(
     injury_impact: float = 0.0,
 ) -> float:
     if decimal_odds < 1.50:
-        req = 0.030
+        req = 0.020
     elif decimal_odds < 1.65:
-        req = 0.032
+        req = 0.023
     elif decimal_odds < 1.85:
-        req = 0.038
+        req = 0.029
     elif decimal_odds < 2.05:
-        req = 0.045
+        req = 0.039
     elif decimal_odds < 2.30:
-        req = 0.055
+        req = 0.050
     elif decimal_odds < 2.80:
-        req = 0.065
+        req = 0.062
     else:
         req = 0.075
 
+    if is_home and is_favourite:
+        req -= 0.004
     if is_home and is_favourite and side_team in PREMIUM_HOME_TEAMS:
         req -= 0.010
     if is_home and is_favourite and side_team in ELITE_HOME_TEAMS:
         req -= 0.005
+    if is_home and is_favourite and side_team in AGGRESSIVE_HOME_TEAMS:
+        req -= 0.010
     if is_home and is_favourite and side_team in WEAK_HOME_TEAMS:
         req += 0.012
 
@@ -1445,7 +1450,7 @@ def dynamic_required_edge(
     if injury_impact >= 2.5:
         req += INJURED_TEAM_EXTRA_EDGE
 
-    return max(0.020, req)
+    return max(0.015, req)
 
 
 def score_bet_opportunity(
@@ -1468,10 +1473,14 @@ def score_bet_opportunity(
     score += max(0.0, (conf - 0.50) * 80.0)
     score += min(10.0, max(0.0, abs(exp_margin) * 0.8))
 
+    if is_home and is_favourite:
+        score += 1.5
     if is_home and is_favourite and team in PREMIUM_HOME_TEAMS:
         score += 4.0
     if is_home and is_favourite and team in ELITE_HOME_TEAMS:
         score += 2.0
+    if is_home and is_favourite and team in AGGRESSIVE_HOME_TEAMS:
+        score += 3.5
     if is_home and is_favourite and team in WEAK_HOME_TEAMS:
         score -= 5.0
 
@@ -1491,13 +1500,13 @@ def score_bet_opportunity(
         score += 2.0
 
     if min_games < 3:
-        score -= 5.0
+        score -= 3.0
     elif min_games < 5:
-        score -= 2.0
+        score -= 1.0
 
-    if market_gap >= 0.08:
+    if market_gap >= 0.10:
         score -= 4.0
-    elif market_gap >= 0.05:
+    elif market_gap >= 0.07:
         score -= 2.0
 
     return score
@@ -1518,7 +1527,7 @@ def assign_bet_grade(
     market_gap: float,
     required_edge: float,
 ) -> str:
-    if edge < max(0.0, required_edge - 0.015) or pick_prob < 0.52:
+    if edge < max(0.0, required_edge - 0.020) or pick_prob < 0.52:
         return "No Bet"
 
     if market_gap >= MARKET_DISAGREEMENT_NO_BET:
@@ -1539,13 +1548,13 @@ def assign_bet_grade(
         market_gap=market_gap,
     )
 
-    if edge >= required_edge + 0.020 and pick_prob >= 0.60 and conf >= 0.60 and score >= 22.0:
+    if edge >= required_edge + 0.014 and pick_prob >= 0.58 and conf >= 0.58 and score >= 20.0:
         return "Strong Bet"
 
-    if edge >= required_edge and pick_prob >= 0.56 and conf >= 0.56 and score >= 14.0:
+    if edge >= required_edge and pick_prob >= 0.55 and conf >= 0.55 and score >= 12.0:
         return "Small Bet"
 
-    if edge >= max(0.0, required_edge - 0.010) and pick_prob >= 0.53 and score >= 8.0:
+    if edge >= max(0.0, required_edge - 0.015) and pick_prob >= 0.53 and score >= 7.0:
         return "Lean"
 
     return "No Bet"
@@ -1601,6 +1610,62 @@ def apply_round_exposure_cap(df: pd.DataFrame) -> pd.DataFrame:
     work.loc[excluded_mask, "recommended_bet"] = "No Bet"
 
     print(f"[predict] exposure cap applied: ${running_exposure:.2f} / ${MAX_ROUND_EXPOSURE:.2f}")
+    return work
+
+
+def aggressive_promote_bets(df: pd.DataFrame) -> pd.DataFrame:
+    work = df.copy()
+
+    real_bets = work[pd.to_numeric(work["stake_dollars"], errors="coerce").fillna(0.0) > 0].copy()
+    if len(real_bets) >= TARGET_MIN_BETS:
+        return work
+
+    need = TARGET_MIN_BETS - len(real_bets)
+
+    candidates = work[
+        (pd.to_numeric(work["stake_dollars"], errors="coerce").fillna(0.0) <= 0.0)
+        & (work["predicted_winner"] == work["home"])
+        & (pd.to_numeric(work["win_probability"], errors="coerce").fillna(0.0) >= 0.58)
+        & (pd.to_numeric(work["confidence"], errors="coerce").fillna(0.0) >= 0.56)
+        & (pd.to_numeric(work["market_gap"], errors="coerce").fillna(999) <= 0.10)
+        & (
+            pd.to_numeric(work["edge"], errors="coerce").fillna(-999)
+            >= (
+                pd.to_numeric(work["required_edge"], errors="coerce").fillna(999)
+                - 0.020
+            )
+        )
+    ].copy()
+
+    if candidates.empty:
+        return work
+
+    candidates["promo_bonus"] = 0.0
+    candidates.loc[candidates["predicted_winner"].isin(AGGRESSIVE_HOME_TEAMS), "promo_bonus"] += 4.0
+    candidates["promo_bonus"] += pd.to_numeric(candidates["win_probability"], errors="coerce").fillna(0.0) * 10.0
+    candidates["promo_bonus"] += pd.to_numeric(candidates["confidence"], errors="coerce").fillna(0.0) * 8.0
+    candidates["promo_bonus"] += pd.to_numeric(candidates["edge"], errors="coerce").fillna(0.0) * 100.0
+
+    candidates = candidates.sort_values(
+        ["promo_bonus", "win_probability", "confidence", "edge"],
+        ascending=[False, False, False, False]
+    )
+
+    promoted = 0
+    for idx, row in candidates.iterrows():
+        if promoted >= need:
+            break
+        odds = float(row["predicted_winner_odds"])
+        stake_dollars = stake_from_grade("Small Bet", odds)
+
+        work.loc[idx, "bet_grade"] = "Small Bet"
+        work.loc[idx, "stake_dollars"] = float(stake_dollars)
+        work.loc[idx, "stake_units"] = round(stake_dollars / UNIT_SIZE, 2) if UNIT_SIZE > 0 else 0.0
+        work.loc[idx, "stake"] = work.loc[idx, "stake_units"]
+        work.loc[idx, "pick"] = "HOME"
+        work.loc[idx, "recommended_bet"] = f"${stake_dollars:.2f} {row['predicted_winner']}"
+        promoted += 1
+
     return work
 
 
@@ -1698,8 +1763,17 @@ def build_predictions() -> pd.DataFrame:
 
         home_injury = team_injury_impact(m.home, adj)
         away_injury = team_injury_impact(m.away, adj)
-        injury_prob_shift = min(0.06, (away_injury - home_injury) * 0.012)
+        injury_prob_shift = min(0.09, (away_injury - home_injury) * 0.018)
         blended_home_prob += injury_prob_shift
+
+        if m.home in AGGRESSIVE_HOME_TEAMS and not math.isnan(home_odds) and home_odds <= 1.85:
+            blended_home_prob += 0.010
+
+        if m.home == "Bulldogs" and away_injury >= 2.5:
+            blended_home_prob += 0.020
+
+        if m.home == "Storm" and not math.isnan(home_odds) and home_odds <= 1.40:
+            blended_home_prob += 0.010
 
         h2h_margin_home = recent_h2h_margin(results, m.home, m.away)
         auto_upset = compute_auto_upset_signal(
@@ -1729,20 +1803,17 @@ def build_predictions() -> pd.DataFrame:
             away=m.away,
         )
 
-        # --- ELITE TEAM BOUNCE BACK BOOST ---
-        elite_teams = {"Storm", "Panthers", "Roosters"}
-
         recent_form_home = form_stats.get(m.home, {})
         recent_form_away = form_stats.get(m.away, {})
 
         home_recent_margin = float(recent_form_home.get("recent_margin", 0.0))
         away_recent_margin = float(recent_form_away.get("recent_margin", 0.0))
 
-        if m.home in elite_teams and home_recent_margin < 0:
-            final_home_prob += 0.015
+        if m.home in ELITE_BOUNCE_TEAMS and home_recent_margin < 0:
+            final_home_prob += 0.025
 
-        if m.away in elite_teams and away_recent_margin < 0:
-            final_home_prob -= 0.015
+        if m.away in ELITE_BOUNCE_TEAMS and away_recent_margin < 0:
+            final_home_prob -= 0.025
 
         final_home_prob = compress_prob(final_home_prob)
 
@@ -1897,6 +1968,8 @@ def build_predictions() -> pd.DataFrame:
     round_end = round_start + pd.Timedelta(days=3)
     df = df[(df["date"] >= round_start) & (df["date"] <= round_end)].copy()
 
+    df = apply_round_exposure_cap(df)
+    df = aggressive_promote_bets(df)
     df = apply_round_exposure_cap(df)
 
     real_bets = df[df["stake_dollars"] > 0].copy()
