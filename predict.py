@@ -78,6 +78,29 @@ UPSET_PROB_SHIFT_PER_POINT = 0.0125
 UPSET_PROB_SHIFT_CAP = 0.05
 UPSET_FLAG_THRESHOLD = 2.0
 
+ADJUSTMENTS_PATH = "adjustments.csv"
+
+# Bookmaker anchoring
+MARKET_BLEND_MIN = 0.56
+MARKET_BLEND_MAX = 0.72
+MARKET_STRONG_FAV_THRESHOLD = 1.60
+MARKET_MED_FAV_THRESHOLD = 1.85
+MARKET_CLOSE_THRESHOLD = 2.10
+MARKET_ANCHOR_MAX_SHIFT = 0.085
+MARKET_DISAGREEMENT_NO_BET = 0.115
+
+# Ladder / form / injury weighting
+LADDER_ADJ_CAP = 4.5
+FORM_ADJ_CAP = 3.2
+HOME_AWAY_FORM_CAP = 2.8
+INJURY_IMPACT_CAP = 6.0
+
+# Bet guardrails
+AWAY_DOG_EXTRA_EDGE = 0.020
+AWAY_TEAM_EXTRA_EDGE = 0.010
+VOLATILE_TEAM_EXTRA_EDGE = 0.010
+INJURED_TEAM_EXTRA_EDGE = 0.015
+
 
 TEAM_NAME_NORMALISE = {
     "Canterbury Bulldogs": "Bulldogs",
@@ -259,6 +282,74 @@ def build_current_season_record(results: pd.DataFrame, season_year: int = 2026) 
     return out
 
 
+def build_ladder_stats(results: pd.DataFrame, teams: List[str], season_year: int = 2026) -> Dict[str, Dict[str, float]]:
+    out = {
+        t: {
+            "games": 0,
+            "wins": 0,
+            "losses": 0,
+            "draws": 0,
+            "points_for": 0.0,
+            "points_against": 0.0,
+            "diff": 0.0,
+            "win_pct": 0.5,
+            "avg_margin": 0.0,
+            "comp_points": 0.0,
+        }
+        for t in teams
+    }
+
+    if results is None or results.empty:
+        return out
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).copy()
+    df = df[df["date"].dt.year == season_year].copy()
+
+    for _, r in df.iterrows():
+        home = r["home"]
+        away = r["away"]
+        hp = float(r["home_pts"])
+        ap = float(r["away_pts"])
+
+        if home in out:
+            out[home]["games"] += 1
+            out[home]["points_for"] += hp
+            out[home]["points_against"] += ap
+            out[home]["diff"] += (hp - ap)
+            if hp > ap:
+                out[home]["wins"] += 1
+                out[home]["comp_points"] += 2
+            elif hp < ap:
+                out[home]["losses"] += 1
+            else:
+                out[home]["draws"] += 1
+                out[home]["comp_points"] += 1
+
+        if away in out:
+            out[away]["games"] += 1
+            out[away]["points_for"] += ap
+            out[away]["points_against"] += hp
+            out[away]["diff"] += (ap - hp)
+            if ap > hp:
+                out[away]["wins"] += 1
+                out[away]["comp_points"] += 2
+            elif ap < hp:
+                out[away]["losses"] += 1
+            else:
+                out[away]["draws"] += 1
+                out[away]["comp_points"] += 1
+
+    for t in teams:
+        g = out[t]["games"]
+        if g > 0:
+            out[t]["win_pct"] = out[t]["wins"] / g
+            out[t]["avg_margin"] = out[t]["diff"] / g
+
+    return out
+
+
 def apply_early_season_matchup_moderation(
     home_prob: float,
     home: str,
@@ -283,6 +374,26 @@ def apply_early_season_matchup_moderation(
             home_prob = min(max(home_prob, 0.44), 0.56)
 
     return min(0.92, max(0.08, home_prob))
+
+
+def ladder_strength_adjustment(home: str, away: str, ladder: Dict[str, Dict[str, float]]) -> float:
+    h = ladder.get(home, {})
+    a = ladder.get(away, {})
+
+    h_margin = float(h.get("avg_margin", 0.0))
+    a_margin = float(a.get("avg_margin", 0.0))
+    h_win = float(h.get("win_pct", 0.5))
+    a_win = float(a.get("win_pct", 0.5))
+    h_games = float(h.get("games", 0.0))
+    a_games = float(a.get("games", 0.0))
+
+    games_scale = min(1.0, min(h_games, a_games) / 6.0)
+
+    margin_diff = (h_margin - a_margin) * 0.18
+    win_diff = (h_win - a_win) * 4.0
+
+    adj = (margin_diff + win_diff) * games_scale
+    return max(-LADDER_ADJ_CAP, min(LADDER_ADJ_CAP, adj))
 
 
 def travel_points_adjustment(home: str, away: str, venue: str) -> Tuple[float, float]:
@@ -611,7 +722,6 @@ def fetch_completed_results() -> pd.DataFrame:
     merged = merged.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
     merged = merged[merged["season_year"].fillna(0) >= 2025].copy()
 
-    # Keep later concatenated sources (manual file) over older cache/web rows
     merged = merged.drop_duplicates(subset=["date", "home", "away"], keep="last").reset_index(drop=True)
     merged = merged.sort_values(["date", "home", "away"]).reset_index(drop=True)
 
@@ -772,22 +882,228 @@ def build_team_home_ground_edges(results: pd.DataFrame, teams: List[str]) -> Dic
     return out
 
 
-def load_adjustments(path: str = "adjustments.csv") -> Dict[str, Dict[str, float]]:
+def load_adjustments(path: str = ADJUSTMENTS_PATH) -> Dict[str, Dict[str, float]]:
     try:
         df = pd.read_csv(path)
-        out = {}
-        for _, r in df.iterrows():
-            team = str(r.get("team", "")).strip()
-            if not team:
-                continue
-            out[team] = {
-                "atk": float(r.get("atk_delta_pts", 0.0)),
-                "def": float(r.get("def_delta_pts", 0.0)),
-                "notes": str(r.get("notes", "")).strip(),
-            }
-        return out
     except Exception:
         return {}
+
+    out = {}
+    for _, r in df.iterrows():
+        team = norm_team(r.get("team", ""))
+        if not team:
+            continue
+
+        atk_delta = pd.to_numeric(r.get("atk_delta_pts", 0.0), errors="coerce")
+        def_delta = pd.to_numeric(r.get("def_delta_pts", 0.0), errors="coerce")
+        spine_out = pd.to_numeric(r.get("spine_out_count", 0.0), errors="coerce")
+        key_out = pd.to_numeric(r.get("key_out_count", 0.0), errors="coerce")
+        market_concern = pd.to_numeric(r.get("market_concern", 0.0), errors="coerce")
+
+        out[team] = {
+            "atk": float(atk_delta) if pd.notna(atk_delta) else 0.0,
+            "def": float(def_delta) if pd.notna(def_delta) else 0.0,
+            "spine_out_count": float(spine_out) if pd.notna(spine_out) else 0.0,
+            "key_out_count": float(key_out) if pd.notna(key_out) else 0.0,
+            "market_concern": float(market_concern) if pd.notna(market_concern) else 0.0,
+            "notes": str(r.get("notes", "")).strip(),
+        }
+    return out
+
+
+def build_recent_form_stats(results: pd.DataFrame, teams: List[str], recent_n: int = 5) -> Dict[str, Dict[str, float]]:
+    out = {t: {"recent_margin": 0.0, "recent_win_rate": 0.5, "games": 0.0} for t in teams}
+    if results is None or results.empty:
+        return out
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).sort_values("date")
+
+    rows = []
+    for _, r in df.iterrows():
+        home = r["home"]
+        away = r["away"]
+        hp = float(r["home_pts"])
+        ap = float(r["away_pts"])
+        rows.append({"date": r["date"], "team": home, "margin": hp - ap, "win": 1.0 if hp > ap else 0.0})
+        rows.append({"date": r["date"], "team": away, "margin": ap - hp, "win": 1.0 if ap > hp else 0.0})
+
+    tf = pd.DataFrame(rows)
+    for team in teams:
+        tdf = tf[tf["team"] == team].sort_values("date", ascending=False).head(recent_n).copy()
+        if tdf.empty:
+            continue
+
+        tdf["yr_weight"] = tdf["date"].dt.year.map(lambda y: YEAR_WEIGHTS.get(int(y), 0.0)).fillna(0.0)
+        tdf = tdf[tdf["yr_weight"] > 0].copy()
+        if tdf.empty:
+            continue
+
+        weights = np.linspace(1.25, 0.85, len(tdf))
+        weights = weights * tdf["yr_weight"].values
+        if weights.sum() <= 0:
+            continue
+
+        out[team] = {
+            "recent_margin": float(np.average(tdf["margin"].values, weights=weights)),
+            "recent_win_rate": float(np.average(tdf["win"].values, weights=weights)),
+            "games": float(len(tdf)),
+        }
+    return out
+
+
+def build_home_away_form_stats(results: pd.DataFrame, teams: List[str], recent_n: int = 4) -> Dict[str, Dict[str, float]]:
+    out = {
+        t: {
+            "home_margin": 0.0,
+            "home_win_rate": 0.5,
+            "home_games": 0.0,
+            "away_margin": 0.0,
+            "away_win_rate": 0.5,
+            "away_games": 0.0,
+        }
+        for t in teams
+    }
+
+    if results is None or results.empty:
+        return out
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).sort_values("date")
+
+    for team in teams:
+        hdf = df[df["home"] == team].sort_values("date", ascending=False).head(recent_n).copy()
+        if not hdf.empty:
+            hdf["yr_weight"] = hdf["date"].dt.year.map(lambda y: YEAR_WEIGHTS.get(int(y), 0.0)).fillna(0.0)
+            hdf = hdf[hdf["yr_weight"] > 0].copy()
+            if not hdf.empty:
+                h_weights = np.linspace(1.20, 0.90, len(hdf)) * hdf["yr_weight"].values
+                margins = (hdf["home_pts"] - hdf["away_pts"]).astype(float).values
+                wins = (hdf["home_pts"] > hdf["away_pts"]).astype(float).values
+                out[team]["home_margin"] = float(np.average(margins, weights=h_weights))
+                out[team]["home_win_rate"] = float(np.average(wins, weights=h_weights))
+                out[team]["home_games"] = float(len(hdf))
+
+        adf = df[df["away"] == team].sort_values("date", ascending=False).head(recent_n).copy()
+        if not adf.empty:
+            adf["yr_weight"] = adf["date"].dt.year.map(lambda y: YEAR_WEIGHTS.get(int(y), 0.0)).fillna(0.0)
+            adf = adf[adf["yr_weight"] > 0].copy()
+            if not adf.empty:
+                a_weights = np.linspace(1.20, 0.90, len(adf)) * adf["yr_weight"].values
+                margins = (adf["away_pts"] - adf["home_pts"]).astype(float).values
+                wins = (adf["away_pts"] > adf["home_pts"]).astype(float).values
+                out[team]["away_margin"] = float(np.average(margins, weights=a_weights))
+                out[team]["away_win_rate"] = float(np.average(wins, weights=a_weights))
+                out[team]["away_games"] = float(len(adf))
+
+    return out
+
+
+def build_team_volatility(results: pd.DataFrame, teams: List[str], recent_n: int = 6) -> Dict[str, float]:
+    out = {t: 0.0 for t in teams}
+    if results is None or results.empty:
+        return out
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).sort_values("date")
+
+    rows = []
+    for _, r in df.iterrows():
+        home = r["home"]
+        away = r["away"]
+        hp = float(r["home_pts"])
+        ap = float(r["away_pts"])
+        rows.append({"date": r["date"], "team": home, "margin": hp - ap})
+        rows.append({"date": r["date"], "team": away, "margin": ap - hp})
+
+    tf = pd.DataFrame(rows)
+
+    for team in teams:
+        tdf = tf[tf["team"] == team].sort_values("date", ascending=False).head(recent_n).copy()
+        if len(tdf) >= 3:
+            out[team] = float(np.std(tdf["margin"].values))
+    return out
+
+
+def recent_h2h_margin(results: pd.DataFrame, home: str, away: str, n_games: int = 4) -> float:
+    if results is None or results.empty:
+        return 0.0
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).sort_values("date", ascending=False)
+
+    margins = []
+    for _, r in df.iterrows():
+        if {r["home"], r["away"]} != {home, away}:
+            continue
+        if r["home"] == home:
+            margins.append(float(r["home_pts"]) - float(r["away_pts"]))
+        else:
+            margins.append(float(r["away_pts"]) - float(r["home_pts"]))
+        if len(margins) >= n_games:
+            break
+
+    if not margins:
+        return 0.0
+    return float(np.mean(margins))
+
+
+def home_away_form_adjustment(home: str, away: str, ha_form: Dict[str, Dict[str, float]]) -> float:
+    hs = ha_form.get(home, {})
+    as_ = ha_form.get(away, {})
+
+    h_margin = float(hs.get("home_margin", 0.0))
+    a_margin = float(as_.get("away_margin", 0.0))
+    h_win = float(hs.get("home_win_rate", 0.5))
+    a_win = float(as_.get("away_win_rate", 0.5))
+    h_games = float(hs.get("home_games", 0.0))
+    a_games = float(as_.get("away_games", 0.0))
+
+    game_scale = min(1.0, min(h_games, a_games) / 4.0)
+    adj = ((h_margin - a_margin) * 0.22) + ((h_win - a_win) * 3.2)
+    adj *= game_scale
+
+    return max(-HOME_AWAY_FORM_CAP, min(HOME_AWAY_FORM_CAP, adj))
+
+
+def form_strength_adjustment(home: str, away: str, form_stats: Dict[str, Dict[str, float]]) -> float:
+    hs = form_stats.get(home, {})
+    as_ = form_stats.get(away, {})
+
+    h_margin = float(hs.get("recent_margin", 0.0))
+    a_margin = float(as_.get("recent_margin", 0.0))
+    h_win = float(hs.get("recent_win_rate", 0.5))
+    a_win = float(as_.get("recent_win_rate", 0.5))
+    h_games = float(hs.get("games", 0.0))
+    a_games = float(as_.get("games", 0.0))
+
+    game_scale = min(1.0, min(h_games, a_games) / 5.0)
+    adj = ((h_margin - a_margin) * 0.17) + ((h_win - a_win) * 2.8)
+    adj *= game_scale
+
+    return max(-FORM_ADJ_CAP, min(FORM_ADJ_CAP, adj))
+
+
+def team_injury_impact(team: str, adj: Dict[str, Dict[str, float]]) -> float:
+    a = adj.get(team, {})
+    spine_out = float(a.get("spine_out_count", 0.0))
+    key_out = float(a.get("key_out_count", 0.0))
+    market_concern = float(a.get("market_concern", 0.0))
+    atk_delta = float(a.get("atk", 0.0))
+    def_delta = float(a.get("def", 0.0))
+
+    impact = 0.0
+    impact += spine_out * 1.7
+    impact += key_out * 0.8
+    impact += market_concern * 0.9
+    impact += max(0.0, -atk_delta) * 0.35
+    impact += max(0.0, -def_delta) * 0.25
+
+    return max(0.0, min(INJURY_IMPACT_CAP, impact))
 
 
 def expected_points(
@@ -802,9 +1118,19 @@ def expected_points(
     atk = model["atk"]
     dfn = model["dfn"]
     home_ground_edges = model.get("team_home_edge", {})
+    ladder_stats = model.get("ladder_stats", {})
+    form_stats = model.get("form_stats", {})
+    home_away_form = model.get("home_away_form", {})
 
     home_pts = mu + ha + atk.get(home, 0.0) - dfn.get(away, 0.0)
     away_pts = mu + atk.get(away, 0.0) - dfn.get(home, 0.0)
+
+    ladder_adj = ladder_strength_adjustment(home, away, ladder_stats)
+    form_adj = form_strength_adjustment(home, away, form_stats)
+    ha_form_adj = home_away_form_adjustment(home, away, home_away_form)
+
+    home_pts += ladder_adj + form_adj + ha_form_adj
+    away_pts -= ladder_adj + form_adj + ha_form_adj
 
     h_adj, a_adj = travel_points_adjustment(home, away, venue)
     home_pts += h_adj
@@ -854,7 +1180,7 @@ def simulate_match_ad(
     win_prob = hw / n
     exp_margin = sum(margins) / n
     exp_total = sum(totals) / n
-    conf = min(0.78, 0.50 + abs(win_prob - 0.5) * 0.72)
+    conf = min(0.80, 0.50 + abs(win_prob - 0.5) * 0.74)
 
     return win_prob, exp_margin, exp_total, conf
 
@@ -917,6 +1243,34 @@ def compress_prob(p: float) -> float:
     return min(0.95, max(0.05, 0.5 + (p - 0.5) * factor))
 
 
+def market_weight_from_prices(home_odds: float, away_odds: float) -> float:
+    if math.isnan(home_odds) or math.isnan(away_odds):
+        return MARKET_BLEND_MIN
+
+    fav_odds = min(home_odds, away_odds)
+
+    if fav_odds <= MARKET_STRONG_FAV_THRESHOLD:
+        return MARKET_BLEND_MAX
+    if fav_odds <= MARKET_MED_FAV_THRESHOLD:
+        return 0.68
+    if fav_odds <= MARKET_CLOSE_THRESHOLD:
+        return 0.63
+    return MARKET_BLEND_MIN
+
+
+def anchor_to_market(model_prob: float, market_prob: float, weight: float) -> float:
+    if math.isnan(market_prob):
+        return model_prob
+
+    blended = ((1.0 - weight) * model_prob) + (weight * market_prob)
+
+    diff = blended - market_prob
+    if abs(diff) > MARKET_ANCHOR_MAX_SHIFT:
+        blended = market_prob + math.copysign(MARKET_ANCHOR_MAX_SHIFT, diff)
+
+    return min(0.94, max(0.06, blended))
+
+
 def load_saved_ratings(path: str = "ratings.json") -> Optional[Dict[str, object]]:
     try:
         if not os.path.exists(path):
@@ -967,99 +1321,6 @@ def load_manual_upset_flags(path: str = UPSET_MANUAL_PATH) -> Dict[Tuple[str, st
             "notes": notes,
         }
     return out
-
-
-def build_recent_form_stats(results: pd.DataFrame, teams: List[str], recent_n: int = 5) -> Dict[str, Dict[str, float]]:
-    out = {t: {"recent_margin": 0.0, "recent_win_rate": 0.5, "games": 0.0} for t in teams}
-    if results is None or results.empty:
-        return out
-
-    df = results.copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df = df.dropna(subset=["date"]).sort_values("date")
-
-    rows = []
-    for _, r in df.iterrows():
-        home = r["home"]
-        away = r["away"]
-        hp = float(r["home_pts"])
-        ap = float(r["away_pts"])
-        rows.append({"date": r["date"], "team": home, "margin": hp - ap, "win": 1.0 if hp > ap else 0.0})
-        rows.append({"date": r["date"], "team": away, "margin": ap - hp, "win": 1.0 if ap > hp else 0.0})
-
-    tf = pd.DataFrame(rows)
-    for team in teams:
-        tdf = tf[tf["team"] == team].sort_values("date", ascending=False).head(recent_n).copy()
-        if tdf.empty:
-            continue
-
-        tdf["yr_weight"] = tdf["date"].dt.year.map(lambda y: YEAR_WEIGHTS.get(int(y), 0.0)).fillna(0.0)
-        tdf = tdf[tdf["yr_weight"] > 0].copy()
-        if tdf.empty:
-            continue
-
-        weights = np.linspace(1.25, 0.85, len(tdf))
-        weights = weights * tdf["yr_weight"].values
-        if weights.sum() <= 0:
-            continue
-
-        out[team] = {
-            "recent_margin": float(np.average(tdf["margin"].values, weights=weights)),
-            "recent_win_rate": float(np.average(tdf["win"].values, weights=weights)),
-            "games": float(len(tdf)),
-        }
-    return out
-
-
-def build_team_volatility(results: pd.DataFrame, teams: List[str], recent_n: int = 6) -> Dict[str, float]:
-    out = {t: 0.0 for t in teams}
-    if results is None or results.empty:
-        return out
-
-    df = results.copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df = df.dropna(subset=["date"]).sort_values("date")
-
-    rows = []
-    for _, r in df.iterrows():
-        home = r["home"]
-        away = r["away"]
-        hp = float(r["home_pts"])
-        ap = float(r["away_pts"])
-        rows.append({"date": r["date"], "team": home, "margin": hp - ap})
-        rows.append({"date": r["date"], "team": away, "margin": ap - hp})
-
-    tf = pd.DataFrame(rows)
-
-    for team in teams:
-        tdf = tf[tf["team"] == team].sort_values("date", ascending=False).head(recent_n).copy()
-        if len(tdf) >= 3:
-            out[team] = float(np.std(tdf["margin"].values))
-    return out
-
-
-def recent_h2h_margin(results: pd.DataFrame, home: str, away: str, n_games: int = 4) -> float:
-    if results is None or results.empty:
-        return 0.0
-
-    df = results.copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df = df.dropna(subset=["date"]).sort_values("date", ascending=False)
-
-    margins = []
-    for _, r in df.iterrows():
-        if {r["home"], r["away"]} != {home, away}:
-            continue
-        if r["home"] == home:
-            margins.append(float(r["home_pts"]) - float(r["away_pts"]))
-        else:
-            margins.append(float(r["away_pts"]) - float(r["home_pts"]))
-        if len(margins) >= n_games:
-            break
-
-    if not margins:
-        return 0.0
-    return float(np.mean(margins))
 
 
 def compute_auto_upset_signal(
@@ -1147,7 +1408,14 @@ def confidence_band(prob: float, conf: float, abs_margin: float) -> str:
     return "Low"
 
 
-def dynamic_required_edge(decimal_odds: float, side_team: str, is_home: bool, is_favourite: bool) -> float:
+def dynamic_required_edge(
+    decimal_odds: float,
+    side_team: str,
+    is_home: bool,
+    is_favourite: bool,
+    volatility: float = 0.0,
+    injury_impact: float = 0.0,
+) -> float:
     if decimal_odds < 1.50:
         req = 0.030
     elif decimal_odds < 1.65:
@@ -1170,6 +1438,15 @@ def dynamic_required_edge(decimal_odds: float, side_team: str, is_home: bool, is
     if is_home and is_favourite and side_team in WEAK_HOME_TEAMS:
         req += 0.012
 
+    if not is_home:
+        req += AWAY_TEAM_EXTRA_EDGE
+    if not is_home and not is_favourite:
+        req += AWAY_DOG_EXTRA_EDGE
+    if volatility >= 10.0:
+        req += VOLATILE_TEAM_EXTRA_EDGE
+    if injury_impact >= 2.5:
+        req += INJURED_TEAM_EXTRA_EDGE
+
     return max(0.020, req)
 
 
@@ -1185,6 +1462,7 @@ def score_bet_opportunity(
     final_upset_score: float,
     exp_margin: float,
     min_games: float,
+    market_gap: float,
 ) -> float:
     score = 0.0
     score += max(0.0, (pick_prob - 0.50) * 100.0)
@@ -1219,6 +1497,11 @@ def score_bet_opportunity(
     elif min_games < 5:
         score -= 2.0
 
+    if market_gap >= 0.08:
+        score -= 4.0
+    elif market_gap >= 0.05:
+        score -= 2.0
+
     return score
 
 
@@ -1234,10 +1517,13 @@ def assign_bet_grade(
     final_upset_score: float,
     exp_margin: float,
     min_games: float,
+    market_gap: float,
+    required_edge: float,
 ) -> str:
-    req_edge = dynamic_required_edge(odds, team, is_home, is_favourite)
+    if edge < max(0.0, required_edge - 0.015) or pick_prob < 0.52:
+        return "No Bet"
 
-    if edge < max(0.0, req_edge - 0.015) or pick_prob < 0.52:
+    if market_gap >= MARKET_DISAGREEMENT_NO_BET:
         return "No Bet"
 
     score = score_bet_opportunity(
@@ -1252,15 +1538,16 @@ def assign_bet_grade(
         final_upset_score=final_upset_score,
         exp_margin=exp_margin,
         min_games=min_games,
+        market_gap=market_gap,
     )
 
-    if edge >= req_edge + 0.020 and pick_prob >= 0.60 and conf >= 0.60 and score >= 22.0:
+    if edge >= required_edge + 0.020 and pick_prob >= 0.60 and conf >= 0.60 and score >= 22.0:
         return "Strong Bet"
 
-    if edge >= req_edge and pick_prob >= 0.56 and conf >= 0.56 and score >= 14.0:
+    if edge >= required_edge and pick_prob >= 0.56 and conf >= 0.56 and score >= 14.0:
         return "Small Bet"
 
-    if edge >= max(0.0, req_edge - 0.010) and pick_prob >= 0.53 and score >= 8.0:
+    if edge >= max(0.0, required_edge - 0.010) and pick_prob >= 0.53 and score >= 8.0:
         return "Lean"
 
     return "No Bet"
@@ -1365,12 +1652,26 @@ def build_predictions() -> pd.DataFrame:
     odds = load_odds()
     manual_upsets = load_manual_upset_flags()
     form_stats = build_recent_form_stats(results, teams)
+    home_away_form = build_home_away_form_stats(results, teams)
     team_volatility = build_team_volatility(results, teams)
     team_home_edge = build_team_home_ground_edges(results, teams)
     season_record = build_current_season_record(results, 2026)
+    ladder_stats = build_ladder_stats(results, teams, 2026)
 
     if ad_model is not None:
         ad_model["team_home_edge"] = team_home_edge
+        ad_model["ladder_stats"] = ladder_stats
+        ad_model["form_stats"] = form_stats
+        ad_model["home_away_form"] = home_away_form
+
+    print("[debug] ladder snapshot:")
+    for team in sorted(ladder_stats.keys()):
+        ls = ladder_stats[team]
+        if ls["games"] > 0:
+            print(
+                f"  {team}: games={ls['games']} wins={ls['wins']} "
+                f"diff={ls['diff']:.0f} avg_margin={ls['avg_margin']:.2f} win_pct={ls['win_pct']:.3f}"
+            )
 
     rows = []
 
@@ -1389,26 +1690,18 @@ def build_predictions() -> pd.DataFrame:
 
         market_home_prob, market_away_prob = fair_probs_from_odds(home_odds, away_odds)
 
-        if math.isnan(market_home_prob):
-            blended_home_prob = model_home_prob
-        else:
-            fav_odds = min(home_odds, away_odds)
-            if fav_odds <= 1.60:
-                market_w = 0.62
-            elif fav_odds <= 1.85:
-                market_w = 0.59
-            elif fav_odds <= 2.10:
-                market_w = 0.56
-            else:
-                market_w = 0.53
-
-            model_w = 1.0 - market_w
-            blended_home_prob = (model_w * model_home_prob) + (market_w * market_home_prob)
+        market_weight = market_weight_from_prices(home_odds, away_odds)
+        blended_home_prob = anchor_to_market(model_home_prob, market_home_prob, market_weight)
 
         blended_home_prob = apply_outright_strength_adjustment(blended_home_prob, m.home, m.away)
         blended_home_prob = apply_early_season_matchup_moderation(
             blended_home_prob, m.home, m.away, season_record
         )
+
+        home_injury = team_injury_impact(m.home, adj)
+        away_injury = team_injury_impact(m.away, adj)
+        injury_prob_shift = min(0.06, (away_injury - home_injury) * 0.012)
+        blended_home_prob += injury_prob_shift
 
         h2h_margin_home = recent_h2h_margin(results, m.home, m.away)
         auto_upset = compute_auto_upset_signal(
@@ -1450,6 +1743,8 @@ def build_predictions() -> pd.DataFrame:
             pick_edge = value_edge(home_win_prob, home_odds)
             is_home = True
             expected_margin_for_pick = exp_margin
+            market_pick_prob = market_home_prob
+            pick_injury_impact = home_injury
         else:
             predicted_winner = m.away
             win_probability = away_win_prob
@@ -1458,6 +1753,8 @@ def build_predictions() -> pd.DataFrame:
             pick_edge = value_edge(away_win_prob, away_odds)
             is_home = False
             expected_margin_for_pick = -exp_margin
+            market_pick_prob = market_away_prob
+            pick_injury_impact = away_injury
 
         market_favourite = ""
         if not math.isnan(home_odds) and not math.isnan(away_odds):
@@ -1469,6 +1766,14 @@ def build_predictions() -> pd.DataFrame:
         home_games = float(form_stats.get(m.home, {}).get("games", 0.0))
         away_games = float(form_stats.get(m.away, {}).get("games", 0.0))
         min_games = min(home_games, away_games)
+
+        if not math.isnan(market_pick_prob):
+            market_gap = abs(win_probability - market_pick_prob)
+        else:
+            market_gap = 0.0
+
+        if not is_home and not math.isnan(market_pick_prob) and market_pick_prob < 0.47 and pick_edge < 0.11:
+            pick_edge = min(pick_edge, 0.0)
 
         band = confidence_band(win_probability, conf, abs(expected_margin_for_pick))
 
@@ -1482,7 +1787,10 @@ def build_predictions() -> pd.DataFrame:
                 side_team=predicted_winner,
                 is_home=is_home,
                 is_favourite=is_favourite,
+                volatility=side_volatility,
+                injury_impact=pick_injury_impact,
             )
+
             bet_grade = assign_bet_grade(
                 pick_prob=win_probability,
                 edge=pick_edge,
@@ -1495,6 +1803,8 @@ def build_predictions() -> pd.DataFrame:
                 final_upset_score=final_upset_score,
                 exp_margin=expected_margin_for_pick,
                 min_games=min_games,
+                market_gap=market_gap,
+                required_edge=required_edge,
             )
             stake_dollars = stake_from_grade(bet_grade, pick_odds)
 
@@ -1536,6 +1846,10 @@ def build_predictions() -> pd.DataFrame:
             "away_odds": away_odds,
             "predicted_winner_odds": pick_odds,
             "edge": round(pick_edge, 3) if not math.isnan(pick_edge) else np.nan,
+            "market_weight": round(market_weight, 3),
+            "market_gap": round(market_gap, 3),
+            "home_injury_impact": round(home_injury, 2),
+            "away_injury_impact": round(away_injury, 2),
 
             "favourite_team": auto_upset["favourite_team"],
             "underdog_team": auto_upset["underdog_team"],
@@ -1548,7 +1862,6 @@ def build_predictions() -> pd.DataFrame:
             "final_upset_score": round(final_upset_score, 2),
             "upset_flag": final_upset_flag,
 
-            # compatibility fields for old downstream scripts
             "fragile_favourite": fragile_favourite,
             "required_edge": round(required_edge, 3) if pd.notna(required_edge) else np.nan,
             "value_flag": value_flag,
