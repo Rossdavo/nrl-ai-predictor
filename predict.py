@@ -50,8 +50,8 @@ MODE = "AUTO"
 # Results sources for ratings
 # ----------------------------
 RESULTS_URLS = {}
-
-MANUAL_RESULTS_2026_PATH = "results_2026.csv"
+RESULTS_CACHE_PATH = "results_cache.csv"
+MANUAL_RESULTS_2026_PATH = "results_2026.csv
 
 
 # ----------------------------
