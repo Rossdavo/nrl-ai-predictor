@@ -521,7 +521,7 @@ def _filter_current_round_fixtures(fixtures: List[Match]) -> List[Match]:
         return fixtures
 
     round_start = dates.min()
-    round_end = round_start + pd.Timedelta(days=3)
+    round_end = round_start + pd.Timedelta(days=4)
 
     out = []
     for m in fixtures:
