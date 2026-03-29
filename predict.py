@@ -1962,54 +1962,57 @@ def build_predictions() -> pd.DataFrame:
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         })
 
- df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"]).reset_index(drop=True)
+    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"]).reset_index(drop=True)
 
-if df.empty:
+    if df.empty:
+        return df
+
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"]).copy()
+
+    if df.empty:
+        return df
+
+    round_start = df["date"].min()
+    round_end = round_start + pd.Timedelta(days=4)
+
+    df = df[(df["date"] >= round_start) & (df["date"] <= round_end)].copy()
+
+    df = apply_round_exposure_cap(df)
+    df = aggressive_promote_bets(df)
+    df = apply_round_exposure_cap(df)
+
+    real_bets = df[df["stake_dollars"] > 0].copy()
+
+    if len(real_bets) > TARGET_MAX_BETS:
+        real_bets = real_bets.sort_values(
+            ["bet_grade", "edge", "win_probability", "confidence"],
+            ascending=[False, False, False, False]
+        ).reset_index()
+
+        keep_idx = set(real_bets.head(TARGET_MAX_BETS)["index"].tolist())
+
+        excess_mask = (df["stake_dollars"] > 0) & (~df.index.isin(keep_idx))
+
+        df.loc[excess_mask, "bet_grade"] = "Lean"
+        df.loc[excess_mask, "stake"] = 0.0
+        df.loc[excess_mask, "stake_units"] = 0.0
+        df.loc[excess_mask, "stake_dollars"] = 0.0
+        df.loc[excess_mask, "pick"] = ""
+        df.loc[excess_mask, "recommended_bet"] = "No Bet"
+
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+
+    round_label = f"Round window {round_start.strftime('%Y-%m-%d')} to {round_end.strftime('%Y-%m-%d')}"
+    bet_count = int((pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0) > 0).sum())
+    exposure = float(pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0).sum())
+    avg_edge_series = pd.to_numeric(df.get("edge", np.nan), errors="coerce").dropna()
+    avg_edge = float(avg_edge_series.mean()) if not avg_edge_series.empty else 0.0
+
+    print(f"[predict] {round_label}")
+    print(f"[predict] current round fixtures={len(df)} bets={bet_count} exposure=${exposure:.2f} avg_edge={avg_edge:.3f}")
+
     return df
-
-df["date"] = pd.to_datetime(df["date"], errors="coerce")
-df = df.dropna(subset=["date"]).copy()
-
-if df.empty:
-    return df
-
-round_start = df["date"].min()
-round_end = round_start + pd.Timedelta(days=4)
-df = df[(df["date"] >= round_start) & (df["date"] <= round_end)].copy()
-
-df = apply_round_exposure_cap(df)
-df = aggressive_promote_bets(df)
-df = apply_round_exposure_cap(df)
-
-real_bets = df[df["stake_dollars"] > 0].copy()
-if len(real_bets) > TARGET_MAX_BETS:
-    real_bets = real_bets.sort_values(
-        ["bet_grade", "edge", "win_probability", "confidence"],
-        ascending=[False, False, False, False]
-    ).reset_index()
-
-    keep_idx = set(real_bets.head(TARGET_MAX_BETS)["index"].tolist())
-    excess_mask = (df["stake_dollars"] > 0) & (~df.index.isin(keep_idx))
-    df.loc[excess_mask, "bet_grade"] = "Lean"
-    df.loc[excess_mask, "stake"] = 0.0
-    df.loc[excess_mask, "stake_units"] = 0.0
-    df.loc[excess_mask, "stake_dollars"] = 0.0
-    df.loc[excess_mask, "pick"] = ""
-    df.loc[excess_mask, "recommended_bet"] = "No Bet"
-
-df["date"] = df["date"].dt.strftime("%Y-%m-%d")
-
-round_label = f"Round window {round_start.strftime('%Y-%m-%d')} to {round_end.strftime('%Y-%m-%d')}"
-bet_count = int((pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0) > 0).sum())
-exposure = float(pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0).sum())
-avg_edge_series = pd.to_numeric(df.get("edge", np.nan), errors="coerce").dropna()
-avg_edge = float(avg_edge_series.mean()) if not avg_edge_series.empty else 0.0
-
-print(f"[predict] {round_label}")
-print(f"[predict] current round fixtures={len(df)} bets={bet_count} exposure=${exposure:.2f} avg_edge={avg_edge:.3f}")
-
-return df
-
 if __name__ == "__main__":
     df = build_predictions()
     df.to_csv("predictions.csv", index=False)
