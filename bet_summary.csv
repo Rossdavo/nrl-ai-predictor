@@ -1,2 +1,2 @@
-start_bankroll,closing_bankroll,bets_total,bets_settled,wins,losses,draws,pending,units_staked,units_profit,roi,yield_on_settled
-200.0,201.88,10,5,4,1,0,5,7.98,1.8788,0.235439,0.235439
+start_bankroll,closing_bankroll,bets_settled,profit_units,roi
+200.0,201.88,5,1.88,0.2354
