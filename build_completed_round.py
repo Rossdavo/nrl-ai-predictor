@@ -162,7 +162,7 @@ def main():
         )
 
     completed_runs = run_summary[
-        (run_summary["games"] >= 8) &
+        (run_summary["games"] >= 6) &
         (run_summary["games"] == run_summary["results_found"])
     ].copy()
 
