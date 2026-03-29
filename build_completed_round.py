@@ -149,7 +149,7 @@ def main():
             max_date=("date", "max"),
         )
         .reset_index()
-        .sort_values("generated_at")
+        .sort_values(["max_date", "generated_at"])
     )
 
     print("[debug] run completion summary:")
@@ -171,18 +171,24 @@ def main():
         empty_csv(COMPLETED_OUT, out_cols)
         return
 
-    latest_completed_run_id = completed_runs.sort_values("generated_at").iloc[-1]["run_id"]
+    # Prefer most recent completed window, then the fullest version of that window, then latest generation
+    latest_max_date = completed_runs["max_date"].max()
+    latest_window = completed_runs[completed_runs["max_date"] == latest_max_date].copy()
+
+    best_run = latest_window.sort_values(
+        ["games", "generated_at"],
+        ascending=[False, False]
+    ).iloc[0]
+
+    latest_completed_run_id = best_run["run_id"]
 
     out = merged[merged["run_id"] == latest_completed_run_id].copy()
     out = out.sort_values(["date", "kickoff_local", "home"]).copy()
     out.to_csv(COMPLETED_OUT, index=False)
 
-    print(f"[info] Wrote {len(out)} rows for latest completed run_id={latest_completed_run_id} -> {COMPLETED_OUT}")
-
-    missing = out[~out["result_found"]]
-    if not missing.empty:
-        print("[warn] Rows still missing results in selected run:")
-        print(missing[["date", "home", "away"]].to_string(index=False))
+    print(
+        f"[info] Wrote {len(out)} rows for latest completed run_id={latest_completed_run_id} -> {COMPLETED_OUT}"
+    )
 
 
 if __name__ == "__main__":
