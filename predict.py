@@ -517,10 +517,13 @@ def _filter_current_round_fixtures(fixtures: List[Match]) -> List[Match]:
 
     dates = pd.to_datetime([m.date for m in fixtures], errors="coerce")
     dates = pd.Series(dates).dropna().sort_values()
+
     if dates.empty:
         return fixtures
 
     round_start = dates.min()
+
+    # ✅ FIX: include Monday
     round_end = round_start + pd.Timedelta(days=4)
 
     out = []
@@ -528,6 +531,7 @@ def _filter_current_round_fixtures(fixtures: List[Match]) -> List[Match]:
         d = pd.to_datetime(m.date, errors="coerce")
         if pd.isna(d):
             continue
+
         if round_start <= d <= round_end:
             out.append(m)
 
