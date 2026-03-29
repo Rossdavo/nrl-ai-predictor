@@ -119,21 +119,27 @@ def _extract_scores(text: str):
 
 def _extract_results_from_table(table: pd.DataFrame) -> pd.DataFrame:
     cols = {str(c).strip().lower(): c for c in table.columns}
-    needed = {"date", "home team", "away team", "result"}
-    if not needed.issubset(cols.keys()):
+
+    # 🔥 FLEXIBLE COLUMN MATCHING
+    date_col = next((cols[c] for c in cols if "date" in c), None)
+    home_col = next((cols[c] for c in cols if "home" in c), None)
+    away_col = next((cols[c] for c in cols if "away" in c), None)
+    result_col = next((cols[c] for c in cols if "result" in c or "score" in c), None)
+
+    if not all([date_col, home_col, away_col, result_col]):
         return empty_results()
 
-    scores = table[cols["result"]].apply(_extract_scores)
+    scores = table[result_col].apply(_extract_scores)
 
     out = pd.DataFrame({
-        "date": table[cols["date"]],
-        "home": table[cols["home team"]],
-        "away": table[cols["away team"]],
+        "date": table[date_col],
+        "home": table[home_col],
+        "away": table[away_col],
         "home_pts": scores.apply(lambda x: x[0]),
         "away_pts": scores.apply(lambda x: x[1]),
     })
-    return normalise_results_df(out)
 
+    return normalise_results_df(out)
 
 def fetch_results_page(year: int, url: str) -> pd.DataFrame:
     headers = {"User-Agent": "Mozilla/5.0"}
