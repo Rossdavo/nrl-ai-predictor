@@ -35,6 +35,15 @@ MIN_BET_DOG = 10.0
 
 TARGET_MIN_BETS = 2
 TARGET_MAX_BETS = 2
+# REST DAYS (manual for now)
+team_rest_days = {
+    "Dolphins": 4,   # short turnaround (Darwin → Redcliffe → NZ)
+    "Warriors": 7,
+    "Sea Eagles": 7,
+    "Eels": 7,
+    "Broncos": 5,    # example if needed
+    "Bulldogs": 7,
+}
 
 print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
 print(f"[predict] max_round_exposure=${MAX_ROUND_EXPOSURE} | max_single_bet=${MAX_SINGLE_BET}")
