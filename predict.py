@@ -1866,7 +1866,7 @@ def build_predictions() -> pd.DataFrame:
             pick_odds = away_odds
             is_home = False
         # FORCE tipping upset when signals are strong
-        if final_upset_score >= 2.2:
+        if final_upset_score >= 2.0:
             predicted_winner = underdog_team
             if predicted_winner == m.home:
                 pick_prob = final_home_prob
