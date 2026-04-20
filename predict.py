@@ -1821,19 +1821,21 @@ def build_predictions() -> pd.DataFrame:
         upset_team = manual_upset_team if manual_upset_team in {m.home, m.away} else ""
         final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
         if final_upset_score >= UPSET_FLAG_THRESHOLD and upset_team:
-            final_home_prob = apply_upset_probability_adjustment(final_home_prob, upset_team, final_upset_score, m.home, m.away)
-        elif final_upset_score >= UPSET_FLAG_THRESHOLD:
-            upset_team = str(auto_upset["underdog_team"])
-
-        final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
-        fragile_favourite = 1 if (
-            final_upset_flag == 1 and
-            (
-                (final_home_prob >= 0.50 and auto_upset["favourite_team"] == m.home) or
-                (final_home_prob < 0.50 and auto_upset["favourite_team"] == m.away)
+            final_home_prob = apply_upset_probability_adjustment(
+                final_home_prob, upset_team, final_upset_score, m.home, m.away
             )
-        ) else 0
+        elif final_upset_score >= UPSET_FLAG_THRESHOLD:
+            upset_team = underdog_team
 
+
+        # extra upset push in volatile season
+        if final_upset_score >= 2.0:
+            if underdog_team == m.home:
+                final_home_prob += 0.02
+            else:
+                final_home_prob -= 0.02
+
+        final_home_prob = min(0.94, max(0.06, final_home_prob))
         final_away_prob = 1.0 - final_home_prob
 
         if final_home_prob >= final_away_prob:
