@@ -1817,16 +1817,7 @@ def build_predictions() -> pd.DataFrame:
 
         home_injury = team_injury_impact(m.home, adj)
         away_injury = team_injury_impact(m.away, adj)
-        # INJURY SHOCK BOOST (major outs create upset potential)
-        injury_diff = home_injury - away_injury
-
-        if abs(injury_diff) >= 1.5:
-            if injury_diff > 0:
-                # home team more impacted → boost away upset
-                final_upset_score += 1.5
-            else:
-                # away team more impacted → boost home upset
-                final_upset_score += 1.5
+        
 
         h2h_margin_home = recent_h2h_margin(pd.DataFrame(results), m.home, m.away)
 
@@ -1854,6 +1845,23 @@ def build_predictions() -> pd.DataFrame:
 
         upset_team = manual_upset_team if manual_upset_team in {m.home, m.away} else ""
         final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
+        # INJURY SHOCK BOOST (major outs create upset potential)
+        injury_diff = home_injury - away_injury
+
+        if abs(injury_diff) >= 1.5:
+            final_upset_score += 1.5
+
+        # VOLATILITY BOOST (inconsistent teams create upsets)
+        home_vol = team_volatility.get(m.home, 0.0)
+        away_vol = team_volatility.get(m.away, 0.0)
+
+        if home_vol > 1.2 or away_vol > 1.2:
+            final_upset_score += 0.8
+
+        # MARKET OVERCONFIDENCE BOOST
+        if not math.isnan(market_home_prob):
+            if abs(final_home_prob - market_home_prob) < 0.05:
+                final_upset_score += 0.5
         print(f"[debug] {m.home} vs {m.away} | upset_score={final_upset_score:.2f} | fav={favourite_team}")
 
         if final_upset_score >= UPSET_FLAG_THRESHOLD and upset_team:
