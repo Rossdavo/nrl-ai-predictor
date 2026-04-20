@@ -142,6 +142,7 @@ TEAM_NAME_NORMALISE = {
     "Raiders": "Raiders",
     "Rabbitohs": "Rabbitohs",
     "Dolphins": "Dolphins",
+    "West Tigers": "Wests Tigers",
 }
 
 TEAM_REGION = {
