@@ -1538,7 +1538,13 @@ def assign_bet_grade(
     market_gap: float,
     required_edge: float,
 ) -> str:
-    if edge < max(0.0, required_edge - 0.020) or pick_prob < 0.52:
+    if edge < required_edge:
+        return "No Bet"
+
+    if pick_prob < 0.54:
+        return "No Bet"
+
+    if conf < 0.56:
         return "No Bet"
 
     if market_gap >= MARKET_DISAGREEMENT_NO_BET:
@@ -1559,14 +1565,11 @@ def assign_bet_grade(
         market_gap=market_gap,
     )
 
-    if edge >= required_edge + 0.014 and pick_prob >= 0.58 and conf >= 0.58 and score >= 20.0:
+    if edge >= required_edge + 0.020 and pick_prob >= 0.60 and conf >= 0.60 and score >= 22.0:
         return "Strong Bet"
 
-    if edge >= required_edge and pick_prob >= 0.55 and conf >= 0.55 and score >= 12.0:
+    if edge >= required_edge and pick_prob >= 0.56 and conf >= 0.57 and score >= 13.0:
         return "Small Bet"
-
-    if edge >= max(0.0, required_edge - 0.015) and pick_prob >= 0.53 and score >= 7.0:
-        return "Lean"
 
     return "No Bet"
 
