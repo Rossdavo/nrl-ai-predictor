@@ -1901,7 +1901,7 @@ def build_predictions() -> pd.DataFrame:
 
         band = confidence_band(win_probability, conf, abs(expected_margin_for_pick))
 
-        if math.isnan(pick_edge):
+         if math.isnan(pick_edge):
             bet_grade = "No Bet"
             stake_dollars = 0.0
             required_edge = np.nan
@@ -1914,6 +1914,21 @@ def build_predictions() -> pd.DataFrame:
                 volatility=side_volatility,
                 injury_impact=pick_injury_impact,
             )
+
+            # extra conservative filter in a volatile season
+            if pick_odds < 1.60:
+                required_edge = max(required_edge, 0.07)
+            else:
+                required_edge = max(required_edge, 0.05)
+
+            if min_games < 4:
+                required_edge += 0.01
+
+            if side_volatility >= 10.0:
+                required_edge += 0.01
+
+            if market_gap >= 0.08:
+                required_edge += 0.01
 
             bet_grade = assign_bet_grade(
                 pick_prob=win_probability,
@@ -1931,7 +1946,6 @@ def build_predictions() -> pd.DataFrame:
                 required_edge=required_edge,
             )
             stake_dollars = stake_from_grade(bet_grade, pick_odds)
-
         if bet_grade == "Lean":
             stake_dollars = 0.0
 
