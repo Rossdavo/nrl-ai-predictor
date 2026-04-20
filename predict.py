@@ -1800,6 +1800,21 @@ def build_predictions() -> pd.DataFrame:
         final_home_prob = 0.5 + (final_home_prob - 0.5) * 1.05
         final_home_prob = min(0.94, max(0.06, final_home_prob))
 
+        # RIVALRY VOLATILITY ADJUSTMENT
+        RIVALRY_MATCHUPS = {
+            frozenset(["Sea Eagles", "Eels"]),
+            frozenset(["Broncos", "Bulldogs"]),
+            frozenset(["Rabbitohs", "Roosters"]),
+        }
+
+        if frozenset([m.home, m.away]) in RIVALRY_MATCHUPS:
+            if final_home_prob >= 0.5:
+                final_home_prob -= 0.015
+            else:
+                final_home_prob += 0.015
+
+            final_home_prob = min(0.94, max(0.06, final_home_prob))
+
         home_injury = team_injury_impact(m.home, adj)
         away_injury = team_injury_impact(m.away, adj)
 
