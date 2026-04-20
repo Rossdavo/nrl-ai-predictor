@@ -1419,41 +1419,49 @@ def dynamic_required_edge(
     injury_impact: float = 0.0,
 ) -> float:
     if decimal_odds < 1.50:
-        req = 0.020
-    elif decimal_odds < 1.65:
-        req = 0.023
-    elif decimal_odds < 1.85:
-        req = 0.029
-    elif decimal_odds < 2.05:
-        req = 0.039
-    elif decimal_odds < 2.30:
+        req = 0.070
+    elif decimal_odds < 1.60:
+        req = 0.070
+    elif decimal_odds < 1.75:
+        req = 0.060
+    elif decimal_odds < 1.95:
+        req = 0.055
+    elif decimal_odds < 2.15:
         req = 0.050
+    elif decimal_odds < 2.40:
+        req = 0.058
     elif decimal_odds < 2.80:
-        req = 0.062
+        req = 0.068
     else:
-        req = 0.075
+        req = 0.080
 
     if is_home and is_favourite:
-        req -= 0.004
+        req -= 0.003
     if is_home and is_favourite and side_team in PREMIUM_HOME_TEAMS:
-        req -= 0.010
+        req -= 0.006
     if is_home and is_favourite and side_team in ELITE_HOME_TEAMS:
-        req -= 0.005
+        req -= 0.004
     if is_home and is_favourite and side_team in AGGRESSIVE_HOME_TEAMS:
-        req -= 0.010
+        req -= 0.004
     if is_home and is_favourite and side_team in WEAK_HOME_TEAMS:
-        req += 0.012
+        req += 0.010
 
     if not is_home:
         req += AWAY_TEAM_EXTRA_EDGE
     if not is_home and not is_favourite:
         req += AWAY_DOG_EXTRA_EDGE
-    if volatility >= 10.0:
+
+    if volatility >= 12.0:
+        req += VOLATILE_TEAM_EXTRA_EDGE + 0.010
+    elif volatility >= 10.0:
         req += VOLATILE_TEAM_EXTRA_EDGE
-    if injury_impact >= 2.5:
+
+    if injury_impact >= 3.5:
+        req += INJURED_TEAM_EXTRA_EDGE + 0.010
+    elif injury_impact >= 2.5:
         req += INJURED_TEAM_EXTRA_EDGE
 
-    return max(0.015, req)
+    return max(0.040, req)
 
 
 def score_bet_opportunity(
