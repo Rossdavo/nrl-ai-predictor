@@ -1829,6 +1829,7 @@ def build_predictions() -> pd.DataFrame:
 
         upset_team = manual_upset_team if manual_upset_team in {m.home, m.away} else ""
         final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
+        print(f"[debug] {m.home} vs {m.away} | upset_score={final_upset_score:.2f} | fav={favourite_team}")
 
         if final_upset_score >= UPSET_FLAG_THRESHOLD and upset_team:
             final_home_prob = apply_upset_probability_adjustment(
