@@ -1793,8 +1793,9 @@ def build_predictions() -> pd.DataFrame:
         raw_home_prob = apply_early_season_matchup_moderation(raw_home_prob, m.home, m.away, season_record)
         raw_home_prob = compress_prob(raw_home_prob)
 
-        market_weight = market_weight_from_prices(home_odds, away_odds)
+                market_weight = market_weight_from_prices(home_odds, away_odds)
         final_home_prob = anchor_to_market(raw_home_prob, market_home_prob, market_weight)
+
         # flatten probabilities a little in a volatile season
         final_home_prob = 0.5 + (final_home_prob - 0.5) * 0.90
         final_home_prob = min(0.94, max(0.06, final_home_prob))
@@ -1803,6 +1804,14 @@ def build_predictions() -> pd.DataFrame:
         away_injury = team_injury_impact(m.away, adj)
 
         h2h_margin_home = recent_h2h_margin(pd.DataFrame(results), m.home, m.away)
+
+        if not math.isnan(market_home_prob):
+            favourite_team = m.home if market_home_prob >= 0.50 else m.away
+        else:
+            favourite_team = m.home if final_home_prob >= 0.50 else m.away
+
+        underdog_team = m.away if favourite_team == m.home else m.home
+
         auto_upset = compute_auto_upset_signal(
             home=m.home,
             away=m.away,
@@ -1820,6 +1829,7 @@ def build_predictions() -> pd.DataFrame:
 
         upset_team = manual_upset_team if manual_upset_team in {m.home, m.away} else ""
         final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
+
         if final_upset_score >= UPSET_FLAG_THRESHOLD and upset_team:
             final_home_prob = apply_upset_probability_adjustment(
                 final_home_prob, upset_team, final_upset_score, m.home, m.away
@@ -1827,6 +1837,7 @@ def build_predictions() -> pd.DataFrame:
         elif final_upset_score >= UPSET_FLAG_THRESHOLD:
             upset_team = underdog_team
 
+        final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
 
         # extra upset push in volatile season
         if final_upset_score >= 2.0:
@@ -1849,13 +1860,14 @@ def build_predictions() -> pd.DataFrame:
             pick_odds = away_odds
             is_home = False
 
+        fragile_favourite = 1 if (
+            final_upset_flag == 1 and predicted_winner == favourite_team
+        ) else 0
+
         market_pick_prob = market_home_prob if predicted_winner == m.home else market_away_prob
         pick_edge = value_edge(pick_prob, pick_odds)
         market_gap = abs(pick_prob - market_pick_prob) if not math.isnan(market_pick_prob) else 0.0
 
-        favourite_team = m.home if (
-            not math.isnan(home_odds) and not math.isnan(away_odds) and home_odds <= away_odds
-        ) else m.away
         is_favourite = predicted_winner == favourite_team
 
         required_edge = dynamic_required_edge(
@@ -1894,7 +1906,6 @@ def build_predictions() -> pd.DataFrame:
         pick = "HOME" if predicted_winner == m.home and stake_dollars > 0 else ("AWAY" if stake_dollars > 0 else "")
         recommended_bet = f"${stake_dollars:.2f} {predicted_winner}" if stake_dollars > 0 else "No Bet"
         value_flag = 1 if (not math.isnan(pick_edge) and pick_edge >= required_edge) else 0
-
         rows.append(
             {
                 "run_id": run_id,
