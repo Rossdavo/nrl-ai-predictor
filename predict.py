@@ -1845,6 +1845,25 @@ def build_predictions() -> pd.DataFrame:
 
         upset_team = manual_upset_team if manual_upset_team in {m.home, m.away} else ""
         final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
+        # REST DAY PENALTY (short turnaround fatigue)
+        home_rest = team_rest_days.get(m.home, 7)
+        away_rest = team_rest_days.get(m.away, 7)
+
+        if favourite_team == m.home:
+            if home_rest <= 4:
+                final_upset_score += 1.5
+            elif home_rest == 5:
+                final_upset_score += 1.0
+            elif home_rest == 6:
+                final_upset_score += 0.5
+        else:
+            if away_rest <= 4:
+                final_upset_score += 1.5
+            elif away_rest == 5:
+                final_upset_score += 1.0
+            elif away_rest == 6:
+                final_upset_score += 0.5
+                
         # INJURY SHOCK BOOST (major outs create upset potential)
         injury_diff = home_injury - away_injury
 
