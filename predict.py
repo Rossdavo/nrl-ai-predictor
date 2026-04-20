@@ -1817,6 +1817,16 @@ def build_predictions() -> pd.DataFrame:
 
         home_injury = team_injury_impact(m.home, adj)
         away_injury = team_injury_impact(m.away, adj)
+        # INJURY SHOCK BOOST (major outs create upset potential)
+        injury_diff = home_injury - away_injury
+
+        if abs(injury_diff) >= 1.5:
+            if injury_diff > 0:
+                # home team more impacted → boost away upset
+                final_upset_score += 1.5
+            else:
+                # away team more impacted → boost home upset
+                final_upset_score += 1.5
 
         h2h_margin_home = recent_h2h_margin(pd.DataFrame(results), m.home, m.away)
 
