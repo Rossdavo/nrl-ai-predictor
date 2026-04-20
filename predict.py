@@ -1788,6 +1788,9 @@ def build_predictions() -> pd.DataFrame:
 
         market_weight = market_weight_from_prices(home_odds, away_odds)
         final_home_prob = anchor_to_market(raw_home_prob, market_home_prob, market_weight)
+        # flatten probabilities a little in a volatile season
+        final_home_prob = 0.5 + (final_home_prob - 0.5) * 0.90
+        final_home_prob = min(0.94, max(0.06, final_home_prob))
 
         home_injury = team_injury_impact(m.home, adj)
         away_injury = team_injury_impact(m.away, adj)
