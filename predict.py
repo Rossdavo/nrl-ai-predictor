@@ -1793,7 +1793,7 @@ def build_predictions() -> pd.DataFrame:
         raw_home_prob = apply_early_season_matchup_moderation(raw_home_prob, m.home, m.away, season_record)
         raw_home_prob = compress_prob(raw_home_prob)
 
-                market_weight = market_weight_from_prices(home_odds, away_odds)
+        market_weight = market_weight_from_prices(home_odds, away_odds)
         final_home_prob = anchor_to_market(raw_home_prob, market_home_prob, market_weight)
 
         # flatten probabilities a little in a volatile season
