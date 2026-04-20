@@ -1935,6 +1935,9 @@ def build_predictions() -> pd.DataFrame:
         if bet_grade == "Lean":
             stake_dollars = 0.0
 
+        if bet_grade == "Lean":
+            stake_dollars = 0.0
+
         pick = pick_side if stake_dollars > 0 else ""
         stake_units = round(stake_dollars / UNIT_SIZE, 2) if UNIT_SIZE > 0 else 0.0
         recommended_bet = f"${stake_dollars:.2f} {predicted_winner}" if stake_dollars > 0 else "No Bet"
