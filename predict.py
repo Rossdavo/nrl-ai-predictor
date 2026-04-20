@@ -1774,6 +1774,13 @@ def build_predictions() -> pd.DataFrame:
 
         market_home_prob, market_away_prob = fair_probs_from_odds(home_odds, away_odds)
 
+        if not math.isnan(market_home_prob):
+            favourite_team = m.home if market_home_prob >= 0.50 else m.away
+        else:
+            favourite_team = m.home if final_home_prob >= 0.50 else m.away
+
+        underdog_team = m.away if favourite_team == m.home else m.home
+
         if ad_model is not None:
             raw_home_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue, adj)
         else:
