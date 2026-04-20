@@ -1804,6 +1804,28 @@ def build_predictions() -> pd.DataFrame:
 
         market_weight = market_weight_from_prices(home_odds, away_odds)
         final_home_prob = anchor_to_market(raw_home_prob, market_home_prob, market_weight)
+        # FATIGUE / TRAVEL ADJUSTMENT
+        home_rest = team_rest_days.get(m.home, 7)
+        away_rest = team_rest_days.get(m.away, 7)
+
+        print(f"[rest] {m.home}={home_rest} {m.away}={away_rest}")
+
+        # Short turnaround hurts that team directly
+        if home_rest <= 4:
+            final_home_prob -= 0.04
+        elif home_rest == 5:
+            final_home_prob -= 0.025
+        elif home_rest == 6:
+            final_home_prob -= 0.01
+
+        if away_rest <= 4:
+            final_home_prob += 0.04
+        elif away_rest == 5:
+            final_home_prob += 0.025
+        elif away_rest == 6:
+            final_home_prob += 0.01
+
+        final_home_prob = min(0.94, max(0.06, final_home_prob))
 
         # flatten probabilities a little in a volatile season
         final_home_prob = 0.5 + (final_home_prob - 0.5) * 1.05
