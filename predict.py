@@ -1576,7 +1576,7 @@ def assign_bet_grade(
 
 def stake_from_grade(grade: str, odds: float) -> float:
     if grade == "Strong Bet":
-        base = 40.0 if odds < 2.0 else 30.0
+        base = 30.0 if odds < 2.0 else 20.0
     elif grade == "Small Bet":
         base = 20.0 if odds < 2.0 else 10.0
     else:
