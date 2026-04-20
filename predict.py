@@ -1850,6 +1850,9 @@ def build_predictions() -> pd.DataFrame:
 
         if abs(injury_diff) >= 1.5:
             final_upset_score += 1.5
+        # STAR PLAYER INJURY BOOST (Turbo-type impact)
+        if abs(injury_diff) >= 2.5:
+            final_upset_score += 1.2   
 
         # VOLATILITY BOOST (inconsistent teams create upsets)
         home_vol = team_volatility.get(m.home, 0.0)
