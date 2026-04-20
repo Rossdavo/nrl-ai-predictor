@@ -1879,10 +1879,8 @@ def build_predictions() -> pd.DataFrame:
 
         # If the AWAY team is on short rest, increase upset chance against them
         if away_rest <= 4:
-            if favourite_team == m.away:
-                final_upset_score += 1.5
-            else:
-                final_upset_score += 0.5
+            # extreme travel / fatigue case
+            final_upset_score += 1.5
         elif away_rest == 5:
             if favourite_team == m.away:
                 final_upset_score += 1.0
