@@ -1639,20 +1639,45 @@ def aggressive_promote_bets(df: pd.DataFrame) -> pd.DataFrame:
     candidates = work[
         (pd.to_numeric(work["stake_dollars"], errors="coerce").fillna(0.0) <= 0.0)
         & (work["predicted_winner"] == work["home"])
-        & (pd.to_numeric(work["win_probability"], errors="coerce").fillna(0.0) >= 0.58)
-        & (pd.to_numeric(work["confidence"], errors="coerce").fillna(0.0) >= 0.56)
-        & (pd.to_numeric(work["market_gap"], errors="coerce").fillna(999) <= 0.10)
+        & (pd.to_numeric(work["win_probability"], errors="coerce").fillna(0.0) >= 0.60)
+        & (pd.to_numeric(work["confidence"], errors="coerce").fillna(0.0) >= 0.58)
+        & (pd.to_numeric(work["market_gap"], errors="coerce").fillna(999) <= 0.08)
         & (
             pd.to_numeric(work["edge"], errors="coerce").fillna(-999)
-            >= (
-                pd.to_numeric(work["required_edge"], errors="coerce").fillna(999)
-                - 0.020
-            )
+            >= pd.to_numeric(work["required_edge"], errors="coerce").fillna(999)
         )
     ].copy()
 
     if candidates.empty:
         return work
+
+    candidates["promo_bonus"] = 0.0
+    candidates["promo_bonus"] += pd.to_numeric(candidates["win_probability"], errors="coerce").fillna(0.0) * 10.0
+    candidates["promo_bonus"] += pd.to_numeric(candidates["confidence"], errors="coerce").fillna(0.0) * 8.0
+    candidates["promo_bonus"] += pd.to_numeric(candidates["edge"], errors="coerce").fillna(0.0) * 100.0
+
+    candidates = candidates.sort_values(
+        ["promo_bonus", "win_probability", "confidence", "edge"],
+        ascending=[False, False, False, False]
+    )
+
+    promoted = 0
+    for idx, row in candidates.iterrows():
+        if promoted >= need:
+            break
+
+        odds = float(row["predicted_winner_odds"])
+        stake_dollars = stake_from_grade("Small Bet", odds)
+
+        work.loc[idx, "bet_grade"] = "Small Bet"
+        work.loc[idx, "stake_dollars"] = float(stake_dollars)
+        work.loc[idx, "stake_units"] = round(stake_dollars / UNIT_SIZE, 2) if UNIT_SIZE > 0 else 0.0
+        work.loc[idx, "stake"] = work.loc[idx, "stake_units"]
+        work.loc[idx, "pick"] = "HOME"
+        work.loc[idx, "recommended_bet"] = f"${stake_dollars:.2f} {row['predicted_winner']}"
+        promoted += 1
+
+    return work
 
     candidates["promo_bonus"] = 0.0
     candidates.loc[candidates["predicted_winner"].isin(AGGRESSIVE_HOME_TEAMS), "promo_bonus"] += 4.0
