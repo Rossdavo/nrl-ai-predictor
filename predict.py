@@ -1547,25 +1547,25 @@ def assign_bet_grade(
     market_gap: float,
     required_edge: float,
 ) -> str:
+
+    # HARD EDGE QUALITY FILTER
     if edge < required_edge:
         return "No Bet"
-    if pick_prob < 0.54:
+
+    # minimum true edge
+    if edge < 0.045:
         return "No Bet"
+
+    # avoid coin flips
+    if pick_prob < 0.56:
+        return "No Bet"
+
+    # confidence + market checks
     if conf < 0.56:
         return "No Bet"
+
     if market_gap >= MARKET_DISAGREEMENT_NO_BET:
         return "No Bet"
-    # HARD EDGE QUALITY FILTER
-if edge < required_edge:
-    return "No Bet"
-
-# NEW: minimum true edge filter
-if edge < 0.045:
-    return "No Bet"
-
-# NEW: avoid coin flip territory
-if pick_prob < 0.56:
-    return "No Bet"    
 
     score = score_bet_opportunity(
         pick_prob=pick_prob,
@@ -1584,8 +1584,10 @@ if pick_prob < 0.56:
 
     if edge >= required_edge + 0.020 and pick_prob >= 0.60 and conf >= 0.60 and score >= 22.0:
         return "Strong Bet"
+
     if edge >= required_edge and pick_prob >= 0.56 and conf >= 0.57 and score >= 13.0:
         return "Small Bet"
+
     return "No Bet"
 
 
