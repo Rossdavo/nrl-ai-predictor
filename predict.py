@@ -1797,7 +1797,7 @@ def build_predictions() -> pd.DataFrame:
         final_home_prob = anchor_to_market(raw_home_prob, market_home_prob, market_weight)
 
         # flatten probabilities a little in a volatile season
-        final_home_prob = 0.5 + (final_home_prob - 0.5) * 0.90
+        final_home_prob = 0.5 + (final_home_prob - 0.5) * 1.05
         final_home_prob = min(0.94, max(0.06, final_home_prob))
 
         home_injury = team_injury_impact(m.home, adj)
@@ -1840,7 +1840,12 @@ def build_predictions() -> pd.DataFrame:
         final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
 
         # extra upset push in volatile season
-        if final_upset_score >= 2.0:
+        if final_upset_score >= 2.5:
+            if underdog_team == m.home:
+                final_home_prob += 0.03
+            else:
+                final_home_prob -= 0.03
+        elif final_upset_score >= 2.0:
             if underdog_team == m.home:
                 final_home_prob += 0.02
             else:
