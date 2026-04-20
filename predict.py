@@ -1424,49 +1424,54 @@ def dynamic_required_edge(
     volatility: float = 0.0,
     injury_impact: float = 0.0,
 ) -> float:
-    if decimal_odds < 1.50:
-        req = 0.070
-    elif decimal_odds < 1.60:
-        req = 0.070
-    elif decimal_odds < 1.75:
-        req = 0.060
-    elif decimal_odds < 1.95:
-        req = 0.055
-    elif decimal_odds < 2.15:
-        req = 0.050
-    elif decimal_odds < 2.40:
-        req = 0.058
-    elif decimal_odds < 2.80:
-        req = 0.068
-    else:
-        req = 0.080
 
+    # Base thresholds (slightly loosened)
+    if decimal_odds < 1.50:
+        req = 0.045
+    elif decimal_odds < 1.70:
+        req = 0.050
+    elif decimal_odds < 2.00:
+        req = 0.055
+    elif decimal_odds < 2.40:
+        req = 0.060
+    else:
+        req = 0.070
+
+    # Home favourites bonus
     if is_home and is_favourite:
-        req -= 0.003
+        req -= 0.005
+
+    # Strong home teams
     if is_home and is_favourite and side_team in PREMIUM_HOME_TEAMS:
-        req -= 0.006
+        req -= 0.005
+
     if is_home and is_favourite and side_team in ELITE_HOME_TEAMS:
-        req -= 0.004
-    if is_home and is_favourite and side_team in AGGRESSIVE_HOME_TEAMS:
-        req -= 0.004
+        req -= 0.005
+
+    # Weak home teams penalty
     if is_home and is_favourite and side_team in WEAK_HOME_TEAMS:
         req += 0.010
 
+    # Away penalties
     if not is_home:
-        req += AWAY_TEAM_EXTRA_EDGE
+        req += 0.010
+
     if not is_home and not is_favourite:
-        req += AWAY_DOG_EXTRA_EDGE
+        req += 0.015
+
+    # Volatility
     if volatility >= 12.0:
-        req += VOLATILE_TEAM_EXTRA_EDGE + 0.010
+        req += 0.010
     elif volatility >= 10.0:
-        req += VOLATILE_TEAM_EXTRA_EDGE
+        req += 0.005
+
+    # Injuries
     if injury_impact >= 3.5:
-        req += INJURED_TEAM_EXTRA_EDGE + 0.010
+        req += 0.010
     elif injury_impact >= 2.5:
-        req += INJURED_TEAM_EXTRA_EDGE
+        req += 0.005
 
     return max(0.040, req)
-
 
 def score_bet_opportunity(
     pick_prob: float,
