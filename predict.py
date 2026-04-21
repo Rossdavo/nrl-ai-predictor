@@ -1869,28 +1869,6 @@ def build_predictions() -> pd.DataFrame:
 
         upset_team = manual_upset_team if manual_upset_team in {m.home, m.away} else ""
         final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
-        # REST DAY PENALTY (short turnaround fatigue)
-        home_rest = team_rest_days.get(m.home, 7)
-        away_rest = team_rest_days.get(m.away, 7)
-
-        print(f"[rest] {m.home}={home_rest} {m.away}={away_rest}")
-
-        # If the HOME team is on short rest, increase upset chance against them
-        if home_rest <= 4:
-            if favourite_team == m.home:
-                final_upset_score += 1.5
-            else:
-                final_upset_score += 0.5
-        elif home_rest == 5:
-            if favourite_team == m.home:
-                final_upset_score += 1.0
-            else:
-                final_upset_score += 0.3
-        elif home_rest == 6:
-            if favourite_team == m.home:
-                final_upset_score += 0.5
-            else:
-                final_upset_score += 0.2
 
         # If the AWAY team is on short rest, increase upset chance against them
         if away_rest <= 4:
