@@ -1942,7 +1942,8 @@ def build_predictions() -> pd.DataFrame:
         if not math.isnan(market_home_prob):
             if abs(final_home_prob - market_home_prob) < 0.05:
                 final_upset_score += 0.5
-
+        final_upset_score = min(final_upset_score, 3.0)
+        
         print(f"[debug] {m.home} vs {m.away} | upset_score={final_upset_score:.2f} | fav={favourite_team}")
 
         # cap upset score
