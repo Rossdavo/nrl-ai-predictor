@@ -2091,8 +2091,8 @@ def build_predictions() -> pd.DataFrame:
     df = df[(df["date"] >= round_start) & (df["date"] <= round_end)].copy()
 
     # Promotions first, then cap, then hard max-bet trim, then cap again
-    df = aggressive_promote_bets(df)
-    df = apply_round_exposure_cap(df)
+    df = allocate_bankroll_all_games(df)
+
 
     real_bets = df[df["stake_dollars"] > 0].copy()
     if len(real_bets) > TARGET_MAX_BETS:
