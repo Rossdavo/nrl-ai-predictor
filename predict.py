@@ -2112,7 +2112,7 @@ def build_predictions() -> pd.DataFrame:
         df.loc[excess_mask, "pick"] = ""
         df.loc[excess_mask, "recommended_bet"] = "No Bet"
 
-    df = apply_round_exposure_cap(df)
+    df = allocate_bankroll_all_games(df)
 
     df["date"] = df["date"].dt.strftime("%Y-%m-%d")
 
