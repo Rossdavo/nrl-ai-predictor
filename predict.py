@@ -1617,7 +1617,7 @@ def allocate_bankroll_all_games(df: pd.DataFrame) -> pd.DataFrame:
     work["alloc_score"] = 1.0
     work["alloc_score"] += (work["win_probability"] - 0.50) * 8.0
     work["alloc_score"] += (work["confidence"] - 0.50) * 5.0
-    work["alloc_score"] += work["edge"].clip(lower=-0.05) * 10.0
+    work["alloc_score"] += work["edge"].clip(lower=0) * 10.0
 
     # Adjust for odds (slight boost to value)
     work["alloc_score"] *= work["predicted_winner_odds"].clip(1.2, 3.5) ** 0.35
