@@ -1620,6 +1620,7 @@ def allocate_bankroll_all_games(df: pd.DataFrame) -> pd.DataFrame:
     work["alloc_score"] += work["edge"].clip(lower=0) * 10.0
     # Heavily reduce negative-edge plays, but keep them in the 8-game allocation
     work.loc[work["edge"] < 0, "alloc_score"] *= 0.35
+    work.loc[work["edge"] < -0.03, "alloc_score"] *= 0.5
 
     # Adjust for odds (slight boost to value)
     work["alloc_score"] *= work["predicted_winner_odds"].clip(1.2, 3.5) ** 0.35
