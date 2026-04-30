@@ -15,7 +15,6 @@ def safe_numeric(series, default=0.0):
 def main():
     df = pd.read_csv(PRED_PATH)
 
-    # Use direct allocated dollar stakes from predict.py
     if "stake_dollars" not in df.columns:
         df["stake_dollars"] = 0.0
 
@@ -31,7 +30,6 @@ def main():
     else:
         df["stake"] = safe_numeric(df["stake"])
 
-    # Ensure expected columns exist
     for col, default in [
         ("pick", ""),
         ("home", ""),
@@ -60,8 +58,14 @@ def main():
     df["upset_flag"] = safe_numeric(df["upset_flag"]).astype(int)
     df["fragile_favourite"] = safe_numeric(df["fragile_favourite"]).astype(int)
 
+    # Force text columns to string so HOME/AWAY can be written safely
+    df["pick"] = df["pick"].astype(str)
+    df["predicted_winner"] = df["predicted_winner"].astype(str)
+    df["home"] = df["home"].astype(str)
+    df["away"] = df["away"].astype(str)
+
     # If pick is missing, rebuild from predicted_winner
-    missing_pick = ~df["pick"].astype(str).str.strip().isin(["HOME", "AWAY"])
+    missing_pick = ~df["pick"].str.strip().isin(["HOME", "AWAY"])
 
     df.loc[
         missing_pick & (df["predicted_winner"] == df["home"]),
@@ -110,7 +114,6 @@ def main():
     )
     bets["odds"] = safe_numeric(bets["odds"])
 
-    # Clean recommended bet
     bets["recommended_bet"] = bets.apply(
         lambda r: f"${float(r['stake_dollars']):.2f} {r['selection']}",
         axis=1,
