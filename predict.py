@@ -1610,7 +1610,44 @@ def stake_from_grade(grade: str, odds: float) -> float:
 
     floor = MIN_BET_SHORT if odds < 2.0 else MIN_BET_DOG
     return round(min(MAX_SINGLE_BET, max(floor, base)), 2)
+def allocate_bankroll_all_games(df: pd.DataFrame) -> pd.DataFrame:
+    work = df.copy()
 
+    # Build a score for each game
+    work["alloc_score"] = 1.0
+    work["alloc_score"] += (work["win_probability"] - 0.50) * 8.0
+    work["alloc_score"] += (work["confidence"] - 0.50) * 5.0
+    work["alloc_score"] += work["edge"].clip(lower=-0.05) * 10.0
+
+    # Adjust for odds (slight boost to value)
+    work["alloc_score"] *= work["predicted_winner_odds"].clip(1.2, 3.5) ** 0.35
+
+    # Reduce weight for volatile games
+    if "final_upset_score" in work.columns:
+        work["alloc_score"] *= (1.0 - work["final_upset_score"].clip(0, 3) * 0.08)
+
+    work["alloc_score"] = work["alloc_score"].clip(lower=0.1)
+
+    total_score = work["alloc_score"].sum()
+
+    # Allocate full bankroll
+    work["stake_dollars"] = (work["alloc_score"] / total_score * BANKROLL).round(2)
+
+    # Fix rounding difference
+    diff = round(BANKROLL - work["stake_dollars"].sum(), 2)
+    best_idx = work["alloc_score"].idxmax()
+    work.loc[best_idx, "stake_dollars"] += diff
+
+    work["stake_units"] = (work["stake_dollars"] / UNIT_SIZE).round(2)
+    work["stake"] = work["stake_units"]
+
+    work["bet_grade"] = "Allocated"
+    work["recommended_bet"] = work.apply(
+        lambda r: f"${r['stake_dollars']:.2f} {r['predicted_winner']}",
+        axis=1,
+    )
+
+    return work
 
 def apply_round_exposure_cap(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty or "stake_dollars" not in df.columns:
