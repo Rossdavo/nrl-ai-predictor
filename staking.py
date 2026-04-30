@@ -15,22 +15,21 @@ def safe_numeric(series, default=0.0):
 def main():
     df = pd.read_csv(PRED_PATH)
 
-    # Prefer direct dollar stakes from predict.py
-    if "stake_dollars" in df.columns:
-        df["stake_dollars"] = safe_numeric(df["stake_dollars"])
-    else:
-        if "stake" not in df.columns:
-            df["stake"] = 0.0
-        df["stake"] = safe_numeric(df["stake"])
-        df["stake_dollars"] = df["stake"] * UNIT_SIZE
+    # Use direct allocated dollar stakes from predict.py
+    if "stake_dollars" not in df.columns:
+        df["stake_dollars"] = 0.0
+
+    df["stake_dollars"] = safe_numeric(df["stake_dollars"])
 
     if "stake_units" not in df.columns:
-        if "stake" in df.columns:
-            df["stake_units"] = safe_numeric(df["stake"])
-        else:
-            df["stake_units"] = (df["stake_dollars"] / UNIT_SIZE).round(2) if UNIT_SIZE > 0 else 0.0
+        df["stake_units"] = (df["stake_dollars"] / UNIT_SIZE).round(2)
     else:
         df["stake_units"] = safe_numeric(df["stake_units"])
+
+    if "stake" not in df.columns:
+        df["stake"] = df["stake_units"]
+    else:
+        df["stake"] = safe_numeric(df["stake"])
 
     # Ensure expected columns exist
     for col, default in [
@@ -42,15 +41,13 @@ def main():
         ("away_odds", 0.0),
         ("edge", 0.0),
         ("confidence", 0.0),
-        ("model_home_win_prob", pd.NA),
-        ("market_home_win_prob", pd.NA),
-        ("final_home_win_prob", pd.NA),
         ("favourite_team", ""),
         ("underdog_team", ""),
         ("upset_flag", 0),
         ("final_upset_score", 0.0),
         ("fragile_favourite", 0),
-        ("recommended_bet", "No Bet"),
+        ("recommended_bet", ""),
+        ("predicted_winner", ""),
     ]:
         if col not in df.columns:
             df[col] = default
@@ -63,11 +60,21 @@ def main():
     df["upset_flag"] = safe_numeric(df["upset_flag"]).astype(int)
     df["fragile_favourite"] = safe_numeric(df["fragile_favourite"]).astype(int)
 
-    # Only real bets
-    bets = df[
-        (df["stake_dollars"] > 0) &
-        (df["pick"].astype(str).str.strip().isin(["HOME", "AWAY"]))
-    ].copy()
+    # If pick is missing, rebuild from predicted_winner
+    missing_pick = ~df["pick"].astype(str).str.strip().isin(["HOME", "AWAY"])
+
+    df.loc[
+        missing_pick & (df["predicted_winner"] == df["home"]),
+        "pick",
+    ] = "HOME"
+
+    df.loc[
+        missing_pick & (df["predicted_winner"] == df["away"]),
+        "pick",
+    ] = "AWAY"
+
+    # Every allocated stake is a bet
+    bets = df[df["stake_dollars"] > 0].copy()
 
     if bets.empty:
         print("0 bets generated")
@@ -103,6 +110,12 @@ def main():
     )
     bets["odds"] = safe_numeric(bets["odds"])
 
+    # Clean recommended bet
+    bets["recommended_bet"] = bets.apply(
+        lambda r: f"${float(r['stake_dollars']):.2f} {r['selection']}",
+        axis=1,
+    )
+
     out_cols = [
         "date",
         "home",
@@ -123,7 +136,7 @@ def main():
     ]
 
     out = bets[out_cols].copy()
-    out = out.sort_values(["date", "selection"]).reset_index(drop=True)
+    out = out.sort_values(["date", "home", "away"]).reset_index(drop=True)
     out.to_csv(OUT_PATH, index=False)
 
     print(f"{len(out)} bets generated")
