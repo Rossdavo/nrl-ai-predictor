@@ -1958,7 +1958,7 @@ def build_predictions() -> pd.DataFrame:
             m.away
         )
 
-      final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
+       final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
 
         # extra upset push in volatile season
         if final_upset_score >= 2.5:
