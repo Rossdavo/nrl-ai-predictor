@@ -1,0 +1,2 @@
+start_bankroll,closing_bankroll,bets_total,bets_settled,wins,losses,draws,pending,units_staked,units_profit,roi,yield_on_settled
+200.0,200.0,1,0,0,0,0,1,0.0,0.0,0.0,0.0
