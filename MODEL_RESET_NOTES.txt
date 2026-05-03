@@ -1,0 +1,3 @@
+Model reset after portfolio staking / upset cap / fatigue logic fixes.
+Ignore ROI before this reset.
+Use new predictions_history.csv from this point forward for live tracking.
