@@ -1616,7 +1616,7 @@ def allocate_bankroll_all_games(df: pd.DataFrame) -> pd.DataFrame:
     # Build a score for each game
     work["alloc_score"] = 1.0
     work["alloc_score"] += (work["win_probability"] - 0.50) * 8.0
-    work["alloc_score"] += (work["confidence"] - 0.50) * 5.0
+    work["alloc_score"] += (work["confidence"] - 0.50) * 3.0
     work["alloc_score"] += work["edge"].clip(lower=0) * 10.0
     # Heavily reduce negative-edge plays, but keep them in the 8-game allocation
     work.loc[work["edge"] < 0, "alloc_score"] *= 0.35
