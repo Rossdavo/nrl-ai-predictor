@@ -1850,20 +1850,6 @@ def build_predictions() -> pd.DataFrame:
 
         print(f"[rest] {m.home}={home_rest} {m.away}={away_rest}")
 
-        # If HOME team is fatigued
-        if home_rest <= 4:
-            if favourite_team == m.home:
-                final_upset_score += 1.5   # favourite weakened → upset more likely
-            else:
-                final_upset_score -= 0.8   # underdog weakened → upset less likely
-
-        # If AWAY team is fatigued
-        if away_rest <= 4:
-            if favourite_team == m.away:
-                final_upset_score += 1.5
-            else:
-                final_upset_score -= 0.8
-
         # RIVALRY VOLATILITY ADJUSTMENT
         RIVALRY_MATCHUPS = {
             frozenset(["Sea Eagles", "Eels"]),
