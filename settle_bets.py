@@ -428,6 +428,29 @@ def main():
 
     summary.to_csv(BET_SUMMARY_OUT, index=False)
 
+    round_summary = (
+        bet_rows
+        .groupby("run_id", dropna=False)
+        .agg(
+            bets_total=("bet_status", "count"),
+            bets_settled=("bet_status", lambda s: s.isin(["WIN", "LOSS", "DRAW"]).sum()),
+            wins=("bet_status", lambda s: (s == "WIN").sum()),
+            losses=("bet_status", lambda s: (s == "LOSS").sum()),
+            draws=("bet_status", lambda s: (s == "DRAW").sum()),
+            pending=("bet_status", lambda s: (s == "PENDING").sum()),
+            units_staked=("stake_units", "sum"),
+            units_profit=("profit_units", "sum"),
+        )
+        .reset_index()
+    )
+
+    round_summary["roi"] = round_summary.apply(
+        lambda r: r["units_profit"] / r["units_staked"] if r["units_staked"] > 0 else 0.0,
+        axis=1,
+    )
+
+    round_summary.to_csv("bet_summary_by_round.csv", index=False)
+
     print(
         f"Bets total: {len(bet_rows)} | "
         f"Settled: {len(settled)} | "
