@@ -14,6 +14,10 @@ def utc_now_str() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def make_run_id() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+
+
 def load_csv_safe(path: str) -> pd.DataFrame:
     if not os.path.exists(path):
         return pd.DataFrame()
@@ -23,15 +27,28 @@ def load_csv_safe(path: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def ensure_run_cols(df: pd.DataFrame) -> pd.DataFrame:
-    out = df.copy()
-    if "run_id" not in out.columns:
-        out["run_id"] = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-    out["run_id"] = out["run_id"].astype(str).replace("", datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"))
+def make_round_key(df: pd.DataFrame) -> str:
+    work = df.copy()
+    work["date"] = pd.to_datetime(work["date"], errors="coerce")
+    work = work.dropna(subset=["date"])
 
-    if "run_utc" not in out.columns:
-        out["run_utc"] = utc_now_str()
-    out["run_utc"] = out["run_utc"].astype(str).replace("", utc_now_str())
+    if work.empty:
+        return make_run_id()
+
+    start = work["date"].min().strftime("%Y-%m-%d")
+    end = work["date"].max().strftime("%Y-%m-%d")
+    return f"{start}_to_{end}"
+
+
+def ensure_run_cols(df: pd.DataFrame, round_key: str) -> pd.DataFrame:
+    out = df.copy()
+
+    run_id = make_run_id()
+
+    out["run_id"] = run_id
+    out["run_utc"] = utc_now_str()
+    out["round_key"] = round_key
+
     return out
 
 
@@ -51,22 +68,44 @@ def append_deduped(history_path: str, new_df: pd.DataFrame, subset: list[str]) -
     combined.to_csv(history_path, index=False)
 
 
+def round_already_archived(history_path: str, round_key: str) -> bool:
+    hist = load_csv_safe(history_path)
+
+    if hist.empty:
+        return False
+
+    if "round_key" not in hist.columns:
+        return False
+
+    existing = set(hist["round_key"].astype(str).str.strip())
+    return str(round_key).strip() in existing
+
+
 def main():
     pred = load_csv_safe(PRED_PATH)
     odds = load_csv_safe(ODDS_PATH)
 
-    if not pred.empty:
-        pred = ensure_run_cols(pred)
-        append_deduped(
-            PRED_HIST,
-            pred,
-            subset=["run_id", "date", "home", "away"],
-        )
+    if pred.empty:
+        print("[archive] No predictions.csv found to archive.")
+    else:
+        round_key = make_round_key(pred)
+
+        if round_already_archived(PRED_HIST, round_key):
+            print(f"[archive] Round already archived ({round_key}) — skipping duplicate $200 allocation.")
+        else:
+            pred = ensure_run_cols(pred, round_key)
+            append_deduped(
+                PRED_HIST,
+                pred,
+                subset=["round_key", "date", "home", "away"],
+            )
+            print(f"[archive] Archived official betting round: {round_key}")
 
     if not odds.empty:
         odds = odds.copy()
         if "captured_at_utc" not in odds.columns:
             odds["captured_at_utc"] = utc_now_str()
+
         append_deduped(
             ODDS_HIST,
             odds,
