@@ -1350,10 +1350,10 @@ def compute_auto_upset_signal(
     form_stats: Dict[str, Dict[str, float]],
     h2h_margin_home: float,
 ) -> Dict[str, object]:
-     if not math.isnan(market_home_prob):
-         favourite_team = m.home if market_home_prob >= 0.50 else m.away
-     else:
-         favourite_team = m.home if raw_home_prob >= 0.50 else m.away
+    if not math.isnan(market_home_prob):
+        favourite_team = m.home if market_home_prob >= 0.50 else m.away
+    else:
+        favourite_team = m.home if raw_home_prob >= 0.50 else m.away
     else:
         fav = home if home_model_prob >= 0.50 else away
     dog = away if fav == home else home
