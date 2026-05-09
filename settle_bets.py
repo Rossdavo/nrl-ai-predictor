@@ -372,6 +372,14 @@ def main():
     # We want to settle every historical run_id so round-by-round summaries are accurate.
     merged = _match_results_with_fallback(pred, res)
 
+    # Keep only the latest saved prediction for each fixture
+    merged = (
+        merged
+        .sort_values(["date", "home", "away", "generated_at", "run_id"])
+        .drop_duplicates(subset=["date", "home", "away"], keep="last")
+        .reset_index(drop=True)
+    )
+    
     if merged.empty:
         print("No matches available after merge.")
         pd.DataFrame().to_csv(BET_HISTORY_OUT, index=False)
