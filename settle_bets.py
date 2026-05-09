@@ -147,6 +147,7 @@ def _load_predictions(path: str) -> pd.DataFrame:
         "upset_flag",
         "final_upset_score",
         "fragile_favourite",
+        "predicted_winner",
         prob_col,
     ]
 
@@ -158,6 +159,19 @@ def _load_predictions(path: str) -> pd.DataFrame:
     df["home"] = df["home"].map(_norm)
     df["away"] = df["away"].map(_norm)
     df["pick"] = df["pick"].astype(str).str.strip().str.upper()
+    df["predicted_winner"] = df["predicted_winner"].astype(str).map(_norm)
+
+    missing_pick = ~df["pick"].isin(["HOME", "AWAY"])
+
+    df.loc[
+        missing_pick & (df["predicted_winner"] == df["home"]),
+        "pick",
+    ] = "HOME"
+
+    df.loc[
+        missing_pick & (df["predicted_winner"] == df["away"]),
+        "pick",
+    ] = "AWAY"
     df["kickoff_local"] = df["kickoff_local"].astype(str).replace("nan", "").str.strip()
 
     for col in [
