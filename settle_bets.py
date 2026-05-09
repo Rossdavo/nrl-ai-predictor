@@ -111,6 +111,7 @@ def _load_predictions(path: str) -> pd.DataFrame:
         "mode",
         "rating_mode",
         "confidence",
+        "predicted_winner",
         "favourite_team",
         "underdog_team",
         "upset_flag",
