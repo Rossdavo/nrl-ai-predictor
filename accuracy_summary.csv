@@ -1,2 +1,2 @@
 scored_matches,winner_accuracy,brier,mae_margin,draws,exact_matches,minus1_matches,plus1_matches
-13,0.6923076923076923,0.2217846153846154,18.646153846153844,0,13,0,0
+16,0.75,0.193250125,17.212500000000002,0,16,0,0
