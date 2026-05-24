@@ -2092,7 +2092,18 @@ def build_predictions() -> pd.DataFrame:
     df = df[(df["date"] >= round_start) & (df["date"] <= round_end)].copy()
 
     # Promotions first, then cap, then hard max-bet trim, then cap again
-    df = allocate_bankroll_all_games(df)
+    round_key = f"{df['date'].min()}_to_{df['date'].max()}"
+
+    hist = pd.read_csv("predictions_history.csv") if os.path.exists("predictions_history.csv") else pd.DataFrame()
+
+    if "round_key" in hist.columns and round_key in set(hist["round_key"].astype(str)):
+        print(f"[predict] round already staked ({round_key}) — no new bankroll allocation")
+        df["stake_dollars"] = 0.0
+        df["stake_units"] = 0.0
+        df["stake"] = 0.0
+        df["recommended_bet"] = "Already Staked"
+    else:
+        df = allocate_bankroll_all_games(df)
 
 
     real_bets = df[df["stake_dollars"] > 0].copy()
