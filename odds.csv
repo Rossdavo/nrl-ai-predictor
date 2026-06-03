@@ -1,9 +1,14 @@
 date,home,away,home_odds,away_odds,captured_at_utc
-2026-06-04,Manly Warringah Sea Eagles,South Sydney Rabbitohs,1.63,2.3,2026-06-02 22:05:34
-2026-06-05,Melbourne Storm,Newcastle Knights,1.63,2.3,2026-06-02 22:05:34
-2026-06-05,Canberra Raiders,Sydney Roosters,2.2,1.68,2026-06-02 22:05:34
-2026-06-06,North Queensland Cowboys,Dolphins,2.4,1.63,2026-06-02 22:05:34
-2026-06-06,Brisbane Broncos,Gold Coast Titans,1.44,3.0,2026-06-02 22:05:34
-2026-06-07,Wests Tigers,Penrith Panthers,4.4,1.22,2026-06-02 22:05:34
-2026-06-07,Cronulla Sutherland Sharks,St George Illawarra Dragons,1.28,3.8,2026-06-02 22:05:34
-2026-06-08,Canterbury Bulldogs,Parramatta Eels,1.52,2.6,2026-06-02 22:05:34
+2026-06-04,Manly Warringah Sea Eagles,South Sydney Rabbitohs,1.63,2.3,2026-06-03 22:09:28
+2026-06-05,Melbourne Storm,Newcastle Knights,1.66,2.3,2026-06-03 22:09:28
+2026-06-05,Canberra Raiders,Sydney Roosters,2.2,1.68,2026-06-03 22:09:28
+2026-06-06,North Queensland Cowboys,Dolphins,2.45,1.6,2026-06-03 22:09:28
+2026-06-06,Brisbane Broncos,Gold Coast Titans,1.42,3.0,2026-06-03 22:09:28
+2026-06-07,Wests Tigers,Penrith Panthers,4.7,1.22,2026-06-03 22:09:28
+2026-06-07,Cronulla Sutherland Sharks,St George Illawarra Dragons,1.32,3.8,2026-06-03 22:09:28
+2026-06-08,Canterbury Bulldogs,Parramatta Eels,1.5,2.67,2026-06-03 22:09:28
+2026-06-11,South Sydney Rabbitohs,Brisbane Broncos,1.64,2.27,2026-06-03 22:09:28
+2026-06-12,Dolphins,Sydney Roosters,1.71,2.14,2026-06-03 22:09:28
+2026-06-13,New Zealand Warriors,Cronulla Sutherland Sharks,1.35,3.25,2026-06-03 22:09:28
+2026-06-13,Parramatta Eels,Canberra Raiders,2.27,1.64,2026-06-03 22:09:28
+2026-06-14,Wests Tigers,Gold Coast Titans,1.32,3.43,2026-06-03 22:09:28
