@@ -1827,7 +1827,7 @@ def build_predictions() -> pd.DataFrame:
         if not math.isnan(market_home_prob):
             favourite_team = m.home if market_home_prob >= 0.50 else m.away
         else:
-            favourite_team = m.home if final_home_prob >= 0.50 else m.away
+            favourite_team = m.home if raw_home_prob >= 0.50 else m.away
 
         underdog_team = m.away if favourite_team == m.home else m.home
 
