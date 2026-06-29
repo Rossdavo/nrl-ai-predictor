@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>NRL AI Predictions</title>
+  <title>NRL AI Tipping Predictions</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -255,27 +255,20 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>NRL AI Predictions</h1>
-      <p class="small">INDEX VERSION: CURRENT + COMPLETED ROUND FILES</p>
-      <p class="lead">Automated predictions, staking, results tracking, performance reporting, and closing line value from the latest generated CSV files.</p>
+      <h1>NRL AI Tipping Predictions</h1>
+      <p class="small">TIPPING MODEL DASHBOARD</p>
+      <p class="lead">Automated NRL tipping predictions, results tracking, accuracy reporting and completed round summaries from the latest generated CSV files.</p>
 
       <div class="downloads" style="margin-top:16px;">
         <h2>Downloads</h2>
         <ul>
           <li><a href="current_predictions.csv" target="_blank" rel="noopener">Current Predictions CSV</a></li>
-          <li><a href="latest_completed_round.csv" target="_blank" rel="noopener">Latest Completed Round CSV</a></li>
+          <li><a href="latest_completed_round.csv" target="_blank" rel="noopener">Last Round Results CSV</a></li>
           <li><a href="predictions.csv" target="_blank" rel="noopener">Raw Predictions CSV</a></li>
           <li><a href="odds.csv" target="_blank" rel="noopener">Odds CSV</a></li>
           <li><a href="accuracy.csv" target="_blank" rel="noopener">Accuracy CSV</a></li>
           <li><a href="accuracy_summary.csv" target="_blank" rel="noopener">Accuracy Summary CSV</a></li>
-          <li><a href="bet_history.csv" target="_blank" rel="noopener">Bet History CSV</a></li>
-          <li><a href="bet_summary.csv" target="_blank" rel="noopener">Bet Summary CSV</a></li>
           <li><a href="performance.csv" target="_blank" rel="noopener">Performance CSV</a></li>
-          <li><a href="bankroll_status.csv" target="_blank" rel="noopener">Bankroll Status CSV</a></li>
-          <li><a href="closing_odds.csv" target="_blank" rel="noopener">Closing Odds CSV</a></li>
-          <li><a href="clv_history.csv" target="_blank" rel="noopener">CLV History CSV</a></li>
-          <li><a href="clv_summary.csv" target="_blank" rel="noopener">CLV Summary CSV</a></li>
-          <li><a href="clv_results.csv" target="_blank" rel="noopener">CLV Results CSV</a></li>
           <li><a href="predictions_history.csv" target="_blank" rel="noopener">Predictions History CSV</a></li>
           <li><a href="odds_history.csv" target="_blank" rel="noopener">Odds History CSV</a></li>
           <li><a href="results_cache.csv" target="_blank" rel="noopener">Results Cache CSV</a></li>
@@ -295,7 +288,7 @@
 
       <div class="card">
         <div class="kpi">
-          <div class="kpi-label">Settled Matches</div>
+          <div class="kpi-label">Scored Matches</div>
           <div class="kpi-value" id="kpi-settled">—</div>
           <div class="small" id="kpi-settled-sub">Loading…</div>
         </div>
@@ -312,10 +305,10 @@
 
     <div class="card" style="margin-top:16px;">
       <div class="section-title-row">
-        <h2>Round Dashboard</h2>
+        <h2>Tipping Dashboard</h2>
         <span class="small" id="round-meta">Loading…</span>
       </div>
-      <div id="round-summary" class="empty">Loading round summary…</div>
+      <div id="round-summary" class="empty">Loading tipping summary…</div>
     </div>
 
     <div class="card" style="margin-top:16px;">
@@ -338,38 +331,21 @@
 
       <div class="card">
         <div class="section-title-row">
-          <h2>Performance &amp; Bankroll</h2>
-          <span class="small" id="perf-meta">Loading…</span>
+          <h2>Model Health</h2>
+          <span class="small">Tipping only</span>
         </div>
-        <div id="perf-summary" class="empty">Loading performance…</div>
-        <div id="perf-table" style="margin-top:12px;"></div>
+        <div id="model-health" class="empty">Loading model health…</div>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px;">
       <div class="section-title-row">
-        <h2>Latest Closed Results</h2>
+        <h2>Last Round Results</h2>
         <span class="small" id="results-meta">Loading…</span>
       </div>
       <div id="results-table" class="empty">Loading latest completed round…</div>
     </div>
 
-    <div class="card" style="margin-top:16px;">
-      <div class="section-title-row">
-        <h2>Recent Bet Settlements</h2>
-        <span class="small" id="bet-history-meta">Loading…</span>
-      </div>
-      <div id="bet-history-table" class="empty">Loading bet history…</div>
-    </div>
-
-    <div class="card" style="margin-top:16px;">
-      <div class="section-title-row">
-        <h2>Closing Line Value</h2>
-        <span class="small" id="clv-meta">Loading…</span>
-      </div>
-      <div id="clv-summary" class="empty">Loading CLV…</div>
-      <div id="clv-table" style="margin-top:12px;"></div>
-    </div>
 
     <p class="footer">Generated automatically via GitHub Actions and published to GitHub Pages.</p>
   </div>
@@ -532,15 +508,14 @@
         "away",
         "predicted_winner",
         probField,
+        "confidence",
         "confidence_band",
-        "bet_grade",
         "home_odds",
         "away_odds",
         "predicted_winner_odds",
-        "recommended_bet",
-        "stake_dollars",
         "exp_margin_home",
         "upset_flag",
+        "final_upset_score",
         "fragile_favourite"
       ].filter(h => h && useRows.some(r => h in r));
 
@@ -553,12 +528,8 @@
         home_odds: v => escapeHtml(formatFixed(v, 2)),
         away_odds: v => escapeHtml(formatFixed(v, 2)),
         predicted_winner_odds: v => escapeHtml(formatFixed(v, 2)),
-        stake_dollars: v => {
-          const n = toNumber(v);
-          if (n === null) return "";
-          return `<span class="mono">$${n.toFixed(2)}</span>`;
-        },
         exp_margin_home: v => escapeHtml(formatSigned(v, 1)),
+        final_upset_score: v => escapeHtml(formatFixed(v, 1)),
         predicted_winner: v => {
           if (!v) return "";
           return `<span class="pill pill-blue">${escapeHtml(v)}</span>`;
@@ -570,22 +541,6 @@
           if (val === "Medium") klass = "pill pill-blue";
           if (val === "Low") klass = "pill pill-amber";
           return val ? `<span class="${klass}">${escapeHtml(val)}</span>` : "";
-        },
-        bet_grade: v => {
-          const val = String(v || "").trim();
-          let klass = "pill pill-red";
-          if (val === "Strong Bet") klass = "pill pill-green";
-          if (val === "Small Bet") klass = "pill pill-blue";
-          if (val === "Lean") klass = "pill pill-amber";
-          if (val === "No Bet") klass = "pill pill-red";
-          return val ? `<span class="${klass}">${escapeHtml(val)}</span>` : "";
-        },
-        recommended_bet: v => {
-          const text = String(v || "").trim();
-          if (!text || text === "No Bet") {
-            return `<span class="pill pill-red">No Bet</span>`;
-          }
-          return `<span class="pill pill-green">${escapeHtml(text)}</span>`;
         },
         upset_flag: v => {
           const n = toNumber(v);
@@ -601,11 +556,8 @@
         }
       };
 
-      const totalExposure = useRows.reduce((s, r) => s + (toNumber(r.stake_dollars) ?? 0), 0);
-      const betCount = useRows.filter(r => (toNumber(r.stake_dollars) ?? 0) > 0).length;
-
       document.getElementById("pred-meta").textContent =
-        `${useRows.length} rows | ${betCount} bets | exposure ${formatMoney(totalExposure, 2)}`;
+        `${useRows.length} tip${useRows.length === 1 ? "" : "s"}`;
 
       document.getElementById("kpi-upcoming").textContent = String(useRows.length);
       document.getElementById("kpi-upcoming-sub").textContent =
@@ -619,15 +571,17 @@
       const elSummary = document.getElementById("accuracy-summary");
       const elTable = document.getElementById("accuracy-table");
       const elMeta = document.getElementById("accuracy-meta");
+      const health = document.getElementById("model-health");
 
       if (!rows.length && !summaryRows.length) {
-        elMeta.textContent = "0 settled matches";
+        elMeta.textContent = "0 scored matches";
         elSummary.innerHTML = '<div class="empty">No completed matches scored yet.</div>';
         elTable.innerHTML = "";
         document.getElementById("kpi-settled").textContent = "0";
         document.getElementById("kpi-settled-sub").textContent = "Awaiting completed matches";
         document.getElementById("kpi-accuracy").textContent = "—";
         document.getElementById("kpi-accuracy-sub").textContent = "No graded predictions yet";
+        if (health) health.innerHTML = '<div class="empty">No model health data yet.</div>';
         return;
       }
 
@@ -651,7 +605,7 @@
         ? toNumber(summary.mae_margin)
         : (settled ? rows.reduce((s, r) => s + (toNumber(r.abs_margin_error) ?? 0), 0) / settled : null);
 
-      elMeta.textContent = `${settled} settled match${settled === 1 ? "" : "es"}`;
+      elMeta.textContent = `${settled} scored match${settled === 1 ? "" : "es"}`;
       elSummary.innerHTML = `
         <div class="grid grid-3">
           <div class="kpi">
@@ -673,6 +627,28 @@
       document.getElementById("kpi-settled-sub").textContent = `${wins} correct winners`;
       document.getElementById("kpi-accuracy").textContent = acc === null ? "—" : formatPct(acc, 0);
       document.getElementById("kpi-accuracy-sub").textContent = avgBrier === null ? "No Brier score yet" : `Brier ${avgBrier.toFixed(3)}`;
+
+      if (health) {
+        health.innerHTML = `
+          <div class="grid grid-3">
+            <div class="kpi">
+              <div class="kpi-label">Scored Matches</div>
+              <div class="kpi-value">${settled}</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Brier Score</div>
+              <div class="kpi-value">${avgBrier === null ? "—" : avgBrier.toFixed(3)}</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Margin Error</div>
+              <div class="kpi-value">${marginMae === null ? "—" : marginMae.toFixed(1)}</div>
+            </div>
+          </div>
+          <p class="small" style="margin-top:12px;">
+            Lower Brier and lower margin error are better. Winner accuracy is the main tipping score.
+          </p>
+        `;
+      }
 
       const headers = [
         "date",
@@ -706,111 +682,7 @@
       elTable.innerHTML = makeTable(headers, tableRows, formatters);
     }
 
-    function renderPerformance(betSummaryRows, betHistoryRows, perfRows, bankRows) {
-      const elSummary = document.getElementById("perf-summary");
-      const elTable = document.getElementById("perf-table");
-      const elMeta = document.getElementById("perf-meta");
 
-      const betSummary = betSummaryRows.length ? betSummaryRows[betSummaryRows.length - 1] : null;
-
-      if (!betSummary && !perfRows.length && !bankRows.length) {
-        elMeta.textContent = "No settled betting data";
-        elSummary.innerHTML = '<div class="empty">Nothing to report yet.</div>';
-        elTable.innerHTML = "";
-        return;
-      }
-
-      let roi = null;
-      let profit = null;
-      let bankroll = null;
-      let settled = null;
-      let wins = null;
-      let losses = null;
-      let pending = null;
-
-      if (betSummary) {
-        profit = toNumber(betSummary.units_profit);
-        bankroll = toNumber(betSummary.closing_bankroll);
-        settled = toNumber(betSummary.bets_settled);
-        wins = toNumber(betSummary.wins);
-        losses = toNumber(betSummary.losses);
-        pending = toNumber(betSummary.pending);
-
-        const totalStake = toNumber(betSummary.total_stake);
-
-        if (profit !== null && totalStake && totalStake > 0) {
-          roi = (profit * 10) / totalStake;
-        } else {
-          roi = null;
-        }
-
-      } else {
-        const latestPerf = perfRows.length ? perfRows[perfRows.length - 1] : null;
-        const latestBank = bankRows.length ? bankRows[bankRows.length - 1] : null;
-
-        profit = toNumber(latestPerf?.profit_units ?? latestPerf?.profit);
-        bankroll = toNumber(latestBank?.bankroll ?? latestBank?.current_bankroll);
-
-        const totalStake = toNumber(latestPerf?.total_stake);
-
-        if (profit !== null && totalStake && totalStake > 0) {
-          roi = (profit * 10) / totalStake;
-        } else {
-          roi = null;
-        }
-      }
-
-      elMeta.textContent = betSummary
-        ? `${toNumber(betSummary.bets_total) ?? 0} total bets tracked`
-        : `${perfRows.length} performance row${perfRows.length === 1 ? "" : "s"}`;
-
-      elSummary.innerHTML = `
-        <div class="grid grid-3">
-          <div class="kpi">
-            <div class="kpi-label">ROI</div>
-            <div class="kpi-value ${(roi ?? 0) >= 0 ? "positive" : "negative"}">${roi === null ? "—" : formatPct(roi, 1)}</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Profit</div>
-            <div class="kpi-value ${(profit ?? 0) >= 0 ? "positive" : "negative"}">${
-              profit === null
-                ? "—"
-                : ((profit * 10) >= 0
-                ? `$${Math.abs(profit * 10).toFixed(2)}`
-                : `-$${Math.abs(profit * 10).toFixed(2)}`)
-            }</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Bankroll</div>
-            <div class="kpi-value">${bankroll === null ? "—" : formatMoney(bankroll, 2)}</div>
-          </div>
-        </div>
-        <div class="small" style="margin-top:12px;">
-          ${settled !== null ? `Settled bets: ${settled}` : "Settled bets unavailable"}
-          ${wins !== null && losses !== null ? ` | Record: ${wins}-${losses}` : ""}
-          ${pending !== null ? ` | Pending: ${pending}` : ""}
-        </div>
-      `;
-
-      const summaryRows = [];
-      if (settled !== null) summaryRows.push({ metric: "Settled Bets", value: String(settled) });
-      if (wins !== null) summaryRows.push({ metric: "Wins", value: String(wins) });
-      if (losses !== null) summaryRows.push({ metric: "Losses", value: String(losses) });
-      if (pending !== null) summaryRows.push({ metric: "Pending", value: String(pending) });
-      if (roi !== null) summaryRows.push({ metric: "ROI", value: formatPct(roi, 1) });
-      if (profit !== null) {
-        const profitDollars = profit * 10;
-        summaryRows.push({
-          metric: "Profit ($)",
-          value: profitDollars >= 0
-            ? `$${Math.abs(profitDollars).toFixed(2)}`
-            : `-$${Math.abs(profitDollars).toFixed(2)}`
-        });
-      }
-      if (bankroll !== null) summaryRows.push({ metric: "Closing Bankroll", value: formatMoney(bankroll, 2) });
-
-      elTable.innerHTML = makeTable(["metric", "value"], summaryRows, {});
-    }
 
     function getRoundLabel(dateStr) {
       const d = new Date((dateStr || "") + "T00:00:00");
@@ -825,11 +697,25 @@
       if (iso >= "2026-03-12" && iso <= "2026-03-15") return "Round 2";
       if (iso >= "2026-03-19" && iso <= "2026-03-22") return "Round 3";
       if (iso >= "2026-03-26" && iso <= "2026-03-29") return "Round 4";
+      if (iso >= "2026-04-02" && iso <= "2026-04-06") return "Round 5";
+      if (iso >= "2026-04-09" && iso <= "2026-04-12") return "Round 6";
+      if (iso >= "2026-04-16" && iso <= "2026-04-19") return "Round 7";
+      if (iso >= "2026-04-23" && iso <= "2026-04-26") return "Round 8";
+      if (iso >= "2026-05-01" && iso <= "2026-05-03") return "Round 9";
+      if (iso >= "2026-05-07" && iso <= "2026-05-10") return "Round 10";
+      if (iso >= "2026-05-15" && iso <= "2026-05-17") return "Round 11";
+      if (iso >= "2026-05-21" && iso <= "2026-05-24") return "Round 12";
+      if (iso >= "2026-05-29" && iso <= "2026-06-01") return "Round 13";
+      if (iso >= "2026-06-04" && iso <= "2026-06-08") return "Round 14";
+      if (iso >= "2026-06-11" && iso <= "2026-06-14") return "Round 15";
+      if (iso >= "2026-06-19" && iso <= "2026-06-22") return "Round 16";
+      if (iso >= "2026-06-25" && iso <= "2026-06-29") return "Round 17";
+      if (iso >= "2026-07-03" && iso <= "2026-07-06") return "Round 18";
 
       return "Other";
     }
 
-    function renderRoundDashboard(accuracyRows, betHistoryRows, completedRows) {
+    function renderRoundDashboard(accuracyRows, completedRows) {
       const meta = document.getElementById("round-meta");
       const el = document.getElementById("round-summary");
 
@@ -843,48 +729,42 @@
       const modelRows = accuracyRows.filter(r => getRoundLabel(r.date) === latestRound);
       const modelWins = modelRows.filter(r => Number(r.winner_correct) === 1).length;
       const modelLosses = modelRows.length - modelWins;
+      const roundAccuracy = modelRows.length ? modelWins / modelRows.length : null;
 
-      const roundBetRows = betHistoryRows.filter(r =>
-        getRoundLabel(r.date) === latestRound &&
-        ["WIN", "LOSS", "DRAW"].includes(String(r.bet_status || "").toUpperCase())
-      );
+      const avgBrier = modelRows.length
+        ? modelRows.reduce((s, r) => s + (toNumber(r.brier) ?? 0), 0) / modelRows.length
+        : null;
 
-      const betWins = roundBetRows.filter(r => String(r.bet_status || "").toUpperCase() === "WIN").length;
-      const betLosses = roundBetRows.filter(r => String(r.bet_status || "").toUpperCase() === "LOSS").length;
-      const betProfit = roundBetRows.reduce((s, r) => s + (toNumber(r.profit_units) ?? 0), 0);
-      const betStake = roundBetRows.reduce((s, r) => s + (toNumber(r.stake) ?? 0), 0);
-      const roi = betStake > 0 ? betProfit / betStake : null;
+      const marginMae = modelRows.length
+        ? modelRows.reduce((s, r) => s + (toNumber(r.abs_margin_error) ?? 0), 0) / modelRows.length
+        : null;
 
       meta.textContent = latestRound;
 
       el.innerHTML = `
         <div class="grid grid-3">
           <div class="kpi">
-            <div class="kpi-label">Model Record</div>
+            <div class="kpi-label">Round Record</div>
             <div class="kpi-value">${modelRows.length ? `${modelWins}-${modelLosses}` : "—"}</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Bet Record</div>
-            <div class="kpi-value">${roundBetRows.length ? `${betWins}-${betLosses}` : "—"}</div>
+            <div class="kpi-label">Round Accuracy</div>
+            <div class="kpi-value">${roundAccuracy === null ? "—" : formatPct(roundAccuracy, 0)}</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">Settled Bets</div>
-            <div class="kpi-value">${roundBetRows.length}</div>
+            <div class="kpi-label">Matches Scored</div>
+            <div class="kpi-value">${modelRows.length}</div>
           </div>
         </div>
 
         <div class="grid grid-2" style="margin-top:16px;">
           <div class="kpi">
-            <div class="kpi-label">Profit</div>
-            <div class="kpi-value ${betProfit >= 0 ? "positive" : "negative"}">
-              ${roundBetRows.length ? formatSigned(betProfit, 2) : "—"}
-            </div>
+            <div class="kpi-label">Round Brier</div>
+            <div class="kpi-value">${avgBrier === null ? "—" : avgBrier.toFixed(3)}</div>
           </div>
           <div class="kpi">
-            <div class="kpi-label">ROI</div>
-            <div class="kpi-value ${roi !== null && roi >= 0 ? "positive" : "negative"}">
-              ${roi !== null ? formatPct(roi, 1) : "—"}
-            </div>
+            <div class="kpi-label">Round Margin MAE</div>
+            <div class="kpi-value">${marginMae === null ? "—" : marginMae.toFixed(1)}</div>
           </div>
         </div>
       `;
@@ -913,9 +793,8 @@
         "winner",
         "home_pts",
         "away_pts",
-        "bet_grade",
-        "recommended_bet",
-        "stake_dollars"
+        "winner_correct",
+        "exp_margin_home"
       ].filter(h => tableRows.some(r => h in r));
 
       const formatters = {
@@ -926,193 +805,19 @@
           const klass = val === "DRAW" ? "pill pill-amber" : "pill pill-green";
           return `<span class="${klass}">${escapeHtml(val)}</span>`;
         },
-        bet_grade: v => {
-          const val = String(v || "").trim();
-          let klass = "pill pill-red";
-          if (val === "Strong Bet") klass = "pill pill-green";
-          if (val === "Small Bet") klass = "pill pill-blue";
-          if (val === "Lean") klass = "pill pill-amber";
-          return val ? `<span class="${klass}">${escapeHtml(val)}</span>` : "";
+        winner_correct: v => {
+          const ok = toNumber(v) === 1;
+          return `<span class="${ok ? "pill pill-green" : "pill pill-red"}">${ok ? "Correct" : "Wrong"}</span>`;
         },
-        recommended_bet: v => {
-          const text = String(v || "").trim();
-          if (!text || text === "No Bet") {
-            return `<span class="pill pill-red">No Bet</span>`;
-          }
-          return `<span class="pill pill-green">${escapeHtml(text)}</span>`;
-        },
-        stake_dollars: v => {
-          const n = toNumber(v);
-          if (n === null) return "";
-          return `<span class="mono">$${n.toFixed(2)}</span>`;
-        }
+        exp_margin_home: v => escapeHtml(formatSigned(v, 1))
       };
 
       el.innerHTML = makeTable(headers, tableRows, formatters);
     }
 
-    function renderBetHistory(rows) {
-      const el = document.getElementById("bet-history-table");
-      const meta = document.getElementById("bet-history-meta");
 
-      if (!rows.length) {
-        meta.textContent = "0 rows";
-        el.innerHTML = '<div class="empty">No bet history available yet.</div>';
-        return;
-      }
 
-      const settledRows = rows
-        .filter(r => ["WIN", "LOSS", "DRAW", "PENDING"].includes(String(r.bet_status || "").toUpperCase()))
-        .sort((a, b) => {
-          const ak = `${a.date || ""} ${a.kickoff_local || ""}`;
-          const bk = `${b.date || ""} ${b.kickoff_local || ""}`;
-          return bk.localeCompare(ak);
-        })
-        .slice(0, 20);
 
-      meta.textContent = `${rows.length} tracked row${rows.length === 1 ? "" : "s"}`;
-
-      const headers = [
-        "date",
-        "home",
-        "away",
-        "pick",
-        "bet_odds",
-        "stake_dollars",
-        "bet_status",
-        "profit_units",
-        "bankroll_after"
-      ].filter(h => settledRows.some(r => h in r));
-
-      const formatters = {
-        pick: v => {
-          if (!v) return "";
-          const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
-          return `<span class="${klass}">${escapeHtml(v)}</span>`;
-        },
-        bet_status: v => {
-          const val = String(v || "").toUpperCase();
-          let klass = "pill pill-amber";
-          if (val === "WIN") klass = "pill pill-green";
-          if (val === "LOSS" || val === "DRAW") klass = "pill pill-red";
-          if (val === "PENDING") klass = "pill pill-blue";
-          return `<span class="${klass}">${escapeHtml(val)}</span>`;
-        },
-        bet_odds: v => escapeHtml(formatFixed(v, 2)),
-        stake_dollars: v => {
-          const n = toNumber(v);
-          if (n === null) return "";
-          return `<span class="mono">${escapeHtml(formatMoney(n, 2))}</span>`;
-        },
-        profit_units: v => {
-          const n = toNumber(v);
-          if (n === null) return "";
-          const dollars = n * 10;
-          const klass = dollars >= 0 ? "positive" : "negative";
-          const absVal = Math.abs(dollars).toFixed(2);
-          const formatted = dollars >= 0 ? `$${absVal}` : `-$${absVal}`;
-          return `<span class="${klass}">${formatted}</span>`;
-        },
-        bankroll_after: v => {
-          const n = toNumber(v);
-          if (n === null) return "";
-          return `<span class="mono">${escapeHtml(formatMoney(n, 2))}</span>`;
-        }
-      };
-
-      el.innerHTML = makeTable(headers, settledRows, formatters);
-    }
-
-    function renderCLV(clvSummaryRows, clvHistoryRows, clvResultsRows) {
-      const elMeta = document.getElementById("clv-meta");
-      const elSummary = document.getElementById("clv-summary");
-      const elTable = document.getElementById("clv-table");
-
-      const summary = clvSummaryRows.length ? clvSummaryRows[clvSummaryRows.length - 1] : null;
-      const history = clvHistoryRows.length ? clvHistoryRows : clvResultsRows;
-
-      if (!summary && !history.length) {
-        elMeta.textContent = "No CLV data";
-        elSummary.innerHTML = '<div class="empty">No closing line value data available yet.</div>';
-        elTable.innerHTML = "";
-        return;
-      }
-
-      const bets = summary ? (toNumber(summary.bets_with_closing_odds) ?? history.length) : history.length;
-      const avgDiff = summary ? toNumber(summary.avg_clv_diff) : null;
-      const avgEdge = summary ? toNumber(summary.avg_clv_edge) : null;
-      const positiveRate = summary ? toNumber(summary.positive_clv_rate) : null;
-
-      elMeta.textContent = `${bets} matched bet${bets === 1 ? "" : "s"}`;
-
-      elSummary.innerHTML = `
-        <div class="grid grid-3">
-          <div class="kpi">
-            <div class="kpi-label">Avg CLV Diff</div>
-            <div class="kpi-value ${(avgDiff ?? 0) >= 0 ? "positive" : "negative"}">
-              ${avgDiff === null ? "—" : formatSigned(avgDiff, 3)}
-            </div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Avg CLV Edge</div>
-            <div class="kpi-value ${(avgEdge ?? 0) >= 0 ? "positive" : "negative"}">
-              ${avgEdge === null ? "—" : formatPct(avgEdge, 2)}
-            </div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Positive CLV Rate</div>
-            <div class="kpi-value">
-              ${positiveRate === null ? "—" : formatPct(positiveRate, 1)}
-            </div>
-          </div>
-        </div>
-      `;
-
-      const tableRows = history
-        .slice()
-        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
-        .slice(0, 20);
-
-      const headers = [
-        "date",
-        "home",
-        "away",
-        "pick",
-        "bet_odds",
-        "closing_odds",
-        "clv_diff",
-        "clv_edge",
-        "positive_clv"
-      ].filter(h => tableRows.some(r => h in r));
-
-      const formatters = {
-        pick: v => {
-          if (!v) return "";
-          const klass = v === "HOME" ? "pill pill-blue" : "pill pill-amber";
-          return `<span class="${klass}">${escapeHtml(v)}</span>`;
-        },
-        bet_odds: v => escapeHtml(formatFixed(v, 2)),
-        closing_odds: v => escapeHtml(formatFixed(v, 2)),
-        clv_diff: v => {
-          const n = toNumber(v);
-          if (n === null) return "";
-          const klass = n >= 0 ? "positive" : "negative";
-          return `<span class="${klass}">${escapeHtml(formatSigned(n, 3))}</span>`;
-        },
-        clv_edge: v => {
-          const n = toNumber(v);
-          if (n === null) return "";
-          const klass = n >= 0 ? "positive" : "negative";
-          return `<span class="${klass}">${escapeHtml(formatPct(n, 2))}</span>`;
-        },
-        positive_clv: v => {
-          const ok = toNumber(v) === 1;
-          return `<span class="${ok ? "pill pill-green" : "pill pill-red"}">${ok ? "Yes" : "No"}</span>`;
-        }
-      };
-
-      elTable.innerHTML = makeTable(headers, tableRows, formatters);
-    }
 
     async function loadOptionalCSV(path) {
       try {
@@ -1137,33 +842,16 @@
       const [
         accuracyRows,
         accuracySummaryRows,
-        betSummaryRows,
-        betHistoryRows,
-        perfRows,
-        bankRows,
-        completedRows,
-        clvSummaryRows,
-        clvHistoryRows,
-        clvResultsRows
+        completedRows
       ] = await Promise.all([
         loadOptionalCSV("accuracy.csv"),
         loadOptionalCSV("accuracy_summary.csv"),
-        loadOptionalCSV("bet_summary.csv"),
-        loadOptionalCSV("bet_history.csv"),
-        loadOptionalCSV("performance.csv"),
-        loadOptionalCSV("bankroll_status.csv"),
-        loadOptionalCSV("latest_completed_round.csv"),
-        loadOptionalCSV("clv_summary.csv"),
-        loadOptionalCSV("clv_history.csv"),
-        loadOptionalCSV("clv_results.csv")
+        loadOptionalCSV("latest_completed_round.csv")
       ]);
 
       renderAccuracy(accuracyRows, accuracySummaryRows);
-      renderPerformance(betSummaryRows, betHistoryRows, perfRows, bankRows);
-      renderRoundDashboard(accuracyRows, betHistoryRows, completedRows);
+      renderRoundDashboard(accuracyRows, completedRows);
       renderCompletedRound(completedRows);
-      renderBetHistory(betHistoryRows);
-      renderCLV(clvSummaryRows, clvHistoryRows, clvResultsRows);
     })();
   </script>
 </body>
