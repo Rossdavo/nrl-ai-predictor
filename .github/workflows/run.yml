@@ -32,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run model + trackers + reports
+      - name: Run tipping model + trackers + reports
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
@@ -43,9 +43,6 @@ jobs:
 
           echo "=== RUN: predict.py ==="
           python -u predict.py
-
-          echo "=== RUN: staking.py ==="
-          python -u staking.py || true
 
           echo "=== RUN: archive.py ==="
           python -u archive.py
@@ -67,27 +64,8 @@ jobs:
           echo "=== RUN: tracker.py ==="
           python -u tracker.py
 
-          if [ -f settle_bets.py ]; then
-            echo "=== RUN: settle_bets.py ==="
-            python -u settle_bets.py
-          else
-            echo "=== SKIP: settle_bets.py not found ==="
-          fi
-
           echo "=== RUN: performance.py ==="
           python -u performance.py || true
-
-          echo "=== RUN: bankroll_tracker.py ==="
-          python -u bankroll_tracker.py || true
-
-          echo "=== RUN: bet_log_updater.py ==="
-          python -u bet_log_updater.py || true
-
-          echo "=== RUN: closing_odds.py ==="
-          python -u closing_odds.py || true
-
-          echo "=== RUN: clv_tracker.py ==="
-          python -u clv_tracker.py || true
 
           echo "=== RUN: report.py ==="
           python -u report.py || true
@@ -110,22 +88,14 @@ jobs:
           if [ -f latest_completed_round.csv ]; then cp latest_completed_round.csv site/latest_completed_round.csv; fi
 
           if [ -f predictions.csv ]; then cp predictions.csv site/predictions.csv; fi
-          if [ -f odds.csv ]; then cp odds.csv site/odds.csv; fi
-          if [ -f accuracy.csv ]; then cp accuracy.csv site/accuracy.csv; fi
-          if [ -f accuracy_summary.csv ]; then cp accuracy_summary.csv site/accuracy_summary.csv; fi
-          if [ -f bet_history.csv ]; then cp bet_history.csv site/bet_history.csv; fi
-          if [ -f bet_summary.csv ]; then cp bet_summary.csv site/bet_summary.csv; fi
-          if [ -f clv_history.csv ]; then cp clv_history.csv site/clv_history.csv; fi
-          if [ -f clv_summary.csv ]; then cp clv_summary.csv site/clv_summary.csv; fi
-          if [ -f performance.csv ]; then cp performance.csv site/performance.csv; fi
-          if [ -f bankroll_status.csv ]; then cp bankroll_status.csv site/bankroll_status.csv; fi
-          if [ -f closing_odds.csv ]; then cp closing_odds.csv site/closing_odds.csv; fi
           if [ -f predictions_history.csv ]; then cp predictions_history.csv site/predictions_history.csv; fi
+          if [ -f odds.csv ]; then cp odds.csv site/odds.csv; fi
           if [ -f odds_history.csv ]; then cp odds_history.csv site/odds_history.csv; fi
           if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
+          if [ -f accuracy.csv ]; then cp accuracy.csv site/accuracy.csv; fi
+          if [ -f accuracy_summary.csv ]; then cp accuracy_summary.csv site/accuracy_summary.csv; fi
+          if [ -f performance.csv ]; then cp performance.csv site/performance.csv; fi
           if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
-          if [ -f bet_log.csv ]; then cp bet_log.csv site/bet_log.csv; fi
-          if [ -f clv_results.csv ]; then cp clv_results.csv site/clv_results.csv; fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
