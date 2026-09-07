@@ -18,36 +18,27 @@ from zoneinfo import ZoneInfo
 
 
 # ----------------------------
-# BANKROLL / STAKING
+# TIPPING / AVAILABILITY SETTINGS
 # ----------------------------
-BANKROLL = 200.0
-UNIT_PCT = 0.05
-UNIT_SIZE = round(BANKROLL * UNIT_PCT, 2)
+# The predictor is now tipping-first. Legacy staking columns are still written
+# as zero/blank values for compatibility with older archive/report scripts.
 
-MAX_ROUND_EXPOSURE_PCT = 0.35
-MAX_ROUND_EXPOSURE = round(BANKROLL * MAX_ROUND_EXPOSURE_PCT, 2)
+# Rest is calculated automatically from completed results.
+DEFAULT_REST_DAYS = 7
+REST_PROB_PER_POINT = 0.008
+REST_PROB_SHIFT_CAP = 0.03
 
-MAX_SINGLE_BET_PCT = 0.20
-MAX_SINGLE_BET = round(BANKROLL * MAX_SINGLE_BET_PCT, 2)
+# Player/team-list layer. These files are optional. If they do not exist the
+# model runs normally, so GitHub Actions will not fail.
+PLAYER_RATINGS_PATH = "player_ratings.csv"
+TEAM_CHANGES_PATH = "team_changes.csv"
+AVAILABILITY_PROB_PER_POINT = 0.012
+AVAILABILITY_PROB_SHIFT_CAP = 0.08
+AVAILABILITY_POINTS_CAP = 8.0
 
-MIN_BET_SHORT = 20.0
-MIN_BET_DOG = 10.0
-
-TARGET_MIN_BETS = 2
-TARGET_MAX_BETS = 2
-# REST DAYS (manual for now)
-team_rest_days = {
-    "Dolphins": 4,   # short turnaround (Darwin → Redcliffe → NZ)
-    "Warriors": 7,
-    "Sea Eagles": 7,
-    "Eels": 7,
-    "Broncos": 5,    # example if needed
-    "Bulldogs": 7,
-}
-
-print(f"[predict] bankroll=${BANKROLL} | unit=${UNIT_SIZE}")
-print(f"[predict] max_round_exposure=${MAX_ROUND_EXPOSURE} | max_single_bet=${MAX_SINGLE_BET}")
-
+# Pre-season futures prices are useful early in a season but stale by finals.
+# Leave False for the finals. It can be switched back on for a new season.
+USE_OUTRIGHT_PRIOR = False
 
 # ----------------------------
 # RUN MODE
@@ -1426,325 +1417,322 @@ def confidence_band(prob: float, conf: float, abs_margin: float) -> str:
     return "Low"
 
 
-def dynamic_required_edge(
-    decimal_odds: float,
-    side_team: str,
-    is_home: bool,
-    is_favourite: bool,
-    volatility: float = 0.0,
-    injury_impact: float = 0.0,
-) -> float:
-
-    # Base thresholds (slightly loosened)
-    if decimal_odds < 1.50:
-        req = 0.045
-    elif decimal_odds < 1.70:
-        req = 0.050
-    elif decimal_odds < 2.00:
-        req = 0.055
-    elif decimal_odds < 2.40:
-        req = 0.060
-    else:
-        req = 0.070
-
-    # Home favourites bonus
-    if is_home and is_favourite:
-        req -= 0.005
-
-    # Strong home teams
-    if is_home and is_favourite and side_team in PREMIUM_HOME_TEAMS:
-        req -= 0.005
-
-    if is_home and is_favourite and side_team in ELITE_HOME_TEAMS:
-        req -= 0.005
-
-    # Weak home teams penalty
-    if is_home and is_favourite and side_team in WEAK_HOME_TEAMS:
-        req += 0.010
-
-    # Away penalties
-    if not is_home:
-        req += 0.010
-
-    if not is_home and not is_favourite:
-        req += 0.015
-
-    # Volatility
-    if volatility >= 12.0:
-        req += 0.010
-    elif volatility >= 10.0:
-        req += 0.005
-
-    # Injuries
-    if injury_impact >= 3.5:
-        req += 0.010
-    elif injury_impact >= 2.5:
-        req += 0.005
-
-    return max(0.040, req)
-
-def score_bet_opportunity(
-    pick_prob: float,
-    edge: float,
-    odds: float,
-    conf: float,
-    team: str,
-    is_home: bool,
-    is_favourite: bool,
-    volatility: float,
-    final_upset_score: float,
-    exp_margin: float,
-    min_games: float,
-    market_gap: float,
-) -> float:
-    score = 0.0
-    score += max(0.0, (pick_prob - 0.50) * 100.0)
-    score += max(0.0, edge * 140.0)
-    score += max(0.0, (conf - 0.50) * 80.0)
-    score += min(10.0, max(0.0, abs(exp_margin) * 0.8))
-
-    if is_home and is_favourite:
-        score += 1.5
-    if is_home and is_favourite and team in PREMIUM_HOME_TEAMS:
-        score += 4.0
-    if is_home and is_favourite and team in ELITE_HOME_TEAMS:
-        score += 2.0
-    if is_home and is_favourite and team in AGGRESSIVE_HOME_TEAMS:
-        score += 3.5
-    if is_home and is_favourite and team in WEAK_HOME_TEAMS:
-        score -= 5.0
-
-    if odds >= 2.60:
-        score -= 5.0
-    elif odds >= 2.20:
-        score -= 2.5
-
-    if volatility >= 12.0:
-        score -= 6.0
-    elif volatility >= 10.0:
-        score -= 3.0
-
-    if final_upset_score >= 2.0 and is_favourite:
-        score -= 5.0
-    if final_upset_score >= 2.0 and not is_favourite:
-        score += 2.0
-
-    if min_games < 3:
-        score -= 3.0
-    elif min_games < 5:
-        score -= 1.0
-
-    if market_gap >= 0.10:
-        score -= 4.0
-    elif market_gap >= 0.07:
-        score -= 2.0
-
-    return score
+def _safe_float(value: object, default: float = 0.0) -> float:
+    try:
+        n = float(value)
+        if math.isnan(n):
+            return default
+        return n
+    except Exception:
+        return default
 
 
-def assign_bet_grade(
-    pick_prob: float,
-    edge: float,
-    odds: float,
-    conf: float,
-    team: str,
-    is_home: bool,
-    is_favourite: bool,
-    volatility: float,
-    final_upset_score: float,
-    exp_margin: float,
-    min_games: float,
-    market_gap: float,
-    required_edge: float,
-) -> str:
-
-    # HARD EDGE QUALITY FILTER
-    if edge < required_edge:
-        return "No Bet"
-
-    # minimum true edge
-    if edge < 0.045:
-        return "No Bet"
-
-    # avoid coin flips
-    if pick_prob < 0.56:
-        return "No Bet"
-
-    # confidence + market checks
-    if conf < 0.56:
-        return "No Bet"
-
-    if market_gap >= MARKET_DISAGREEMENT_NO_BET:
-        return "No Bet"
-
-    score = score_bet_opportunity(
-        pick_prob=pick_prob,
-        edge=edge,
-        odds=odds,
-        conf=conf,
-        team=team,
-        is_home=is_home,
-        is_favourite=is_favourite,
-        volatility=volatility,
-        final_upset_score=final_upset_score,
-        exp_margin=exp_margin,
-        min_games=min_games,
-        market_gap=market_gap,
-    )
-
-    if edge >= required_edge + 0.020 and pick_prob >= 0.60 and conf >= 0.60 and score >= 22.0:
-        return "Strong Bet"
-
-    if edge >= required_edge and pick_prob >= 0.56 and conf >= 0.57 and score >= 13.0:
-        return "Small Bet"
-
-    return "No Bet"
+def norm_player_name(name: object) -> str:
+    return re.sub(r"\\s+", " ", str(name or "").strip()).casefold()
 
 
-def stake_from_grade(grade: str, odds: float) -> float:
-    if grade == "Strong Bet":
-        base = 30.0 if odds < 2.0 else 20.0
-    elif grade == "Small Bet":
-        base = 20.0 if odds < 2.0 else 10.0
-    else:
-        return 0.0
+def _normalise_position(position: object) -> str:
+    p = str(position or "").strip().casefold().replace("_", " ").replace("-", " ")
+    aliases = {
+        "1": "fullback", "fb": "fullback", "full back": "fullback",
+        "6": "five eighth", "five eighth": "five eighth", "fiveeighth": "five eighth", "fe": "five eighth",
+        "7": "halfback", "hb": "halfback", "half back": "halfback",
+        "9": "hooker", "hk": "hooker",
+        "8": "prop", "10": "prop", "front row": "prop", "front rower": "prop",
+        "11": "second row", "12": "second row", "second rower": "second row",
+        "13": "lock", "lock forward": "lock",
+        "2": "wing", "5": "wing", "winger": "wing",
+        "3": "centre", "4": "centre", "center": "centre",
+        "14": "bench", "15": "bench", "16": "bench", "17": "bench", "interchange": "bench", "reserve": "bench",
+    }
+    return aliases.get(p, p)
 
-    floor = MIN_BET_SHORT if odds < 2.0 else MIN_BET_DOG
-    return round(min(MAX_SINGLE_BET, max(floor, base)), 2)
-def allocate_bankroll_all_games(df: pd.DataFrame) -> pd.DataFrame:
-    work = df.copy()
 
-    # Build a score for each game
-    work["alloc_score"] = 1.0
-    work["alloc_score"] += (work["win_probability"] - 0.50) * 8.0
-    work["alloc_score"] += (work["confidence"] - 0.50) * 3.0
-    work["alloc_score"] += work["edge"].clip(lower=0) * 10.0
-    # Heavily reduce negative-edge plays, but keep them in the 8-game allocation
-    work.loc[work["edge"] < 0, "alloc_score"] *= 0.35
-    work.loc[work["edge"] < -0.03, "alloc_score"] *= 0.5
+DEFAULT_POSITION_IMPACT = {
+    "halfback": 5.0,
+    "five eighth": 4.2,
+    "fullback": 4.0,
+    "hooker": 4.0,
+    "prop": 2.5,
+    "lock": 2.5,
+    "second row": 2.0,
+    "centre": 1.6,
+    "wing": 1.2,
+    "bench": 1.0,
+}
+SPINE_POSITIONS = {"fullback", "five eighth", "halfback", "hooker"}
+OUT_STATUSES = {"out", "late out", "injured", "injury", "suspended", "suspension", "origin", "origin out", "unavailable"}
+RETURN_STATUSES = {"in", "return", "returns", "returning", "back", "available"}
+DOUBTFUL_STATUSES = {"doubtful", "questionable", "test", "50/50"}
 
-    # Adjust for odds (slight boost to value)
-    work["alloc_score"] *= work["predicted_winner_odds"].clip(1.2, 3.5) ** 0.35
 
-    # Reduce weight for volatile games
-    if "final_upset_score" in work.columns:
-        work["alloc_score"] *= (1.0 - work["final_upset_score"].clip(0, 3) * 0.08)
+def load_player_ratings(path: str = PLAYER_RATINGS_PATH) -> Dict[Tuple[str, str], Dict[str, object]]:
+    """Load optional player impact ratings.
 
-    work["alloc_score"] = work["alloc_score"].clip(lower=0.1)
+    Preferred columns:
+      team, player, impact_points, position
 
-    total_score = work["alloc_score"].sum()
+    impact_points is the player's approximate value in scoreboard points relative
+    to a replacement-level player. Missing files or columns are handled safely.
+    """
+    if not os.path.exists(path):
+        print(f"[availability] {path} not found - using position/default impacts only")
+        return {}
 
-    # Allocate full bankroll
-    work["stake_dollars"] = (work["alloc_score"] / total_score * BANKROLL).round(2)
+    try:
+        df = pd.read_csv(path)
+    except Exception as e:
+        print(f"[warn] Could not load {path}: {e}")
+        return {}
 
-    # Fix rounding difference
-    diff = round(BANKROLL - work["stake_dollars"].sum(), 2)
-    best_idx = work["alloc_score"].idxmax()
-    work.loc[best_idx, "stake_dollars"] += diff
-
-    work["stake_units"] = (work["stake_dollars"] / UNIT_SIZE).round(2)
-    work["stake"] = work["stake_units"]
-
-    work["bet_grade"] = "Allocated"
-    work["recommended_bet"] = work.apply(
-        lambda r: f"${r['stake_dollars']:.2f} {r['predicted_winner']}",
-        axis=1,
-    )
-
-    return work
-
-def apply_round_exposure_cap(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty or "stake_dollars" not in df.columns:
-        return df
-
-    work = df.copy()
-    work["stake_dollars"] = pd.to_numeric(work["stake_dollars"], errors="coerce").fillna(0.0)
-
-    bet_df = work[work["stake_dollars"] > 0].copy()
-    if bet_df.empty:
-        return work
-
-    grade_rank = {"Strong Bet": 3, "Small Bet": 2, "Lean": 1, "No Bet": 0}
-    bet_df["grade_rank"] = bet_df["bet_grade"].map(grade_rank).fillna(0).astype(int)
-
-    bet_df = bet_df.sort_values(
-        ["grade_rank", "edge", "win_probability", "confidence"],
-        ascending=[False, False, False, False],
-    ).reset_index()
-
-    running_exposure = 0.0
-    keep_original_idx = []
-
-    for _, row in bet_df.iterrows():
-        stake_amt = float(row["stake_dollars"])
-        if running_exposure + stake_amt > MAX_ROUND_EXPOSURE:
+    out: Dict[Tuple[str, str], Dict[str, object]] = {}
+    for _, r in df.iterrows():
+        team = norm_team(r.get("team", ""))
+        player = str(r.get("player", "")).strip()
+        if not team or not player:
             continue
-        keep_original_idx.append(int(row["index"]))
-        running_exposure += stake_amt
 
-    excluded_mask = (work["stake_dollars"] > 0) & (~work.index.isin(keep_original_idx))
-    work.loc[excluded_mask, "bet_grade"] = "Lean"
-    work.loc[excluded_mask, "stake_dollars"] = 0.0
-    work.loc[excluded_mask, "stake_units"] = 0.0
-    work.loc[excluded_mask, "stake"] = 0.0
-    work.loc[excluded_mask, "pick"] = ""
-    work.loc[excluded_mask, "recommended_bet"] = "No Bet"
+        position = _normalise_position(r.get("position", ""))
+        impact = pd.to_numeric(r.get("impact_points", np.nan), errors="coerce")
+        if pd.isna(impact):
+            # Support a generic rating column if one already exists. Ratings above
+            # 10 are treated as 0-100 style ratings and converted conservatively.
+            rating = pd.to_numeric(r.get("rating", np.nan), errors="coerce")
+            if pd.notna(rating):
+                rating = float(rating)
+                impact = max(0.5, min(6.5, (rating - 50.0) / 8.0)) if rating > 10 else rating
+            else:
+                impact = DEFAULT_POSITION_IMPACT.get(position, 1.5)
 
-    print(f"[predict] exposure cap applied: ${running_exposure:.2f} / ${MAX_ROUND_EXPOSURE:.2f}")
-    return work
+        out[(team, norm_player_name(player))] = {
+            "player": player,
+            "team": team,
+            "position": position,
+            "impact_points": max(0.0, min(6.5, float(impact))),
+        }
+
+    print(f"[availability] Loaded {len(out)} player ratings from {path}")
+    return out
 
 
-def aggressive_promote_bets(df: pd.DataFrame) -> pd.DataFrame:
-    work = df.copy()
+def load_team_changes(path: str = TEAM_CHANGES_PATH) -> pd.DataFrame:
+    """Load optional team changes for upcoming matches.
 
-    real_bets = work[pd.to_numeric(work["stake_dollars"], errors="coerce").fillna(0.0) > 0].copy()
-    if len(real_bets) >= TARGET_MIN_BETS:
-        return work
+    Recommended columns:
+      date,team,player,status,replacement_player,position,impact_points,
+      replacement_impact_points,notes
 
-    need = TARGET_MIN_BETS - len(real_bets)
+    `date` should normally be the match date. A team-list publication date also
+    works because the most recent row up to seven days before kickoff is accepted.
+    """
+    cols = [
+        "date", "team", "player", "status", "replacement_player", "position",
+        "impact_points", "replacement_impact_points", "notes",
+    ]
+    if not os.path.exists(path):
+        print(f"[availability] {path} not found - no player-change adjustment applied")
+        return pd.DataFrame(columns=cols)
 
-    candidates = work[
-        (pd.to_numeric(work["stake_dollars"], errors="coerce").fillna(0.0) <= 0.0)
-        & (work["predicted_winner"] == work["home"])
-        & (pd.to_numeric(work["win_probability"], errors="coerce").fillna(0.0) >= 0.58)
-        & (pd.to_numeric(work["confidence"], errors="coerce").fillna(0.0) >= 0.56)
-        & (pd.to_numeric(work["market_gap"], errors="coerce").fillna(999) <= 0.10)
-        & (
-            pd.to_numeric(work["edge"], errors="coerce").fillna(-999)
-            >= (pd.to_numeric(work["required_edge"], errors="coerce").fillna(999) - 0.020)
-        )
-    ].copy()
+    try:
+        df = pd.read_csv(path)
+    except Exception as e:
+        print(f"[warn] Could not load {path}: {e}")
+        return pd.DataFrame(columns=cols)
 
-    if candidates.empty:
-        return work
+    for col in cols:
+        if col not in df.columns:
+            df[col] = ""
 
-    candidates["promo_bonus"] = 0.0
-    candidates.loc[candidates["predicted_winner"].isin(AGGRESSIVE_HOME_TEAMS), "promo_bonus"] += 4.0
-    candidates["promo_bonus"] += pd.to_numeric(candidates["win_probability"], errors="coerce").fillna(0.0) * 10.0
-    candidates["promo_bonus"] += pd.to_numeric(candidates["confidence"], errors="coerce").fillna(0.0) * 8.0
-    candidates["promo_bonus"] += pd.to_numeric(candidates["edge"], errors="coerce").fillna(0.0) * 100.0
+    df = df[cols].copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["team"] = df["team"].astype(str).apply(norm_team)
+    df["player"] = df["player"].astype(str).str.strip()
+    df["status"] = df["status"].astype(str).str.strip().str.casefold()
+    df["replacement_player"] = df["replacement_player"].astype(str).str.strip()
+    df["position"] = df["position"].astype(str).apply(_normalise_position)
+    df["impact_points"] = pd.to_numeric(df["impact_points"], errors="coerce")
+    df["replacement_impact_points"] = pd.to_numeric(df["replacement_impact_points"], errors="coerce")
+    df = df[(df["team"] != "") & (df["player"] != "")].copy()
 
-    candidates = candidates.sort_values(
-        ["promo_bonus", "win_probability", "confidence", "edge"],
-        ascending=[False, False, False, False],
-    )
+    print(f"[availability] Loaded {len(df)} team-change rows from {path}")
+    return df
 
-    promoted = 0
-    for idx, row in candidates.iterrows():
-        if promoted >= need:
-            break
-        odds = float(row["predicted_winner_odds"])
-        stake_dollars = stake_from_grade("Small Bet", odds)
 
-        work.loc[idx, "bet_grade"] = "Small Bet"
-        work.loc[idx, "stake_dollars"] = float(stake_dollars)
-        work.loc[idx, "stake_units"] = round(stake_dollars / UNIT_SIZE, 2) if UNIT_SIZE > 0 else 0.0
-        work.loc[idx, "stake"] = work.loc[idx, "stake_units"]
-        work.loc[idx, "pick"] = "HOME"
-        work.loc[idx, "recommended_bet"] = f"${stake_dollars:.2f} {row['predicted_winner']}"
-        promoted += 1
+def _player_impact(
+    team: str,
+    player: object,
+    position: object,
+    ratings: Dict[Tuple[str, str], Dict[str, object]],
+    explicit_impact: object = np.nan,
+) -> float:
+    explicit = pd.to_numeric(explicit_impact, errors="coerce")
+    if pd.notna(explicit):
+        return max(0.0, min(6.5, float(explicit)))
 
-    return work
+    rec = ratings.get((team, norm_player_name(player)))
+    if rec:
+        return max(0.0, min(6.5, _safe_float(rec.get("impact_points"), 1.5)))
+
+    return DEFAULT_POSITION_IMPACT.get(_normalise_position(position), 1.5)
+
+
+def team_availability_adjustment(
+    team: str,
+    fixture_date: str,
+    team_changes: pd.DataFrame,
+    ratings: Dict[Tuple[str, str], Dict[str, object]],
+) -> Dict[str, object]:
+    """Return a team-strength adjustment in scoreboard points.
+
+    Negative = weakened team. Positive = strengthened team.
+    Missing player value is offset by the replacement player's value where known.
+    """
+    empty = {
+        "points": 0.0,
+        "missing_impact": 0.0,
+        "returning_impact": 0.0,
+        "change_count": 0,
+        "spine_out": 0,
+        "key_out": 0,
+        "summary": "",
+    }
+    if team_changes is None or team_changes.empty:
+        return empty
+
+    fd = pd.to_datetime(fixture_date, errors="coerce")
+    if pd.isna(fd):
+        return empty
+
+    tdf = team_changes[team_changes["team"] == team].copy()
+    if tdf.empty:
+        return empty
+
+    dated = tdf.dropna(subset=["date"]).copy()
+    if not dated.empty:
+        exact = dated[dated["date"].dt.normalize() == fd.normalize()].copy()
+        if not exact.empty:
+            tdf = exact
+        else:
+            recent = dated[(dated["date"] <= fd) & (dated["date"] >= fd - pd.Timedelta(days=7))].copy()
+            if not recent.empty:
+                latest_date = recent["date"].max()
+                tdf = recent[recent["date"] == latest_date].copy()
+            else:
+                # Dated rows exist but none are relevant to this match.
+                tdf = tdf[tdf["date"].isna()].copy()
+
+    if tdf.empty:
+        return empty
+
+    points = 0.0
+    missing_impact = 0.0
+    returning_impact = 0.0
+    spine_out = 0
+    key_out = 0
+    summaries = []
+
+    for _, r in tdf.iterrows():
+        status = str(r.get("status", "")).strip().casefold()
+        player = str(r.get("player", "")).strip()
+        position = _normalise_position(r.get("position", ""))
+        player_impact = _player_impact(team, player, position, ratings, r.get("impact_points", np.nan))
+
+        replacement = str(r.get("replacement_player", "")).strip()
+        replacement_impact = pd.to_numeric(r.get("replacement_impact_points", np.nan), errors="coerce")
+        if pd.isna(replacement_impact) and replacement:
+            replacement_impact = _player_impact(team, replacement, position, ratings)
+        replacement_impact = float(replacement_impact) if pd.notna(replacement_impact) else 0.0
+
+        net = max(0.0, player_impact - replacement_impact)
+
+        if status in OUT_STATUSES:
+            points -= net
+            missing_impact += net
+            if position in SPINE_POSITIONS:
+                spine_out += 1
+            if player_impact >= 3.0:
+                key_out += 1
+            summaries.append(f"OUT {player} (-{net:.1f})")
+        elif status in RETURN_STATUSES:
+            points += net
+            returning_impact += net
+            summaries.append(f"IN {player} (+{net:.1f})")
+        elif status in DOUBTFUL_STATUSES:
+            points -= net * 0.50
+            missing_impact += net * 0.50
+            if position in SPINE_POSITIONS:
+                spine_out += 1
+            summaries.append(f"TEST {player} (-{net * 0.50:.1f})")
+        else:
+            # Unknown/non-impact statuses are retained in the source file but do
+            # not alter the model. This avoids accidental penalties from typos.
+            continue
+
+    # Combination penalties. Losing multiple spine players or several key players
+    # is more damaging than treating each change as fully independent.
+    if spine_out >= 2:
+        combo_penalty = min(1.5, 0.75 * (spine_out - 1))
+        points -= combo_penalty
+        missing_impact += combo_penalty
+        summaries.append(f"spine disruption (-{combo_penalty:.1f})")
+
+    if key_out >= 3:
+        pack_penalty = 0.5
+        points -= pack_penalty
+        missing_impact += pack_penalty
+        summaries.append("multiple key outs (-0.5)")
+
+    points = max(-AVAILABILITY_POINTS_CAP, min(AVAILABILITY_POINTS_CAP, points))
+
+    return {
+        "points": round(points, 2),
+        "missing_impact": round(missing_impact, 2),
+        "returning_impact": round(returning_impact, 2),
+        "change_count": int(len(tdf)),
+        "spine_out": int(spine_out),
+        "key_out": int(key_out),
+        "summary": " | ".join(summaries),
+    }
+
+
+def rest_days_for_team(team: str, fixture_date: str, results: pd.DataFrame) -> int:
+    """Calculate rest days automatically from the team's most recent match."""
+    if results is None or results.empty:
+        return DEFAULT_REST_DAYS
+
+    fd = pd.to_datetime(fixture_date, errors="coerce")
+    if pd.isna(fd):
+        return DEFAULT_REST_DAYS
+
+    df = results.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
+    df = df[(df["date"] < fd) & ((df["home"] == team) | (df["away"] == team))]
+    if df.empty:
+        return DEFAULT_REST_DAYS
+
+    last_date = df["date"].max().normalize()
+    days = int((fd.normalize() - last_date).days)
+    return max(1, min(21, days))
+
+
+def rest_strength_points(rest_days: int) -> float:
+    """Convert turnaround length to a conservative scoreboard-point adjustment."""
+    if rest_days <= 4:
+        return -2.0
+    if rest_days == 5:
+        return -1.2
+    if rest_days == 6:
+        return -0.5
+    if 7 <= rest_days <= 9:
+        return 0.0
+    if 10 <= rest_days <= 13:
+        return 0.4
+    return 0.6
+
+
+def clamp_probability(p: float, low: float = 0.06, high: float = 0.94) -> float:
+    return min(high, max(low, p))
 
 
 def build_predictions() -> pd.DataFrame:
@@ -1792,6 +1780,8 @@ def build_predictions() -> pd.DataFrame:
     adj = load_adjustments()
     odds = load_odds()
     manual_upsets = load_manual_upset_flags()
+    player_ratings = load_player_ratings()
+    team_changes = load_team_changes()
     form_stats = build_recent_form_stats(results, teams)
     home_away_form = build_home_away_form_stats(results, teams)
     team_volatility = build_team_volatility(results, teams)
@@ -1821,62 +1811,100 @@ def build_predictions() -> pd.DataFrame:
         o = odds.get(key, {})
         home_odds = float(o.get("home_odds", float("nan")))
         away_odds = float(o.get("away_odds", float("nan")))
-
         market_home_prob, market_away_prob = fair_probs_from_odds(home_odds, away_odds)
 
-        if not math.isnan(market_home_prob):
-            favourite_team = m.home if market_home_prob >= 0.50 else m.away
-        else:
-            favourite_team = m.home
-
-        underdog_team = m.away if favourite_team == m.home else m.home
-
         if ad_model is not None:
-            raw_home_prob, exp_margin, exp_total, conf = simulate_match_ad(ad_model, m.home, m.away, m.venue, adj)
+            raw_home_prob, exp_margin, exp_total, conf = simulate_match_ad(
+                ad_model, m.home, m.away, m.venue, adj
+            )
         else:
             raw_home_prob = 0.50
             exp_margin = 0.0
             exp_total = 44.0
             conf = 0.50
 
-        raw_home_prob = apply_outright_strength_adjustment(raw_home_prob, m.home, m.away)
-        raw_home_prob = apply_early_season_matchup_moderation(raw_home_prob, m.home, m.away, season_record)
+        # Pre-season futures priors are intentionally disabled for finals unless
+        # USE_OUTRIGHT_PRIOR is explicitly switched back on.
+        if USE_OUTRIGHT_PRIOR:
+            raw_home_prob = apply_outright_strength_adjustment(raw_home_prob, m.home, m.away)
+
+        raw_home_prob = apply_early_season_matchup_moderation(
+            raw_home_prob, m.home, m.away, season_record
+        )
         raw_home_prob = compress_prob(raw_home_prob)
+
+        # ------------------------------------------------------------
+        # AUTOMATED REST / TURNAROUND LAYER
+        # ------------------------------------------------------------
+        home_rest = rest_days_for_team(m.home, m.date, results)
+        away_rest = rest_days_for_team(m.away, m.date, results)
+        home_rest_pts = rest_strength_points(home_rest)
+        away_rest_pts = rest_strength_points(away_rest)
+        rest_net_home = home_rest_pts - away_rest_pts
+        rest_prob_shift = max(
+            -REST_PROB_SHIFT_CAP,
+            min(REST_PROB_SHIFT_CAP, rest_net_home * REST_PROB_PER_POINT),
+        )
+        raw_home_prob = clamp_probability(raw_home_prob + rest_prob_shift)
+        exp_margin += rest_net_home
+        print(
+            f"[rest] {m.home}={home_rest}d ({home_rest_pts:+.1f}) "
+            f"{m.away}={away_rest}d ({away_rest_pts:+.1f}) net_home={rest_net_home:+.1f}"
+        )
+
+        # ------------------------------------------------------------
+        # PLAYER / TEAM AVAILABILITY LAYER
+        # ------------------------------------------------------------
+        home_avail = team_availability_adjustment(m.home, m.date, team_changes, player_ratings)
+        away_avail = team_availability_adjustment(m.away, m.date, team_changes, player_ratings)
+        availability_net_home = float(home_avail["points"]) - float(away_avail["points"])
+        availability_prob_shift = max(
+            -AVAILABILITY_PROB_SHIFT_CAP,
+            min(AVAILABILITY_PROB_SHIFT_CAP, availability_net_home * AVAILABILITY_PROB_PER_POINT),
+        )
+        raw_home_prob = clamp_probability(raw_home_prob + availability_prob_shift)
+        exp_margin += availability_net_home
+
+        if home_avail["change_count"] or away_avail["change_count"]:
+            print(
+                f"[availability] {m.home}={home_avail['points']:+.1f} "
+                f"{m.away}={away_avail['points']:+.1f} net_home={availability_net_home:+.1f}"
+            )
+            if home_avail["summary"]:
+                print(f"[availability] {m.home}: {home_avail['summary']}")
+            if away_avail["summary"]:
+                print(f"[availability] {m.away}: {away_avail['summary']}")
 
         market_weight = market_weight_from_prices(home_odds, away_odds)
         final_home_prob = anchor_to_market(raw_home_prob, market_home_prob, market_weight)
-        # REST DAY EFFECT (correct logic)
-        home_rest = team_rest_days.get(m.home, 7)
-        away_rest = team_rest_days.get(m.away, 7)
 
-        print(f"[rest] {m.home}={home_rest} {m.away}={away_rest}")
-
-        # RIVALRY VOLATILITY ADJUSTMENT
-        RIVALRY_MATCHUPS = {
+        # Rivalry volatility nudges an extreme probability slightly back toward 50/50.
+        rivalry_matchups = {
             frozenset(["Sea Eagles", "Eels"]),
             frozenset(["Broncos", "Bulldogs"]),
             frozenset(["Rabbitohs", "Roosters"]),
         }
-
-        if frozenset([m.home, m.away]) in RIVALRY_MATCHUPS:
+        if frozenset([m.home, m.away]) in rivalry_matchups:
             if final_home_prob >= 0.5:
                 final_home_prob -= 0.015
             else:
                 final_home_prob += 0.015
+            final_home_prob = clamp_probability(final_home_prob)
 
-            final_home_prob = min(0.94, max(0.06, final_home_prob))
+        # Retain existing manual injury adjustments as a fallback. If player-change
+        # data is present, the larger of the two signals is used for upset context
+        # rather than simply stacking both injury systems together.
+        legacy_home_injury = team_injury_impact(m.home, adj)
+        legacy_away_injury = team_injury_impact(m.away, adj)
+        home_injury = max(legacy_home_injury, float(home_avail["missing_impact"]))
+        away_injury = max(legacy_away_injury, float(away_avail["missing_impact"]))
 
-        home_injury = team_injury_impact(m.home, adj)
-        away_injury = team_injury_impact(m.away, adj)
-        
-
-        h2h_margin_home = recent_h2h_margin(pd.DataFrame(results), m.home, m.away)
+        h2h_margin_home = recent_h2h_margin(results, m.home, m.away)
 
         if not math.isnan(market_home_prob):
             favourite_team = m.home if market_home_prob >= 0.50 else m.away
         else:
             favourite_team = m.home if raw_home_prob >= 0.50 else m.away
-
         underdog_team = m.away if favourite_team == m.home else m.home
 
         auto_upset = compute_auto_upset_signal(
@@ -1893,93 +1921,76 @@ def build_predictions() -> pd.DataFrame:
         manual_upset = manual_upsets.get(key, {})
         manual_upset_team = str(manual_upset.get("upset_team", "")).strip()
         manual_upset_score = float(manual_upset.get("manual_upset_score", 0.0) or 0.0)
-
         upset_team = manual_upset_team if manual_upset_team in {m.home, m.away} else ""
         final_upset_score = float(auto_upset["auto_upset_score"]) + manual_upset_score
 
-        # If the AWAY team is on short rest, increase upset chance against them
-        if away_rest <= 4:
-            # extreme travel / fatigue case
-            final_upset_score += 1.5
-        elif away_rest == 5:
-            if favourite_team == m.away:
-                final_upset_score += 1.0
-            else:
-                final_upset_score += 0.3
-        elif away_rest == 6:
-            if favourite_team == m.away:
-                final_upset_score += 0.5
-            else:
-                final_upset_score += 0.2
-                
-        # INJURY SHOCK BOOST (major outs create upset potential)
-        injury_diff = home_injury - away_injury
+        # Short rest matters most when the favourite is the tired side.
+        favourite_rest = home_rest if favourite_team == m.home else away_rest
+        if favourite_rest <= 4:
+            final_upset_score += 1.2
+        elif favourite_rest == 5:
+            final_upset_score += 0.7
+        elif favourite_rest == 6:
+            final_upset_score += 0.3
 
-        if abs(injury_diff) >= 1.5:
-            final_upset_score += 1.5
-        # STAR PLAYER INJURY BOOST (Turbo-type impact)
-        if abs(injury_diff) >= 2.5:
-            final_upset_score += 1.2   
-
-        # VOLATILITY BOOST (inconsistent teams create upsets)
-        home_vol = team_volatility.get(m.home, 0.0)
-        away_vol = team_volatility.get(m.away, 0.0)
-
-        if home_vol > 1.2 or away_vol > 1.2:
+        # Team-sheet shock. Only boost upset risk if the favourite is materially
+        # more depleted than the underdog.
+        fav_missing = home_injury if favourite_team == m.home else away_injury
+        dog_missing = away_injury if favourite_team == m.home else home_injury
+        missing_gap = fav_missing - dog_missing
+        if missing_gap >= 1.5:
             final_upset_score += 0.8
+            if not upset_team:
+                upset_team = underdog_team
+        if missing_gap >= 3.0:
+            final_upset_score += 0.7
 
-                # MARKET OVERCONFIDENCE BOOST
-        if not math.isnan(market_home_prob):
-            if abs(final_home_prob - market_home_prob) < 0.05:
-                final_upset_score += 0.5
+        # Volatility from recent match margins. Original >1.2 threshold caused
+        # nearly every NRL side to trigger; 10+ is a meaningful volatility level.
+        home_vol = float(team_volatility.get(m.home, 0.0))
+        away_vol = float(team_volatility.get(m.away, 0.0))
+        if max(home_vol, away_vol) >= 12.0:
+            final_upset_score += 0.8
+        elif max(home_vol, away_vol) >= 10.0:
+            final_upset_score += 0.4
+
+        if not math.isnan(market_home_prob) and abs(final_home_prob - market_home_prob) < 0.05:
+            final_upset_score += 0.3
+
         final_upset_score = min(final_upset_score, 3.0)
-        
-        print(f"[debug] {m.home} vs {m.away} | upset_score={final_upset_score:.2f} | fav={favourite_team}")
+        print(
+            f"[debug] {m.home} vs {m.away} | upset_score={final_upset_score:.2f} "
+            f"| fav={favourite_team}"
+        )
 
-        # cap upset score
-        final_upset_score = min(final_upset_score, 3.0)
-
-        # apply upset adjustment
         if final_upset_score >= UPSET_FLAG_THRESHOLD:
             if not upset_team:
                 upset_team = underdog_team
-
             final_home_prob = apply_upset_probability_adjustment(
-                final_home_prob,
-                upset_team,
-                final_upset_score,
-                m.home,
-                m.away
+                final_home_prob, upset_team, final_upset_score, m.home, m.away
             )
 
         final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
 
-        # extra upset push in volatile season
+        # Keep the existing extra upset push, but slightly reduced because team
+        # availability and rest now directly alter the probability beforehand.
         if final_upset_score >= 2.5:
-            if underdog_team == m.home:
-                final_home_prob += 0.03
-            else:
-                final_home_prob -= 0.03
+            final_home_prob += 0.02 if underdog_team == m.home else -0.02
         elif final_upset_score >= 2.0:
-            if underdog_team == m.home:
-                final_home_prob += 0.02
-            else:
-                final_home_prob -= 0.02
+            final_home_prob += 0.01 if underdog_team == m.home else -0.01
 
-        final_home_prob = min(0.94, max(0.06, final_home_prob))
+        final_home_prob = clamp_probability(final_home_prob)
         final_away_prob = 1.0 - final_home_prob
 
         if final_home_prob >= final_away_prob:
             predicted_winner = m.home
             pick_prob = final_home_prob
             pick_odds = home_odds
-            is_home = True
         else:
             predicted_winner = m.away
             pick_prob = final_away_prob
             pick_odds = away_odds
-            is_home = False
-        
+
         fragile_favourite = 1 if (
             final_upset_flag == 1 and predicted_winner == favourite_team
         ) else 0
@@ -1988,44 +1999,6 @@ def build_predictions() -> pd.DataFrame:
         pick_edge = value_edge(pick_prob, pick_odds)
         market_gap = abs(pick_prob - market_pick_prob) if not math.isnan(market_pick_prob) else 0.0
 
-        is_favourite = predicted_winner == favourite_team
-
-        required_edge = dynamic_required_edge(
-            decimal_odds=pick_odds if not math.isnan(pick_odds) else 99.0,
-            side_team=predicted_winner,
-            is_home=is_home,
-            is_favourite=is_favourite,
-            volatility=float(team_volatility.get(predicted_winner, 0.0)),
-            injury_impact=(home_injury if predicted_winner == m.home else away_injury),
-        )
-
-        min_games = min(
-            float(form_stats.get(m.home, {}).get("games", 0.0)),
-            float(form_stats.get(m.away, {}).get("games", 0.0)),
-        )
-
-        bet_grade = assign_bet_grade(
-            pick_prob=pick_prob,
-            edge=pick_edge if not math.isnan(pick_edge) else -999.0,
-            odds=pick_odds if not math.isnan(pick_odds) else 99.0,
-            conf=conf,
-            team=predicted_winner,
-            is_home=is_home,
-            is_favourite=is_favourite,
-            volatility=float(team_volatility.get(predicted_winner, 0.0)),
-            final_upset_score=final_upset_score,
-            exp_margin=abs(exp_margin),
-            min_games=min_games,
-            market_gap=market_gap,
-            required_edge=required_edge,
-        )
-
-        stake_dollars = stake_from_grade(bet_grade, pick_odds if not math.isnan(pick_odds) else 99.0)
-        stake_units = round(stake_dollars / UNIT_SIZE, 2) if UNIT_SIZE > 0 else 0.0
-
-        pick = "HOME" if predicted_winner == m.home and stake_dollars > 0 else ("AWAY" if stake_dollars > 0 else "")
-        recommended_bet = f"${stake_dollars:.2f} {predicted_winner}" if stake_dollars > 0 else "No Bet"
-        value_flag = 1 if (not math.isnan(pick_edge) and pick_edge >= required_edge) else 0
         rows.append(
             {
                 "run_id": run_id,
@@ -2053,6 +2026,16 @@ def build_predictions() -> pd.DataFrame:
                 "edge": round(pick_edge, 3) if not math.isnan(pick_edge) else np.nan,
                 "market_weight": round(market_weight, 3),
                 "market_gap": round(market_gap, 3),
+                "home_rest_days": home_rest,
+                "away_rest_days": away_rest,
+                "rest_net_home_pts": round(rest_net_home, 2),
+                "home_availability_adjustment": round(float(home_avail["points"]), 2),
+                "away_availability_adjustment": round(float(away_avail["points"]), 2),
+                "availability_net_home": round(availability_net_home, 2),
+                "home_team_changes": home_avail["summary"],
+                "away_team_changes": away_avail["summary"],
+                "home_spine_out": int(home_avail["spine_out"]),
+                "away_spine_out": int(away_avail["spine_out"]),
                 "home_injury_impact": round(home_injury, 2),
                 "away_injury_impact": round(away_injury, 2),
                 "favourite_team": auto_upset["favourite_team"],
@@ -2066,22 +2049,25 @@ def build_predictions() -> pd.DataFrame:
                 "final_upset_score": round(final_upset_score, 2),
                 "upset_flag": final_upset_flag,
                 "fragile_favourite": fragile_favourite,
-                "required_edge": round(required_edge, 3) if pd.notna(required_edge) else np.nan,
-                "value_flag": value_flag,
-                "bet_grade": bet_grade,
-                "pick": pick,
-                "stake": float(stake_units),
-                "stake_units": float(stake_units),
-                "stake_dollars": float(stake_dollars),
-                "recommended_bet": recommended_bet,
+
+                # Legacy compatibility fields. Betting has been retired, but
+                # keeping these prevents older archive/report scripts from failing.
+                "required_edge": np.nan,
+                "value_flag": 0,
+                "bet_grade": "",
+                "pick": "",
+                "stake": 0.0,
+                "stake_units": 0.0,
+                "stake_dollars": 0.0,
+                "recommended_bet": "",
                 "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
             }
         )
 
-    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"]).reset_index(drop=True)
-    if df.empty:
-        return df
+    if not rows:
+        return pd.DataFrame()
 
+    df = pd.DataFrame(rows).sort_values(["date", "kickoff_local"]).reset_index(drop=True)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df = df.dropna(subset=["date"]).copy()
     if df.empty:
@@ -2090,52 +2076,22 @@ def build_predictions() -> pd.DataFrame:
     round_start = df["date"].min()
     round_end = round_start + pd.Timedelta(days=4)
     df = df[(df["date"] >= round_start) & (df["date"] <= round_end)].copy()
-
-    # Promotions first, then cap, then hard max-bet trim, then cap again
-    round_key = f"{df['date'].min()}_to_{df['date'].max()}"
-
-    hist = pd.read_csv("predictions_history.csv") if os.path.exists("predictions_history.csv") else pd.DataFrame()
-
-    if "round_key" in hist.columns and round_key in set(hist["round_key"].astype(str)):
-        print(f"[predict] round already staked ({round_key}) — no new bankroll allocation")
-        df["stake_dollars"] = 0.0
-        df["stake_units"] = 0.0
-        df["stake"] = 0.0
-        df["recommended_bet"] = "Already Staked"
-    else:
-        df = allocate_bankroll_all_games(df)
-
-
-    real_bets = df[df["stake_dollars"] > 0].copy()
-    if len(real_bets) > TARGET_MAX_BETS:
-        grade_rank = {"Strong Bet": 3, "Small Bet": 2, "Lean": 1, "No Bet": 0}
-        real_bets["grade_rank"] = real_bets["bet_grade"].map(grade_rank).fillna(0).astype(int)
-        real_bets = real_bets.sort_values(
-            ["grade_rank", "edge", "win_probability", "confidence"],
-            ascending=[False, False, False, False],
-        ).reset_index()
-
-        keep_idx = set(real_bets.head(TARGET_MAX_BETS)["index"].tolist())
-        excess_mask = (df["stake_dollars"] > 0) & (~df.index.isin(keep_idx))
-        df.loc[excess_mask, "bet_grade"] = "Lean"
-        df.loc[excess_mask, "stake"] = 0.0
-        df.loc[excess_mask, "stake_units"] = 0.0
-        df.loc[excess_mask, "stake_dollars"] = 0.0
-        df.loc[excess_mask, "pick"] = ""
-        df.loc[excess_mask, "recommended_bet"] = "No Bet"
-
-    df = allocate_bankroll_all_games(df)
-
     df["date"] = df["date"].dt.strftime("%Y-%m-%d")
 
-    round_label = f"Round window {round_start.strftime('%Y-%m-%d')} to {round_end.strftime('%Y-%m-%d')}"
-    bet_count = int((pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0) > 0).sum())
-    exposure = float(pd.to_numeric(df.get("stake_dollars", 0), errors="coerce").fillna(0).sum())
     avg_edge_series = pd.to_numeric(df.get("edge", np.nan), errors="coerce").dropna()
     avg_edge = float(avg_edge_series.mean()) if not avg_edge_series.empty else 0.0
+    upset_count = int(pd.to_numeric(df.get("upset_flag", 0), errors="coerce").fillna(0).sum())
+    availability_games = int(
+        ((pd.to_numeric(df.get("home_availability_adjustment", 0), errors="coerce").fillna(0).abs() > 0)
+         | (pd.to_numeric(df.get("away_availability_adjustment", 0), errors="coerce").fillna(0).abs() > 0)).sum()
+    )
 
+    round_label = f"Round window {round_start.strftime('%Y-%m-%d')} to {round_end.strftime('%Y-%m-%d')}"
     print(f"[predict] {round_label}")
-    print(f"[predict] current round fixtures={len(df)} bets={bet_count} exposure=${exposure:.2f} avg_edge={avg_edge:.3f}")
+    print(
+        f"[predict] fixtures={len(df)} tips={len(df)} upset_flags={upset_count} "
+        f"availability_adjusted_games={availability_games} avg_market_edge={avg_edge:.3f}"
+    )
 
     return df
 
@@ -2143,9 +2099,5 @@ def build_predictions() -> pd.DataFrame:
 if __name__ == "__main__":
     df = build_predictions()
     df.to_csv("predictions.csv", index=False)
+    print(f"[predict] rows={len(df)} tips={len(df)}")
 
-    if "stake_dollars" in df.columns:
-        bet_count = int((pd.to_numeric(df["stake_dollars"], errors="coerce").fillna(0.0) > 0).sum())
-        print(f"[predict] rows={len(df)} bets={bet_count}")
-    else:
-        print(f"[predict] rows={len(df)}")
