@@ -3,3 +3,4 @@ numpy
 requests
 python-dateutil
 lxml
+beautifulsoup4
