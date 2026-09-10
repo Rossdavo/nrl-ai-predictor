@@ -32,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tipping model + trackers + reports
+      - name: Run tipping model + team lists + trackers + reports
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
@@ -40,6 +40,9 @@ jobs:
 
           echo "=== RUN: odds_fetch.py ==="
           python -u odds_fetch.py
+
+          echo "=== RUN: team_lists.py ==="
+          python -u team_lists.py
 
           echo "=== RUN: predict.py ==="
           python -u predict.py
@@ -96,6 +99,11 @@ jobs:
           if [ -f accuracy_summary.csv ]; then cp accuracy_summary.csv site/accuracy_summary.csv; fi
           if [ -f performance.csv ]; then cp performance.csv site/performance.csv; fi
           if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
+
+          # Team-list data
+          if [ -f current_team_lists.csv ]; then cp current_team_lists.csv site/current_team_lists.csv; fi
+          if [ -f player_ratings.csv ]; then cp player_ratings.csv site/player_ratings.csv; fi
+          if [ -f team_changes.csv ]; then cp team_changes.csv site/team_changes.csv; fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
