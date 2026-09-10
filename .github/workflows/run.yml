@@ -32,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tipping model + team lists + trackers + reports
+      - name: Run tipping model + team lists + player ratings + trackers + reports
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
@@ -43,6 +43,9 @@ jobs:
 
           echo "=== RUN: team_lists.py ==="
           python -u team_lists.py
+
+          echo "=== RUN: build_player_ratings.py ==="
+          python -u build_player_ratings.py
 
           echo "=== RUN: predict.py ==="
           python -u predict.py
@@ -87,23 +90,62 @@ jobs:
           mkdir -p site
           cp index.html site/index.html
 
-          if [ -f current_predictions.csv ]; then cp current_predictions.csv site/current_predictions.csv; fi
-          if [ -f latest_completed_round.csv ]; then cp latest_completed_round.csv site/latest_completed_round.csv; fi
+          if [ -f current_predictions.csv ]; then
+            cp current_predictions.csv site/current_predictions.csv
+          fi
 
-          if [ -f predictions.csv ]; then cp predictions.csv site/predictions.csv; fi
-          if [ -f predictions_history.csv ]; then cp predictions_history.csv site/predictions_history.csv; fi
-          if [ -f odds.csv ]; then cp odds.csv site/odds.csv; fi
-          if [ -f odds_history.csv ]; then cp odds_history.csv site/odds_history.csv; fi
-          if [ -f results_cache.csv ]; then cp results_cache.csv site/results_cache.csv; fi
-          if [ -f accuracy.csv ]; then cp accuracy.csv site/accuracy.csv; fi
-          if [ -f accuracy_summary.csv ]; then cp accuracy_summary.csv site/accuracy_summary.csv; fi
-          if [ -f performance.csv ]; then cp performance.csv site/performance.csv; fi
-          if [ -f ratings.json ]; then cp ratings.json site/ratings.json; fi
+          if [ -f latest_completed_round.csv ]; then
+            cp latest_completed_round.csv site/latest_completed_round.csv
+          fi
 
-          # Team-list data
-          if [ -f current_team_lists.csv ]; then cp current_team_lists.csv site/current_team_lists.csv; fi
-          if [ -f player_ratings.csv ]; then cp player_ratings.csv site/player_ratings.csv; fi
-          if [ -f team_changes.csv ]; then cp team_changes.csv site/team_changes.csv; fi
+          if [ -f predictions.csv ]; then
+            cp predictions.csv site/predictions.csv
+          fi
+
+          if [ -f predictions_history.csv ]; then
+            cp predictions_history.csv site/predictions_history.csv
+          fi
+
+          if [ -f odds.csv ]; then
+            cp odds.csv site/odds.csv
+          fi
+
+          if [ -f odds_history.csv ]; then
+            cp odds_history.csv site/odds_history.csv
+          fi
+
+          if [ -f results_cache.csv ]; then
+            cp results_cache.csv site/results_cache.csv
+          fi
+
+          if [ -f accuracy.csv ]; then
+            cp accuracy.csv site/accuracy.csv
+          fi
+
+          if [ -f accuracy_summary.csv ]; then
+            cp accuracy_summary.csv site/accuracy_summary.csv
+          fi
+
+          if [ -f performance.csv ]; then
+            cp performance.csv site/performance.csv
+          fi
+
+          if [ -f ratings.json ]; then
+            cp ratings.json site/ratings.json
+          fi
+
+          # Team-list and player-rating data
+          if [ -f current_team_lists.csv ]; then
+            cp current_team_lists.csv site/current_team_lists.csv
+          fi
+
+          if [ -f player_ratings.csv ]; then
+            cp player_ratings.csv site/player_ratings.csv
+          fi
+
+          if [ -f team_changes.csv ]; then
+            cp team_changes.csv site/team_changes.csv
+          fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
