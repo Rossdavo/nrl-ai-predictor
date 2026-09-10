@@ -5,18 +5,22 @@ Cowboys,Jaxon Purdue,centre,1.6
 Cowboys,Tom Chester,centre,1.6
 Cowboys,Jake Clifford,five-eighth,4.2
 Cowboys,Scott Drinkwater,fullback,4.0
+Cowboys,Tom Dearden,halfback,5.0
 Cowboys,Tom Dearden Forwards,halfback,5.0
 Cowboys,Reed Mahoney,hooker,4.0
 Cowboys,Coen Hess,interchange,1.0
+Cowboys,Ethan King,interchange,1.0
 Cowboys,Ethan King Reserves,interchange,1.0
 Cowboys,John Bateman,interchange,1.0
 Cowboys,Kaiden Lahrs,interchange,1.0
 Cowboys,Soni Luke,interchange,1.0
 Cowboys,Thomas Mikaele,interchange,1.0
+Cowboys,Reuben Cotter,lock,2.5
 Cowboys,Reuben Cotter Interchange,lock,2.5
 Cowboys,Griffin Neame,prop,2.5
 Cowboys,Jason Taumalolo,prop,2.5
 Cowboys,Kai O'Donnell,reserve,0.7
+Cowboys,Liam Sutton,reserve,0.7
 Cowboys,Liam Sutton Sharks,reserve,0.7
 Cowboys,Sam McIntyre,reserve,0.7
 Cowboys,Braidon Burns,winger,1.2
@@ -27,19 +31,23 @@ Dolphins,Herbie Farnworth,centre,1.6
 Dolphins,Jack Bostock,centre,1.6
 Dolphins,Kodi Nikorima,five-eighth,4.2
 Dolphins,Hamiso Tabuai-Fidow,fullback,4.0
+Dolphins,Isaiya Katoa,halfback,5.0
 Dolphins,Isaiya Katoa Forwards,halfback,5.0
 Dolphins,Jeremy Marshall-King,hooker,4.0
+Dolphins,Bradley Schneider,interchange,1.0
 Dolphins,Bradley Schneider Reserves,interchange,1.0
 Dolphins,Connelly Lemuelu,interchange,1.0
 Dolphins,Felise Kaufusi,interchange,1.0
 Dolphins,Francis Molo,interchange,1.0
 Dolphins,Kurt Donoghoe,interchange,1.0
 Dolphins,Ray Stone,interchange,1.0
+Dolphins,Morgan Knowles,lock,2.5
 Dolphins,Morgan Knowles Interchange,lock,2.5
 Dolphins,Thomas Flegler,prop,2.5
 Dolphins,Tom Gilbert,prop,2.5
 Dolphins,Brian Pouniu,reserve,0.7
 Dolphins,Jake Averillo,reserve,0.7
+Dolphins,Tevita Naufahu,reserve,0.7
 Dolphins,Tevita Naufahu Warriors,reserve,0.7
 Dolphins,Jamayne Isaako,winger,1.2
 Dolphins,Selwyn Cobbo,winger,1.2
@@ -49,6 +57,7 @@ Knights,Bradman Best,centre,1.6
 Knights,Dane Gagai,centre,1.6
 Knights,Fletcher Sharpe,five-eighth,4.2
 Knights,Kalyn Ponga,fullback,4.0
+Knights,Sandon Smith,halfback,5.0
 Knights,Sandon Smith Forwards,halfback,5.0
 Knights,Phoenix Crossland,hooker,4.0
 Knights,Fletcher Hunt,interchange,1.0
@@ -56,20 +65,64 @@ Knights,Harrison Graham,interchange,1.0
 Knights,Lachlan Crouch,interchange,1.0
 Knights,Pasami Saulo,interchange,1.0
 Knights,Thomas Cant,interchange,1.0
+Knights,Toby Winter,interchange,1.0
 Knights,Toby Winter Reserves,interchange,1.0
+Knights,Mat Croker,lock,2.5
 Knights,Mat Croker Interchange,lock,2.5
 Knights,Cody Hopwood,prop,2.5
 Knights,Tyson Frizell,prop,2.5
+Knights,Kyle McCarthy,reserve,0.7
 Knights,Kyle McCarthy Rabbitohs,reserve,0.7
 Knights,Dominic Young,winger,1.2
 Knights,Greg Marzhew,winger,1.2
+Panthers,Isaiah Papali'i,2nd row,2.0
+Panthers,Liam Martin,2nd row,2.0
+Panthers,Casey McLean,centre,1.6
+Panthers,Luke Garner,centre,1.6
+Panthers,Jack Cole,five-eighth,4.2
+Panthers,Dylan Edwards,fullback,4.0
 Panthers,Nathan Cleary,halfback,6.0
+Panthers,Mitch Kenny,hooker,4.0
+Panthers,Billy Phillips,interchange,1.0
+Panthers,Billy Scott,interchange,1.0
+Panthers,Blaize Talagi,interchange,1.0
+Panthers,Freddy Lussick,interchange,1.0
+Panthers,Liam Henry,interchange,1.0
+Panthers,Scott Sorensen,interchange,1.0
+Panthers,Isaah Yeo,lock,2.5
+Panthers,Lindsay Smith,prop,2.5
+Panthers,Moses Leota,prop,2.5
+Panthers,Jesse McLean,reserve,0.7
+Panthers,Kalani Leuluai-Going,reserve,0.7
+Panthers,Luron Patea,reserve,0.7
+Panthers,Brian To'o,winger,1.2
+Panthers,Thomas Jenkins,winger,1.2
+Rabbitohs,David Fifita,2nd row,2.0
+Rabbitohs,Tallis Duncan,2nd row,2.0
+Rabbitohs,Jack Wighton,centre,1.6
+Rabbitohs,Latrell Mitchell,centre,1.6
+Rabbitohs,Cody Walker,five-eighth,4.2
+Rabbitohs,Matthew Dufty,fullback,4.0
+Rabbitohs,Jayden Sullivan,halfback,5.0
+Rabbitohs,Brandon Smith,hooker,4.0
+Rabbitohs,Adam Elliott,interchange,1.0
+Rabbitohs,Jamie Humphreys,interchange,1.0
+Rabbitohs,Jye Gray,interchange,1.0
+Rabbitohs,Lachlan Hubner,interchange,1.0
+Rabbitohs,Latrell Siegwalt,interchange,1.0
+Rabbitohs,Sean Keppie,interchange,1.0
+Rabbitohs,Cameron Murray,lock,2.5
+Rabbitohs,Keaon Koloamatangi,prop,2.5
+Rabbitohs,Tevita Tatola,prop,2.5
+Rabbitohs,Alex Johnston,winger,1.2
+Rabbitohs,Campbell Graham,winger,1.2
 Roosters,Salesi Foketi,2nd row,2.0
 Roosters,Siua Wong,2nd row,2.0
 Roosters,Billy Smith,centre,1.6
 Roosters,Robert Toia,centre,1.6
 Roosters,Hugo Savala,five-eighth,4.2
 Roosters,James Tedesco,fullback,4.0
+Roosters,Daly Cherry-Evans,halfback,5.0
 Roosters,Daly Cherry-Evans Forwards,halfback,5.0
 Roosters,Sam Walker,halfback,5.0
 Roosters,Reece Robson,hooker,4.0
@@ -78,12 +131,55 @@ Roosters,Cody Ramsey,interchange,1.0
 Roosters,Connor Watson,interchange,1.0
 Roosters,Nat Butcher,interchange,1.0
 Roosters,Spencer Leniu,interchange,1.0
+Roosters,Tommy Talau,interchange,1.0
 Roosters,Tommy Talau Reserves,interchange,1.0
+Roosters,Victor Radley,lock,2.5
 Roosters,Victor Radley Interchange,lock,2.5
 Roosters,Lindsay Collins,prop,2.5
 Roosters,Naufahu Whyte,prop,2.5
 Roosters,Benaiah Ioelu,reserve,0.7
 Roosters,Egan Butcher,reserve,0.7
+Roosters,Taylor Losalu,reserve,0.7
 Roosters,Taylor Losalu Panthers,reserve,0.7
 Roosters,Daniel Tupou,winger,1.2
 Roosters,Mark Nawaqanitawase,winger,1.2
+Sharks,Briton Nikora,2nd row,2.0
+Sharks,Teig Wilton,2nd row,2.0
+Sharks,KL Iro,centre,1.6
+Sharks,Riley Jones,centre,1.6
+Sharks,Braydon Trindall,five-eighth,4.2
+Sharks,William Kennedy,fullback,4.0
+Sharks,Nicho Hynes,halfback,5.0
+Sharks,Blayke Brailey,hooker,4.0
+Sharks,Billy Burns,interchange,1.0
+Sharks,Hohepa Puru,interchange,1.0
+Sharks,Oregon Kaufusi,interchange,1.0
+Sharks,Siosifa Talakai,interchange,1.0
+Sharks,Thomas Hazelton,interchange,1.0
+Sharks,Toby Rudolf,interchange,1.0
+Sharks,Cameron McInnes,lock,2.5
+Sharks,Addin Fonua-Blake,prop,2.5
+Sharks,Jesse Colquhoun,prop,2.5
+Sharks,Mawene Hiroti,reserve,0.7
+Sharks,Niwhai Puru,reserve,0.7
+Sharks,Samuel Stonestreet,reserve,0.7
+Sharks,Ronaldo Mulitalo,winger,1.2
+Sharks,Sione Katoa,winger,1.2
+Warriors,Jacob Laban,2nd row,2.0
+Warriors,Kurt Capewell,2nd row,2.0
+Warriors,Ali Leiataua,centre,1.6
+Warriors,Leka Halasima,centre,1.6
+Warriors,Chanel Harris-Tavita,five-eighth,4.2
+Warriors,Taine Tuaupiki,fullback,4.0
+Warriors,Te Maire Martin,halfback,5.0
+Warriors,Wayde Egan,hooker,4.0
+Warriors,Demitric Vaimauga,interchange,1.0
+Warriors,Eddie Ieremia-Toeava,interchange,1.0
+Warriors,Jackson Ford,interchange,1.0
+Warriors,Sam Healey,interchange,1.0
+Warriors,Tanner Stowers-Smith,interchange,1.0
+Warriors,Erin Clark,lock,2.5
+Warriors,James Fisher-Harris,prop,2.5
+Warriors,Mitchell Barnett,prop,2.5
+Warriors,Alofiana Khan-Pereira,winger,1.2
+Warriors,Charnze Nicoll-Klokstad,winger,1.2
