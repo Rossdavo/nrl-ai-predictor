@@ -1,219 +1,291 @@
 import os
+import math
 import pandas as pd
 
-BET_HISTORY_PATH = "bet_history.csv"
-BET_LOG_PATH = "bet_log.csv"
+PRED_HISTORY_PATH = "predictions_history.csv"
 RESULTS_CACHE_PATH = "results_cache.csv"
 OUT_PATH = "performance.csv"
 
 
-def _empty_output() -> pd.DataFrame:
-    return pd.DataFrame(columns=[
-        "date",
-        "home",
-        "away",
-        "bet_side",
-        "odds",
-        "stake",
-        "profit",
-        "result"
-    ])
-
-
-def _norm(s: str) -> str:
-    return " ".join(str(s).strip().upper().split())
+OUTPUT_COLUMNS = [
+    "date",
+    "home",
+    "away",
+    "run_id",
+    "round_key",
+    "predicted_winner",
+    "actual_winner",
+    "correct",
+    "home_win_probability",
+    "winner_probability",
+    "exp_margin_home",
+    "actual_margin_home",
+    "margin_error",
+    "brier",
+]
 
 
 def _load_csv_safe(path: str) -> pd.DataFrame:
     if not os.path.exists(path) or os.path.getsize(path) == 0:
         return pd.DataFrame()
+
     try:
         return pd.read_csv(path)
     except Exception as e:
-        print(f"[warn] Could not read {path}: {e}")
+        print(f"[performance] Warning: could not read {path}: {e}")
         return pd.DataFrame()
 
 
-def _from_bet_history() -> pd.DataFrame:
-    df = _load_csv_safe(BET_HISTORY_PATH)
-    if df.empty:
-        return pd.DataFrame()
+def _norm_team(value: object) -> str:
+    return " ".join(str(value).strip().upper().split())
 
-    required = {"date", "home", "away", "pick", "bet_odds", "stake", "profit_units", "bet_status"}
-    if not required.issubset(df.columns):
-        print(f"[warn] {BET_HISTORY_PATH} missing required columns.")
-        return pd.DataFrame()
 
-    df = df.copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    df["home"] = df["home"].map(_norm)
-    df["away"] = df["away"].map(_norm)
-    df["pick"] = df["pick"].astype(str).str.strip().str.upper()
-    df["bet_odds"] = pd.to_numeric(df["bet_odds"], errors="coerce")
-    df["stake"] = pd.to_numeric(df["stake"], errors="coerce")
-    df["profit_units"] = pd.to_numeric(df["profit_units"], errors="coerce")
+def _pick_numeric_column(df: pd.DataFrame, candidates: list[str]) -> pd.Series:
+    for col in candidates:
+        if col in df.columns:
+            return pd.to_numeric(df[col], errors="coerce")
 
-    df = df[df["bet_status"].isin(["WIN", "LOSS", "DRAW"])].copy()
+    return pd.Series([float("nan")] * len(df), index=df.index, dtype=float)
 
-    if df.empty:
-        return _empty_output()
 
-    df["bet_side"] = df.apply(
-        lambda r: r["home"] if r["pick"] == "HOME" else (r["away"] if r["pick"] == "AWAY" else ""),
-        axis=1
+def _latest_prediction_per_match(pred: pd.DataFrame) -> pd.DataFrame:
+    """
+    Multiple snapshots of the same finals match are now deliberately archived.
+    For performance scoring, use the latest available prediction snapshot for
+    each date/home/away combination.
+    """
+    work = pred.copy()
+
+    work["date"] = pd.to_datetime(work["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    work = work.dropna(subset=["date", "home", "away"]).copy()
+
+    work["_home_key"] = work["home"].map(_norm_team)
+    work["_away_key"] = work["away"].map(_norm_team)
+
+    if "run_utc" in work.columns:
+        work["_run_sort"] = pd.to_datetime(work["run_utc"], errors="coerce", utc=True)
+    else:
+        work["_run_sort"] = pd.NaT
+
+    if "run_id" not in work.columns:
+        work["run_id"] = ""
+    work["run_id"] = work["run_id"].fillna("").astype(str)
+
+    # run_id is YYYYMMDDHHMMSS, so it is a useful fallback sort key.
+    work = work.sort_values(
+        ["date", "_home_key", "_away_key", "_run_sort", "run_id"],
+        na_position="first",
     )
 
-    df["result"] = df["bet_status"].replace({"DRAW": "LOSS"})
-    df["profit"] = df["profit_units"]
-    df["odds"] = df["bet_odds"]
+    work = work.drop_duplicates(
+        subset=["date", "_home_key", "_away_key"],
+        keep="last",
+    ).reset_index(drop=True)
 
-    out = df[["date", "home", "away", "bet_side", "odds", "stake", "profit", "result"]].copy()
-    out["odds"] = out["odds"].round(2)
-    out["stake"] = out["stake"].round(2)
-    out["profit"] = out["profit"].round(2)
-
-    return out.sort_values(["date", "home", "away"]).reset_index(drop=True)
+    return work
 
 
-def _from_bet_log_and_results() -> pd.DataFrame:
-    bets = _load_csv_safe(BET_LOG_PATH)
+def build_performance() -> pd.DataFrame:
+    pred = _load_csv_safe(PRED_HISTORY_PATH)
     results = _load_csv_safe(RESULTS_CACHE_PATH)
 
-    if bets.empty or results.empty:
-        return pd.DataFrame()
+    if pred.empty:
+        print(f"[performance] No {PRED_HISTORY_PATH} found.")
+        return pd.DataFrame(columns=OUTPUT_COLUMNS)
 
-    need_bets = {"date", "home", "away"}
-    need_results = {"date", "home", "away", "home_pts", "away_pts"}
+    if results.empty:
+        print(f"[performance] No {RESULTS_CACHE_PATH} found.")
+        return pd.DataFrame(columns=OUTPUT_COLUMNS)
 
-    if not need_bets.issubset(bets.columns):
-        print(f"[warn] {BET_LOG_PATH} missing required columns.")
-        return pd.DataFrame()
+    pred_required = {"date", "home", "away", "predicted_winner"}
+    result_required = {"date", "home", "away", "home_pts", "away_pts"}
 
-    if not need_results.issubset(results.columns):
-        print(f"[warn] {RESULTS_CACHE_PATH} missing required columns.")
-        return pd.DataFrame()
+    pred_missing = pred_required - set(pred.columns)
+    result_missing = result_required - set(results.columns)
 
-    bets = bets.copy()
+    if pred_missing:
+        print(f"[performance] {PRED_HISTORY_PATH} missing: {sorted(pred_missing)}")
+        return pd.DataFrame(columns=OUTPUT_COLUMNS)
+
+    if result_missing:
+        print(f"[performance] {RESULTS_CACHE_PATH} missing: {sorted(result_missing)}")
+        return pd.DataFrame(columns=OUTPUT_COLUMNS)
+
+    pred = _latest_prediction_per_match(pred)
+
     results = results.copy()
-
-    bets["date"] = pd.to_datetime(bets["date"], errors="coerce").dt.strftime("%Y-%m-%d")
     results["date"] = pd.to_datetime(results["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-
-    bets["home"] = bets["home"].map(_norm)
-    bets["away"] = bets["away"].map(_norm)
-    results["home"] = results["home"].map(_norm)
-    results["away"] = results["away"].map(_norm)
-
-    if "bet_side" not in bets.columns:
-        if "pick" in bets.columns:
-            bets["bet_side"] = bets["pick"]
-        elif "selection" in bets.columns:
-            bets["bet_side"] = bets["selection"]
-        else:
-            bets["bet_side"] = ""
-
-    if "odds" not in bets.columns:
-        if "odds_taken" in bets.columns:
-            bets["odds"] = bets["odds_taken"]
-        elif "home_odds" in bets.columns and "away_odds" in bets.columns:
-            bets["odds"] = bets.apply(
-                lambda r: r["home_odds"] if str(r["bet_side"]).strip().upper() in {"HOME", str(r["home"]).strip().upper()} else r.get("away_odds", pd.NA),
-                axis=1
-            )
-        else:
-            bets["odds"] = pd.NA
-
-    if "stake" not in bets.columns:
-        if "stake_dollars" in bets.columns:
-            bets["stake"] = bets["stake_dollars"]
-        else:
-            bets["stake"] = 0
-
-    bets["bet_side"] = bets["bet_side"].astype(str).str.strip()
-    bets["odds"] = pd.to_numeric(bets["odds"], errors="coerce")
-    bets["stake"] = pd.to_numeric(bets["stake"], errors="coerce")
-
     results["home_pts"] = pd.to_numeric(results["home_pts"], errors="coerce")
     results["away_pts"] = pd.to_numeric(results["away_pts"], errors="coerce")
+    results = results.dropna(subset=["date", "home", "away", "home_pts", "away_pts"]).copy()
 
-    bets = bets.dropna(subset=["date", "home", "away", "odds", "stake"])
-    results = results.dropna(subset=["date", "home", "away", "home_pts", "away_pts"])
+    results["_home_key"] = results["home"].map(_norm_team)
+    results["_away_key"] = results["away"].map(_norm_team)
 
-    merged = bets.merge(
-        results[["date", "home", "away", "home_pts", "away_pts"]],
-        on=["date", "home", "away"],
-        how="inner"
+    # Guard against duplicate copies of the same completed result.
+    results = results.drop_duplicates(
+        subset=["date", "_home_key", "_away_key"],
+        keep="last",
+    )
+
+    merged = pred.merge(
+        results[
+            [
+                "date",
+                "_home_key",
+                "_away_key",
+                "home_pts",
+                "away_pts",
+            ]
+        ],
+        on=["date", "_home_key", "_away_key"],
+        how="inner",
+    )
+
+    if merged.empty:
+        return pd.DataFrame(columns=OUTPUT_COLUMNS)
+
+    # Flexible support for the probability column names used across earlier
+    # versions of predict.py.
+    merged["home_win_probability"] = _pick_numeric_column(
+        merged,
+        [
+            "home_win_probability",
+            "final_home_win_probability",
+            "home_prob",
+            "home_probability",
+        ],
+    )
+
+    # Old archives may only contain winner probability.
+    winner_prob_source = _pick_numeric_column(
+        merged,
+        [
+            "win_probability",
+            "winner_probability",
+            "predicted_winner_probability",
+        ],
+    )
+
+    exp_margin_source = _pick_numeric_column(
+        merged,
+        [
+            "exp_margin_home",
+            "expected_margin_home",
+            "exp_margin",
+            "predicted_margin_home",
+        ],
     )
 
     rows = []
 
     for _, r in merged.iterrows():
-        home = r["home"]
-        away = r["away"]
-        bet_side_raw = str(r.get("bet_side", "")).strip()
-        bet_side_upper = bet_side_raw.upper()
+        home = str(r["home"]).strip()
+        away = str(r["away"]).strip()
+        predicted_winner = str(r.get("predicted_winner", "")).strip()
 
-        if bet_side_upper == "HOME":
-            bet_team = home
-        elif bet_side_upper == "AWAY":
-            bet_team = away
-        else:
-            bet_team = bet_side_raw.upper()
-
-        stake = float(r.get("stake", 0))
-        odds = float(r.get("odds", 0))
-        home_pts = float(r.get("home_pts", 0))
-        away_pts = float(r.get("away_pts", 0))
+        home_pts = float(r["home_pts"])
+        away_pts = float(r["away_pts"])
 
         if home_pts > away_pts:
-            winner = home
+            actual_winner = home
+            actual_home_result = 1.0
         elif away_pts > home_pts:
-            winner = away
+            actual_winner = away
+            actual_home_result = 0.0
         else:
-            winner = "DRAW"
+            actual_winner = "DRAW"
+            actual_home_result = 0.5
 
-        if winner == "DRAW":
-            profit = -stake
-            result = "LOSS"
-        elif bet_team == winner:
-            profit = stake * (odds - 1)
-            result = "WIN"
+        if actual_winner == "DRAW":
+            correct = float("nan")
         else:
-            profit = -stake
-            result = "LOSS"
+            correct = 1 if _norm_team(predicted_winner) == _norm_team(actual_winner) else 0
 
-        rows.append({
-            "date": r["date"],
-            "home": home,
-            "away": away,
-            "bet_side": bet_team,
-            "odds": round(odds, 2),
-            "stake": round(stake, 2),
-            "profit": round(profit, 2),
-            "result": result
-        })
+        home_prob = r["home_win_probability"]
 
-    out = pd.DataFrame(rows)
-    if out.empty:
-        return _empty_output()
+        # If home probability was absent in an old row, reconstruct it from
+        # winner probability when possible.
+        winner_prob = winner_prob_source.loc[r.name]
+        if pd.isna(home_prob) and pd.notna(winner_prob):
+            if _norm_team(predicted_winner) == _norm_team(home):
+                home_prob = float(winner_prob)
+            elif _norm_team(predicted_winner) == _norm_team(away):
+                home_prob = 1.0 - float(winner_prob)
 
+        if pd.notna(home_prob):
+            home_prob = min(1.0, max(0.0, float(home_prob)))
+            brier = (home_prob - actual_home_result) ** 2
+
+            if _norm_team(predicted_winner) == _norm_team(home):
+                winner_probability = home_prob
+            elif _norm_team(predicted_winner) == _norm_team(away):
+                winner_probability = 1.0 - home_prob
+            else:
+                winner_probability = float("nan")
+        else:
+            brier = float("nan")
+            winner_probability = float(winner_prob) if pd.notna(winner_prob) else float("nan")
+
+        exp_margin_home = exp_margin_source.loc[r.name]
+        actual_margin_home = home_pts - away_pts
+
+        if pd.notna(exp_margin_home):
+            exp_margin_home = float(exp_margin_home)
+            margin_error = abs(exp_margin_home - actual_margin_home)
+        else:
+            margin_error = float("nan")
+
+        rows.append(
+            {
+                "date": r["date"],
+                "home": home,
+                "away": away,
+                "run_id": str(r.get("run_id", "")).strip(),
+                "round_key": str(r.get("round_key", "")).strip(),
+                "predicted_winner": predicted_winner,
+                "actual_winner": actual_winner,
+                "correct": correct,
+                "home_win_probability": round(home_prob, 4) if pd.notna(home_prob) else float("nan"),
+                "winner_probability": round(winner_probability, 4) if pd.notna(winner_probability) else float("nan"),
+                "exp_margin_home": round(exp_margin_home, 2) if pd.notna(exp_margin_home) else float("nan"),
+                "actual_margin_home": round(actual_margin_home, 2),
+                "margin_error": round(margin_error, 2) if pd.notna(margin_error) else float("nan"),
+                "brier": round(brier, 4) if pd.notna(brier) else float("nan"),
+            }
+        )
+
+    out = pd.DataFrame(rows, columns=OUTPUT_COLUMNS)
     return out.sort_values(["date", "home", "away"]).reset_index(drop=True)
 
 
 def main():
-    out = _from_bet_history()
+    out = build_performance()
+    out.to_csv(OUT_PATH, index=False)
 
     if out.empty:
-        out = _from_bet_log_and_results()
-
-    if out.empty:
-        out = _empty_output()
-        out.to_csv(OUT_PATH, index=False)
-        print("performance.csv updated (0 settled bets)")
+        print("[performance] performance.csv updated (0 scored matches)")
         return
 
-    out.to_csv(OUT_PATH, index=False)
-    print(f"performance.csv updated ({len(out)} settled bets)")
+    scored = out["correct"].dropna()
+    accuracy = float(scored.mean()) if not scored.empty else float("nan")
+
+    brier_series = pd.to_numeric(out["brier"], errors="coerce").dropna()
+    margin_series = pd.to_numeric(out["margin_error"], errors="coerce").dropna()
+
+    brier = float(brier_series.mean()) if not brier_series.empty else float("nan")
+    margin_mae = float(margin_series.mean()) if not margin_series.empty else float("nan")
+    draws = int((out["actual_winner"] == "DRAW").sum())
+
+    accuracy_text = f"{accuracy:.1%}" if not math.isnan(accuracy) else "n/a"
+    brier_text = f"{brier:.3f}" if not math.isnan(brier) else "n/a"
+    margin_text = f"{margin_mae:.2f}" if not math.isnan(margin_mae) else "n/a"
+
+    print(
+        f"[performance] performance.csv updated "
+        f"({len(scored)} scored matches | accuracy={accuracy_text} | "
+        f"Brier={brier_text} | Margin MAE={margin_text} | draws={draws})"
+    )
 
 
 if __name__ == "__main__":
