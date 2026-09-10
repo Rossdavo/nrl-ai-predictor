@@ -5,11 +5,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 
-# ============================================================
-# NRL TEAM LIST COLLECTOR
-# Finals Week 1 - 2026
-# ============================================================
-
 TEAM_LIST_URLS = [
     "https://www.nrl.com/news/2026/09/10/nrl-late-mail-finals-week-1/",
     "https://www.nrl.com/news/2026/09/08/nrl-team-lists-finals-week-1/",
@@ -41,20 +36,6 @@ POSITION_DEFAULTS = {
     "lock": 2.5,
     "interchange": 1.0,
     "reserve": 0.7,
-}
-
-VALID_POSITIONS = {
-    "fullback",
-    "winger",
-    "centre",
-    "five-eighth",
-    "halfback",
-    "prop",
-    "hooker",
-    "2nd row",
-    "lock",
-    "interchange",
-    "reserve",
 }
 
 
@@ -110,99 +91,89 @@ def fetch_page(url):
 
 
 def extract_team_lists(html):
-    """
-    Extract team selections from the official NRL article.
-
-    Important:
-    We preserve newline boundaries instead of flattening the entire
-    article into one long string. The earlier version flattened the
-    article and caused alternating teams to be swallowed by the regex.
-    """
-
     soup = BeautifulSoup(html, "html.parser")
 
-    text = soup.get_text(
-        separator="\n",
-        strip=True,
-    )
+    # Flatten the visible article text.
+    # This is deliberate because NRL splits the two teams across
+    # different HTML elements.
+    text = soup.get_text(" ", strip=True)
+    text = re.sub(r"\s+", " ", text)
 
-    # Collapse repeated spaces but KEEP line breaks.
-    cleaned_lines = []
-
-    for raw_line in text.splitlines():
-        line = clean_text(raw_line)
-
-        if line:
-            cleaned_lines.append(line)
-
-    rows = []
-
-    position_pattern = (
-        r"(Fullback|Winger|Centre|Five-Eighth|Five Eighth|"
+    positions = (
+        r"Fullback|Winger|Centre|Five-Eighth|Five Eighth|"
         r"Halfback|Prop|Hooker|2nd Row|Second Row|Lock|"
-        r"Interchange|Reserve)"
+        r"Interchange|Reserve"
     )
 
-    team_pattern = (
-        r"(Rabbitohs|Knights|Warriors|Dolphins|"
-        r"Sharks|Cowboys|Panthers|Roosters)"
+    teams = (
+        r"Rabbitohs|Knights|Warriors|Dolphins|"
+        r"Sharks|Cowboys|Panthers|Roosters"
     )
 
-    player_pattern = (
-        r"([A-Za-zÀ-ÖØ-öø-ÿĀ-ž'’\-\.\s]+)"
-    )
-
-    full_pattern = re.compile(
-        rf"^{position_pattern}\s+for\s+{team_pattern}"
-        rf"\s+is\s+number\s+(\d+)\s+{player_pattern}$",
+    # Key change:
+    # NRL often inserts the opposing jersey number between players:
+    #
+    # Fullback for Rabbitohs is number 1 Matthew Dufty
+    # 1 Fullback for Knights is number 1 Kalyn Ponga
+    #
+    # So we stop the player name when we see either:
+    #   POSITION for TEAM
+    # or:
+    #   NUMBER POSITION for TEAM
+    pattern = re.compile(
+        rf"({positions})\s+for\s+({teams})\s+"
+        rf"is\s+number\s+(\d+)\s+"
+        rf"([A-Za-zÀ-ÖØ-öø-ÿĀ-ž'’\-. ]+?)"
+        rf"(?="
+        rf"\s+(?:\d+\s+)?(?:{positions})\s+for\s+(?:{teams})\s+"
+        rf"|"
+        rf"\s+(?:Backs|Forwards|Interchange|Reserves|"
+        rf"Match Officials|Last updated:|Team News|"
+        rf"Rabbitohs Ins|Rabbitohs Outs|"
+        rf"Knights Ins|Knights Outs|"
+        rf"Warriors Ins|Warriors Outs|"
+        rf"Dolphins Ins|Dolphins Outs|"
+        rf"Sharks Ins|Sharks Outs|"
+        rf"Cowboys Ins|Cowboys Outs|"
+        rf"Panthers Ins|Panthers Outs|"
+        rf"Roosters Ins|Roosters Outs)"
+        rf"|$"
+        rf")",
         re.IGNORECASE,
     )
 
-    for line in cleaned_lines:
-        match = full_pattern.match(line)
+    rows = []
 
-        if not match:
-            continue
+    team_lookup = {
+        x.lower(): x
+        for x in FINALS_TEAMS
+    }
 
+    for match in pattern.finditer(text):
         position = normalise_position(match.group(1))
-        team_raw = clean_text(match.group(2))
+
+        team = team_lookup.get(
+            clean_text(match.group(2)).lower()
+        )
+
         jersey = int(match.group(3))
         player = clean_text(match.group(4))
 
-        # Standardise team capitalisation.
-        team_lookup = {
-            x.lower(): x
-            for x in FINALS_TEAMS
-        }
-
-        team = team_lookup.get(
-            team_raw.lower(),
-            team_raw,
-        )
+        # Sometimes an isolated jersey number sneaks onto
+        # the end of the player string.
+        player = re.sub(
+            r"\s+\d+$",
+            "",
+            player,
+        ).strip()
 
         if team not in FINALS_TEAMS:
             continue
 
-        if position not in VALID_POSITIONS:
+        if not player:
             continue
 
-        # Sanity checks.
         if jersey < 1 or jersey > 30:
-            continue
-
-        if len(player) < 2:
-            continue
-
-        # Ignore obvious article words if somehow captured.
-        bad_words = {
-            "team",
-            "lists",
-            "ins",
-            "outs",
-            "news",
-        }
-
-        if player.lower() in bad_words:
             continue
 
         rows.append(
@@ -219,7 +190,6 @@ def extract_team_lists(html):
     if df.empty:
         return df
 
-    # Some NRL articles can contain the same team list twice.
     df = df.drop_duplicates(
         subset=[
             "team",
@@ -241,14 +211,7 @@ def extract_team_lists(html):
     return df
 
 
-def score_extraction(df):
-    """
-    Give an extraction a simple score.
-
-    Each finals club should normally have at least 17 named players,
-    usually around 21-23 including reserves.
-    """
-
+def extraction_score(df):
     if df.empty:
         return 0
 
@@ -266,12 +229,6 @@ def score_extraction(df):
 
 
 def get_best_team_list():
-    """
-    Try Late Mail first, then the original official team-list article.
-
-    Use whichever page produces the most complete set of teams.
-    """
-
     best_df = pd.DataFrame()
     best_score = -1
     best_url = None
@@ -282,13 +239,25 @@ def get_best_team_list():
 
             df = extract_team_lists(html)
 
-            score = score_extraction(df)
+            score = extraction_score(df)
 
             print(
                 f"[teams] Extraction result: "
                 f"{len(df)} players, "
                 f"{score}/8 teams with at least 17 players"
             )
+
+            for team in FINALS_TEAMS:
+                count = 0
+
+                if not df.empty:
+                    count = len(
+                        df[df["team"] == team]
+                    )
+
+                print(
+                    f"[teams]   {team}: {count}"
+                )
 
             if score > best_score:
                 best_df = df
@@ -297,7 +266,7 @@ def get_best_team_list():
 
         except Exception as exc:
             print(
-                f"[teams] WARNING: Could not read {url}: {exc}"
+                f"[teams] WARNING: {url}: {exc}"
             )
 
     if best_df.empty:
@@ -313,16 +282,10 @@ def get_best_team_list():
 
 
 def validate_team_lists(df):
-    """
-    Fail safely.
-
-    We do NOT want incomplete team lists feeding the predictor.
-    """
-
     problems = []
 
     print("")
-    print("[teams] Team counts:")
+    print("[teams] FINAL TEAM COUNTS")
 
     for team in FINALS_TEAMS:
         count = len(
@@ -335,7 +298,7 @@ def validate_team_lists(df):
 
         if count < 17:
             problems.append(
-                f"{team} only has {count} players"
+                f"{team} only has {count}"
             )
 
     if problems:
@@ -348,25 +311,19 @@ def validate_team_lists(df):
             )
 
         raise RuntimeError(
-            "Incomplete NRL team-list extraction. "
-            "current_team_lists.csv was NOT updated."
+            "Incomplete team-list extraction. "
+            "No files were updated."
         )
 
     print("")
     print(
-        "[teams] Validation passed: "
+        "[teams] VALIDATION PASSED: "
         "all 8 finals teams found."
     )
 
 
 def update_player_ratings(team_lists):
-    """
-    Add newly discovered players to player_ratings.csv.
-
-    Existing individual ratings are NEVER overwritten.
-    """
-
-    required_columns = [
+    columns = [
         "team",
         "player",
         "position",
@@ -375,17 +332,19 @@ def update_player_ratings(team_lists):
 
     if os.path.exists(RATINGS_PATH):
         try:
-            ratings = pd.read_csv(RATINGS_PATH)
+            ratings = pd.read_csv(
+                RATINGS_PATH
+            )
         except Exception:
             ratings = pd.DataFrame(
-                columns=required_columns
+                columns=columns
             )
     else:
         ratings = pd.DataFrame(
-            columns=required_columns
+            columns=columns
         )
 
-    for col in required_columns:
+    for col in columns:
         if col not in ratings.columns:
             ratings[col] = ""
 
@@ -490,7 +449,6 @@ def update_player_ratings(team_lists):
 
 
 def main():
-
     print(
         "[teams] Fetching official "
         "NRL Finals Week 1 team lists..."
@@ -498,8 +456,7 @@ def main():
 
     team_lists = get_best_team_list()
 
-    # IMPORTANT:
-    # Validate BEFORE writing anything.
+    # Never overwrite files unless every team is present.
     validate_team_lists(
         team_lists
     )
