@@ -32,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tipping model + team lists + player ratings + trackers + reports
+      - name: Run tipping model + team lists + player ratings + team changes + trackers + reports
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
@@ -46,6 +46,9 @@ jobs:
 
           echo "=== RUN: build_player_ratings.py ==="
           python -u build_player_ratings.py
+
+          echo "=== RUN: team_changes.py ==="
+          python -u team_changes.py
 
           echo "=== RUN: predict.py ==="
           python -u predict.py
@@ -80,14 +83,19 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
           git add -A
+
           git commit -m "Update predictions/data" || echo "No changes to commit"
+
           git pull --rebase origin "${GITHUB_REF_NAME}" || true
+
           git push || echo "Nothing to push"
 
       - name: Prepare site
         run: |
           mkdir -p site
+
           cp index.html site/index.html
 
           if [ -f current_predictions.csv ]; then
@@ -134,7 +142,7 @@ jobs:
             cp ratings.json site/ratings.json
           fi
 
-          # Team-list and player-rating data
+          # Team-list and player availability data
           if [ -f current_team_lists.csv ]; then
             cp current_team_lists.csv site/current_team_lists.csv
           fi
@@ -147,6 +155,10 @@ jobs:
             cp team_changes.csv site/team_changes.csv
           fi
 
+          if [ -f team_lists_history.csv ]; then
+            cp team_lists_history.csv site/team_lists_history.csv
+          fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -155,6 +167,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
