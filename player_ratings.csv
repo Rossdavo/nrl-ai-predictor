@@ -39,7 +39,7 @@ Dolphins,Morgan Knowles Interchange,lock,2.5
 Dolphins,Selwyn Cobbo,winger,2.4
 Dolphins,Kulikefu Finefeuiaki,2nd row,2.2
 Dolphins,Jamayne Isaako,winger,2.1
-Dolphins,Bradley Schneider,interchange,1.7
+Dolphins,Bradley Schneider,reserve,1.7
 Dolphins,Felise Kaufusi,interchange,1.7
 Dolphins,Francis Molo,interchange,1.7
 Dolphins,Jack Bostock,centre,1.7
@@ -68,13 +68,13 @@ Knights,Jermaine McEwen,2nd row,1.6
 Knights,Cody Hopwood,prop,1.5
 Knights,Pasami Saulo,interchange,1.2
 Knights,Harrison Graham,interchange,1.1
-Knights,Fletcher Hunt,interchange,1.0
 Knights,Lachlan Crouch,interchange,1.0
 Knights,Thomas Cant,interchange,1.0
-Knights,Toby Winter,interchange,1.0
 Knights,Toby Winter Reserves,interchange,1.0
 Knights,Kyle McCarthy Rabbitohs,reserve,0.7
+Knights,Fletcher Hunt,reserve,0.6
 Knights,Kyle McCarthy,reserve,0.6
+Knights,Toby Winter,reserve,0.6
 Panthers,Nathan Cleary,halfback,6.5
 Panthers,Isaah Yeo,lock,5.2
 Panthers,Dylan Edwards,fullback,5.0
@@ -111,11 +111,11 @@ Rabbitohs,Tevita Tatola,prop,2.3
 Rabbitohs,Campbell Graham,winger,2.2
 Rabbitohs,Alex Johnston,winger,1.9
 Rabbitohs,Jye Gray,interchange,1.8
-Rabbitohs,Adam Elliott,interchange,1.7
+Rabbitohs,Adam Elliott,reserve,1.7
 Rabbitohs,Sean Keppie,interchange,1.5
 Rabbitohs,Jamie Humphreys,interchange,1.4
 Rabbitohs,Lachlan Hubner,interchange,1.1
-Rabbitohs,Latrell Siegwalt,interchange,1.0
+Rabbitohs,Latrell Siegwalt,reserve,0.6
 Roosters,Daly Cherry-Evans,halfback,5.7
 Roosters,James Tedesco,fullback,5.3
 Roosters,Daly Cherry-Evans Forwards,halfback,5.0
