@@ -93,9 +93,8 @@ def fetch_page(url):
 def extract_team_lists(html):
     soup = BeautifulSoup(html, "html.parser")
 
-    # Flatten the visible article text.
-    # This is deliberate because NRL splits the two teams across
-    # different HTML elements.
+    # Flatten visible article text because the NRL page often
+    # splits opposing teams across different HTML elements.
     text = soup.get_text(" ", strip=True)
     text = re.sub(r"\s+", " ", text)
 
@@ -110,16 +109,6 @@ def extract_team_lists(html):
         r"Sharks|Cowboys|Panthers|Roosters"
     )
 
-    # Key change:
-    # NRL often inserts the opposing jersey number between players:
-    #
-    # Fullback for Rabbitohs is number 1 Matthew Dufty
-    # 1 Fullback for Knights is number 1 Kalyn Ponga
-    #
-    # So we stop the player name when we see either:
-    #   POSITION for TEAM
-    # or:
-    #   NUMBER POSITION for TEAM
     pattern = re.compile(
         rf"({positions})\s+for\s+({teams})\s+"
         rf"is\s+number\s+(\d+)\s+"
@@ -150,17 +139,25 @@ def extract_team_lists(html):
     }
 
     for match in pattern.finditer(text):
-        position = normalise_position(match.group(1))
-
-        team = team_lookup.get(
-            clean_text(match.group(2)).lower()
+        position = normalise_position(
+            match.group(1)
         )
 
-        jersey = int(match.group(3))
-        player = clean_text(match.group(4))
+        team = team_lookup.get(
+            clean_text(
+                match.group(2)
+            ).lower()
+        )
 
-        # Sometimes an isolated jersey number sneaks onto
-        # the end of the player string.
+        jersey = int(
+            match.group(3)
+        )
+
+        player = clean_text(
+            match.group(4)
+        )
+
+        # Remove an accidental trailing jersey number.
         player = re.sub(
             r"\s+\d+$",
             "",
@@ -211,89 +208,293 @@ def extract_team_lists(html):
     return df
 
 
-def extraction_score(df):
-    if df.empty:
-        return 0
-
-    score = 0
-
-    for team in FINALS_TEAMS:
-        count = len(
-            df[df["team"] == team]
+def load_previous_team_lists():
+    if not os.path.exists(OUT_PATH):
+        print(
+            "[teams] No previous "
+            f"{OUT_PATH} available."
         )
+        return pd.DataFrame()
 
-        if count >= 17:
-            score += 1
+    try:
+        previous = pd.read_csv(
+            OUT_PATH
+        )
+    except Exception as exc:
+        print(
+            "[teams] WARNING: Could not read previous "
+            f"{OUT_PATH}: {exc}"
+        )
+        return pd.DataFrame()
 
-    return score
+    required = {
+        "team",
+        "jersey",
+        "player",
+        "position",
+    }
+
+    if not required.issubset(
+        previous.columns
+    ):
+        print(
+            "[teams] WARNING: Previous "
+            f"{OUT_PATH} does not contain "
+            "the required columns."
+        )
+        return pd.DataFrame()
+
+    print(
+        f"[teams] Loaded previous "
+        f"{OUT_PATH}: {len(previous)} players"
+    )
+
+    return previous
 
 
 def get_best_team_list():
-    best_df = pd.DataFrame()
-    best_score = -1
-    best_url = None
+    scraped_sources = []
 
     for url in TEAM_LIST_URLS:
         try:
-            html = fetch_page(url)
+            html = fetch_page(
+                url
+            )
 
-            df = extract_team_lists(html)
+            df = extract_team_lists(
+                html
+            )
 
-            score = extraction_score(df)
+            complete_count = 0
+
+            for team in FINALS_TEAMS:
+                if df.empty:
+                    count = 0
+                else:
+                    count = len(
+                        df[
+                            df["team"] == team
+                        ]
+                    )
+
+                if count >= 17:
+                    complete_count += 1
 
             print(
                 f"[teams] Extraction result: "
                 f"{len(df)} players, "
-                f"{score}/8 teams with at least 17 players"
+                f"{complete_count}/8 teams "
+                f"with at least 17 players"
             )
 
             for team in FINALS_TEAMS:
-                count = 0
-
-                if not df.empty:
+                if df.empty:
+                    count = 0
+                else:
                     count = len(
-                        df[df["team"] == team]
+                        df[
+                            df["team"] == team
+                        ]
                     )
 
                 print(
-                    f"[teams]   {team}: {count}"
+                    f"[teams]   "
+                    f"{team}: {count}"
                 )
 
-            if score > best_score:
-                best_df = df
-                best_score = score
-                best_url = url
+            scraped_sources.append(
+                {
+                    "url": url,
+                    "df": df,
+                }
+            )
 
         except Exception as exc:
             print(
-                f"[teams] WARNING: {url}: {exc}"
+                f"[teams] WARNING: "
+                f"{url}: {exc}"
             )
 
-    if best_df.empty:
+    if not scraped_sources:
         raise RuntimeError(
-            "Could not extract any NRL team-list data."
+            "Could not fetch any NRL "
+            "team-list source."
         )
 
+    previous = load_previous_team_lists()
+
+    final_blocks = []
+
+    print("")
     print(
-        f"[teams] Best source: {best_url}"
+        "[teams] SELECTING BEST TEAM "
+        "BLOCKS"
     )
 
-    return best_df
+    for team in FINALS_TEAMS:
+        best_fresh_df = pd.DataFrame()
+        best_fresh_count = 0
+        best_fresh_url = None
+
+        # Find the largest extraction for this
+        # individual team across all current sources.
+        #
+        # If counts are tied, the first URL wins.
+        # TEAM_LIST_URLS has Late Mail first.
+        for source in scraped_sources:
+            df = source["df"]
+
+            if df.empty:
+                continue
+
+            team_df = df[
+                df["team"] == team
+            ].copy()
+
+            count = len(
+                team_df
+            )
+
+            if count > best_fresh_count:
+                best_fresh_df = team_df
+                best_fresh_count = count
+                best_fresh_url = source["url"]
+
+        # Fresh complete team takes priority.
+        if best_fresh_count >= 17:
+            print(
+                f"[teams] {team}: "
+                f"using fresh source "
+                f"({best_fresh_count} players)"
+            )
+
+            print(
+                f"[teams]   Source: "
+                f"{best_fresh_url}"
+            )
+
+            final_blocks.append(
+                best_fresh_df
+            )
+
+            continue
+
+        # Fresh extraction is incomplete.
+        print(
+            f"[teams] {team}: "
+            f"fresh extraction incomplete "
+            f"({best_fresh_count} players)"
+        )
+
+        previous_team_df = pd.DataFrame()
+
+        if not previous.empty:
+            previous_team_df = previous[
+                previous["team"] == team
+            ].copy()
+
+        previous_count = len(
+            previous_team_df
+        )
+
+        # Use the previous known-good team
+        # only if it has at least 17 players.
+        if previous_count >= 17:
+            print(
+                f"[teams] {team}: "
+                f"FALLBACK to previous "
+                f"{OUT_PATH} "
+                f"({previous_count} players)"
+            )
+
+            final_blocks.append(
+                previous_team_df
+            )
+
+            continue
+
+        # No safe source exists.
+        print(
+            f"[teams] {team}: "
+            f"ERROR - no complete fresh "
+            f"or previous team available"
+        )
+
+        # Keep whatever fresh data exists.
+        # Validation below will deliberately fail,
+        # which prevents overwriting the good files.
+        if not best_fresh_df.empty:
+            final_blocks.append(
+                best_fresh_df
+            )
+
+    if not final_blocks:
+        raise RuntimeError(
+            "Could not build any team-list data."
+        )
+
+    final_df = pd.concat(
+        final_blocks,
+        ignore_index=True,
+    )
+
+    final_df = final_df.drop_duplicates(
+        subset=[
+            "team",
+            "jersey",
+            "player",
+            "position",
+        ],
+        keep="last",
+    )
+
+    team_order = {
+        team: index
+        for index, team
+        in enumerate(FINALS_TEAMS)
+    }
+
+    final_df["_team_order"] = (
+        final_df["team"]
+        .map(team_order)
+        .fillna(999)
+    )
+
+    final_df = final_df.sort_values(
+        [
+            "_team_order",
+            "jersey",
+            "player",
+        ]
+    )
+
+    final_df = final_df.drop(
+        columns=[
+            "_team_order",
+        ]
+    ).reset_index(drop=True)
+
+    return final_df
 
 
 def validate_team_lists(df):
     problems = []
 
     print("")
-    print("[teams] FINAL TEAM COUNTS")
+    print(
+        "[teams] FINAL TEAM COUNTS"
+    )
 
     for team in FINALS_TEAMS:
         count = len(
-            df[df["team"] == team]
+            df[
+                df["team"] == team
+            ]
         )
 
         print(
-            f"[teams] {team}: {count} players"
+            f"[teams] "
+            f"{team}: {count} players"
         )
 
         if count < 17:
@@ -303,11 +504,14 @@ def validate_team_lists(df):
 
     if problems:
         print("")
-        print("[teams] VALIDATION FAILED")
+        print(
+            "[teams] VALIDATION FAILED"
+        )
 
         for problem in problems:
             print(
-                f"[teams] ERROR: {problem}"
+                f"[teams] ERROR: "
+                f"{problem}"
             )
 
         raise RuntimeError(
@@ -330,7 +534,9 @@ def update_player_ratings(team_lists):
         "impact_points",
     ]
 
-    if os.path.exists(RATINGS_PATH):
+    if os.path.exists(
+        RATINGS_PATH
+    ):
         try:
             ratings = pd.read_csv(
                 RATINGS_PATH
@@ -352,16 +558,25 @@ def update_player_ratings(team_lists):
 
     for _, row in ratings.iterrows():
         team = clean_text(
-            row.get("team", "")
+            row.get(
+                "team",
+                "",
+            )
         ).upper()
 
         player = clean_text(
-            row.get("player", "")
+            row.get(
+                "player",
+                "",
+            )
         ).upper()
 
         if team and player:
             existing.add(
-                (team, player)
+                (
+                    team,
+                    player,
+                )
             )
 
     additions = []
@@ -401,12 +616,14 @@ def update_player_ratings(team_lists):
             }
         )
 
-        existing.add(key)
+        existing.add(
+            key
+        )
 
     if not additions:
         print(
-            "[teams] No new players needed "
-            "in player_ratings.csv"
+            "[teams] No new players "
+            "needed in player_ratings.csv"
         )
         return
 
@@ -423,8 +640,12 @@ def update_player_ratings(team_lists):
         sort=False,
     )
 
-    ratings["impact_points"] = pd.to_numeric(
-        ratings["impact_points"],
+    ratings[
+        "impact_points"
+    ] = pd.to_numeric(
+        ratings[
+            "impact_points"
+        ],
         errors="coerce",
     )
 
@@ -434,7 +655,9 @@ def update_player_ratings(team_lists):
             "position",
             "player",
         ]
-    ).reset_index(drop=True)
+    ).reset_index(
+        drop=True
+    )
 
     ratings.to_csv(
         RATINGS_PATH,
@@ -454,9 +677,15 @@ def main():
         "NRL Finals Week 1 team lists..."
     )
 
-    team_lists = get_best_team_list()
+    team_lists = (
+        get_best_team_list()
+    )
 
-    # Never overwrite files unless every team is present.
+    # This validation happens AFTER fresh data
+    # and previous-file fallbacks have been combined.
+    #
+    # Files are still never overwritten unless every
+    # team has at least 17 players.
     validate_team_lists(
         team_lists
     )
