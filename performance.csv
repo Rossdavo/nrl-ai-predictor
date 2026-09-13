@@ -128,3 +128,4 @@ date,home,away,run_id,round_key,predicted_winner,actual_winner,correct,home_win_
 2026-09-11,Rabbitohs,Knights,20260910230526,2026-09-11_to_2026-09-13,Rabbitohs,Knights,0,0.75,0.75,16.4,-10.0,26.4,0.5625
 2026-09-12,Sharks,Cowboys,20260910230526,2026-09-11_to_2026-09-13,Sharks,Sharks,1,0.737,0.737,18.9,10.0,8.9,0.0692
 2026-09-12,Warriors,Dolphins,20260910230526,2026-09-11_to_2026-09-13,Warriors,Dolphins,0,0.573,0.573,5.5,-10.0,15.5,0.3283
+2026-09-13,Panthers,Roosters,20260912213131,2026-09-13_to_2026-09-16,Panthers,Panthers,1,0.759,0.759,15.0,7.0,8.0,0.0581
