@@ -3,26 +3,38 @@ import re
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
+from urllib.parse import urljoin
 
 
-TEAM_LIST_URLS = [
-    "https://www.nrl.com/news/2026/09/10/nrl-late-mail-finals-week-1/",
-    "https://www.nrl.com/news/2026/09/08/nrl-team-lists-finals-week-1/",
-]
-
+NRL_BASE = "https://www.nrl.com"
+NRL_NEWS_URL = "https://www.nrl.com/news/"
 OUT_PATH = "current_team_lists.csv"
 RATINGS_PATH = "player_ratings.csv"
+ODDS_PATH = "odds.csv"
 
+# Safe fallback only. In normal operation the current teams are read from odds.csv.
 FINALS_TEAMS = [
-    "Rabbitohs",
-    "Knights",
-    "Warriors",
-    "Dolphins",
-    "Sharks",
-    "Cowboys",
-    "Panthers",
-    "Roosters",
+    "Rabbitohs", "Knights", "Warriors", "Dolphins",
+    "Sharks", "Cowboys", "Panthers", "Roosters",
 ]
+
+TEAM_ALIASES = {
+    "South Sydney Rabbitohs": "Rabbitohs",
+    "Newcastle Knights": "Knights",
+    "New Zealand Warriors": "Warriors",
+    "Dolphins": "Dolphins",
+    "The Dolphins": "Dolphins",
+    "Cronulla Sharks": "Sharks",
+    "Cronulla-Sutherland Sharks": "Sharks",
+    "North Queensland Cowboys": "Cowboys",
+    "Penrith Panthers": "Panthers",
+    "Sydney Roosters": "Roosters",
+    "Rabbitohs": "Rabbitohs", "Knights": "Knights",
+    "Warriors": "Warriors", "Sharks": "Sharks",
+    "Cowboys": "Cowboys", "Panthers": "Panthers",
+    "Roosters": "Roosters",
+}
 
 POSITION_DEFAULTS = {
     "fullback": 4.0,
@@ -43,6 +55,102 @@ def clean_text(value):
     if value is None:
         return ""
     return " ".join(str(value).strip().split())
+
+
+
+
+def normalise_team_name(value):
+    name = clean_text(value)
+    return TEAM_ALIASES.get(name, name)
+
+
+def load_current_teams_from_odds():
+    if not os.path.exists(ODDS_PATH):
+        print(f"[teams] WARNING: {ODDS_PATH} not found; using fallback finals teams.")
+        return FINALS_TEAMS.copy()
+
+    try:
+        odds = pd.read_csv(ODDS_PATH)
+    except Exception as exc:
+        print(f"[teams] WARNING: Could not read {ODDS_PATH}: {exc}")
+        return FINALS_TEAMS.copy()
+
+    home_col = next((c for c in ["home", "home_team", "Home Team"] if c in odds.columns), None)
+    away_col = next((c for c in ["away", "away_team", "Away Team"] if c in odds.columns), None)
+    if not home_col or not away_col:
+        print(f"[teams] WARNING: Could not identify home/away columns in {ODDS_PATH}; using fallback finals teams.")
+        return FINALS_TEAMS.copy()
+
+    teams = []
+    for value in list(odds[home_col]) + list(odds[away_col]):
+        team = normalise_team_name(value)
+        if team and team not in teams:
+            teams.append(team)
+
+    if not teams:
+        return FINALS_TEAMS.copy()
+
+    print(f"[teams] Current teams from {ODDS_PATH}: {', '.join(teams)}")
+    return teams
+
+
+def discover_team_list_urls():
+    """Find current official NRL Team Lists / Late Mail pages.
+
+    Discovery first inspects the NRL news landing page. During the finals it also
+    tries date-based official URL candidates for the current finals week. Old
+    hard-coded Week 1 URLs are deliberately not used.
+    """
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0 Safari/537.36"
+        )
+    }
+    found = []
+
+    try:
+        response = requests.get(NRL_NEWS_URL, headers=headers, timeout=30)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+        for a in soup.find_all("a", href=True):
+            href = urljoin(NRL_BASE, a.get("href", ""))
+            label = clean_text(a.get_text(" ", strip=True)).lower()
+            href_l = href.lower()
+            if "nrl.com/news/" not in href_l:
+                continue
+            if ("team-lists" in href_l or "late-mail" in href_l or
+                    "team lists" in label or "late mail" in label):
+                if href not in found:
+                    found.append(href)
+    except Exception as exc:
+        print(f"[teams] WARNING: NRL news discovery failed: {exc}")
+
+    # Finals safety net. Team Lists are normally published on Tuesday; Late Mail
+    # can appear later. Try only recent dates and finals-week slugs, then validate
+    # the page by the teams/jerseys actually extracted.
+    today = datetime.now().date()
+    for days_back in range(0, 8):
+        d = today - timedelta(days=days_back)
+        for week in range(1, 5):
+            for slug in (f"nrl-late-mail-finals-week-{week}", f"nrl-team-lists-finals-week-{week}"):
+                url = f"{NRL_BASE}/news/{d:%Y/%m/%d}/{slug}/"
+                if url not in found:
+                    found.append(url)
+
+    # Prefer Late Mail when it exists, then Team Lists, and prefer newer dates.
+    def priority(url):
+        late = 1 if "late-mail" in url.lower() else 0
+        m = re.search(r"/news/(\d{4})/(\d{2})/(\d{2})/", url)
+        date_key = "00000000"
+        if m:
+            date_key = "".join(m.groups())
+        return (late, date_key)
+
+    found.sort(key=priority, reverse=True)
+    print(f"[teams] Discovered {len(found)} candidate official NRL team-list URLs")
+    return found
 
 
 def normalise_position(position):
@@ -104,10 +212,7 @@ def extract_team_lists(html):
         r"Interchange|Reserve"
     )
 
-    teams = (
-        r"Rabbitohs|Knights|Warriors|Dolphins|"
-        r"Sharks|Cowboys|Panthers|Roosters"
-    )
+    teams = "|".join(re.escape(team) for team in FINALS_TEAMS)
 
     pattern = re.compile(
         rf"({positions})\s+for\s+({teams})\s+"
@@ -280,7 +385,9 @@ def load_previous_team_lists():
 def get_best_team_list():
     scraped_sources = []
 
-    for url in TEAM_LIST_URLS:
+    team_list_urls = discover_team_list_urls()
+
+    for url in team_list_urls:
         try:
             html = fetch_page(url)
             df = extract_team_lists(html)
@@ -292,7 +399,7 @@ def get_best_team_list():
 
             print(
                 f"[teams] Extraction result: {len(df)} players, "
-                f"{complete_count}/8 teams with complete active 1-17"
+                f"{complete_count}/{len(FINALS_TEAMS)} teams with complete active 1-17"
             )
 
             for team in FINALS_TEAMS:
@@ -439,7 +546,7 @@ def validate_team_lists(df):
     print("")
     print(
         "[teams] VALIDATION PASSED: "
-        "all 8 teams have complete active jerseys 1-17."
+        f"all {len(FINALS_TEAMS)} teams have complete active jerseys 1-17."
     )
 
 
@@ -590,9 +697,12 @@ def update_player_ratings(team_lists):
 
 
 def main():
+    global FINALS_TEAMS
+    FINALS_TEAMS = load_current_teams_from_odds()
+
     print(
-        "[teams] Fetching official "
-        "NRL Finals Week 1 team lists..."
+        "[teams] Fetching official current NRL team lists "
+        f"for {len(FINALS_TEAMS)} teams..."
     )
 
     team_lists = (
