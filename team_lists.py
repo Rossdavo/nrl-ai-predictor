@@ -98,9 +98,9 @@ def load_current_teams_from_odds():
 def discover_team_list_urls():
     """Find current official NRL Team Lists / Late Mail pages.
 
-    Discovery first inspects the NRL news landing page. During the finals it also
-    tries date-based official URL candidates for the current finals week. Old
-    hard-coded Week 1 URLs are deliberately not used.
+    First inspect the NRL news landing page and use the real article links it
+    exposes. This keeps normal runs quiet and avoids dozens of speculative 404s.
+    If discovery fails completely, use a small date-based finals safety net.
     """
     headers = {
         "User-Agent": (
@@ -115,33 +115,67 @@ def discover_team_list_urls():
         response = requests.get(NRL_NEWS_URL, headers=headers, timeout=30)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
+
         for a in soup.find_all("a", href=True):
             href = urljoin(NRL_BASE, a.get("href", ""))
             label = clean_text(a.get_text(" ", strip=True)).lower()
             href_l = href.lower()
+
             if "nrl.com/news/" not in href_l:
                 continue
-            if ("team-lists" in href_l or "late-mail" in href_l or
-                    "team lists" in label or "late mail" in label):
-                if href not in found:
-                    found.append(href)
+
+            # Men's NRL only. NRLW pages can contain the same club names and
+            # should never be allowed into the men's team-list pipeline.
+            if "nrlw" in href_l or "nrlw" in label:
+                continue
+
+            is_team_page = (
+                "nrl-team-lists" in href_l
+                or "nrl-late-mail" in href_l
+                or "team lists" in label
+                or "late mail" in label
+            )
+            if not is_team_page:
+                continue
+
+            if href not in found:
+                found.append(href)
+
     except Exception as exc:
         print(f"[teams] WARNING: NRL news discovery failed: {exc}")
 
-    # Finals safety net. Team Lists are normally published on Tuesday; Late Mail
-    # can appear later. Try only recent dates and finals-week slugs, then validate
-    # the page by the teams/jerseys actually extracted.
+    # If the landing page supplied real article links, trust those and do not
+    # spray guessed URLs at NRL.com. The extraction/17-player validation below
+    # still decides whether any discovered page is safe to use.
+    if found:
+        def priority(url):
+            late = 1 if "late-mail" in url.lower() else 0
+            m = re.search(r"/news/(\d{4})/(\d{2})/(\d{2})/", url)
+            date_key = "00000000"
+            if m:
+                date_key = "".join(m.groups())
+            return (late, date_key)
+
+        found.sort(key=priority, reverse=True)
+        print(f"[teams] Discovered {len(found)} official NRL team-list URL(s)")
+        return found
+
+    # Small emergency safety net only when the NRL news page gave us nothing.
+    # Team Lists are normally Tuesday publications, while Late Mail appears
+    # later. Limit guesses to the last four dates rather than a full week.
+    print("[teams] No team-list links found on NRL news page; using fallback URL search")
     today = datetime.now().date()
-    for days_back in range(0, 8):
+    fallback = []
+    for days_back in range(0, 4):
         d = today - timedelta(days=days_back)
         for week in range(1, 5):
-            for slug in (f"nrl-late-mail-finals-week-{week}", f"nrl-team-lists-finals-week-{week}"):
-                url = f"{NRL_BASE}/news/{d:%Y/%m/%d}/{slug}/"
-                if url not in found:
-                    found.append(url)
+            for slug in (
+                f"nrl-late-mail-finals-week-{week}",
+                f"nrl-team-lists-finals-week-{week}",
+            ):
+                fallback.append(f"{NRL_BASE}/news/{d:%Y/%m/%d}/{slug}/")
 
-    # Prefer Late Mail when it exists, then Team Lists, and prefer newer dates.
-    def priority(url):
+    def fallback_priority(url):
         late = 1 if "late-mail" in url.lower() else 0
         m = re.search(r"/news/(\d{4})/(\d{2})/(\d{2})/", url)
         date_key = "00000000"
@@ -149,9 +183,9 @@ def discover_team_list_urls():
             date_key = "".join(m.groups())
         return (late, date_key)
 
-    found.sort(key=priority, reverse=True)
-    print(f"[teams] Discovered {len(found)} candidate official NRL team-list URLs")
-    return found
+    fallback.sort(key=fallback_priority, reverse=True)
+    print(f"[teams] Fallback search has {len(fallback)} candidate URL(s)")
+    return fallback
 
 
 def normalise_position(position):
