@@ -26,6 +26,7 @@ TEAM_ALIASES = {
     "Dolphins": "Dolphins",
     "The Dolphins": "Dolphins",
     "Cronulla Sharks": "Sharks",
+    "Cronulla Sutherland Sharks": "Sharks",
     "Cronulla-Sutherland Sharks": "Sharks",
     "North Queensland Cowboys": "Cowboys",
     "Penrith Panthers": "Panthers",
@@ -212,7 +213,10 @@ def extract_team_lists(html):
         r"Interchange|Reserve"
     )
 
-    teams = "|".join(re.escape(team) for team in FINALS_TEAMS)
+    # Match both canonical names and the longer club names used by different NRL/odds pages.
+    extraction_team_names = list(dict.fromkeys(list(TEAM_ALIASES.keys()) + FINALS_TEAMS))
+    extraction_team_names.sort(key=len, reverse=True)
+    teams = "|".join(re.escape(team) for team in extraction_team_names)
 
     pattern = re.compile(
         rf"({positions})\s+for\s+({teams})\s+"
@@ -238,10 +242,8 @@ def extract_team_lists(html):
 
     rows = []
 
-    team_lookup = {
-        x.lower(): x
-        for x in FINALS_TEAMS
-    }
+    team_lookup = {clean_text(name).lower(): normalise_team_name(name)
+                   for name in extraction_team_names}
 
     for match in pattern.finditer(text):
         position = normalise_position(
