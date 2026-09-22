@@ -1,11 +1,55 @@
 team,jersey,player,position
+Dolphins,1,Hamiso Tabuai-Fidow,fullback
+Dolphins,2,Jamayne Isaako,winger
+Dolphins,3,Jack Bostock,centre
+Dolphins,4,Herbie Farnworth,centre
+Dolphins,5,Selwyn Cobbo,winger
+Dolphins,6,Kodi Nikorima,five-eighth
+Dolphins,7,Isaiya Katoa,halfback
+Dolphins,8,Thomas Flegler,prop
+Dolphins,9,Jeremy Marshall-King,hooker
+Dolphins,10,Tom Gilbert,prop
+Dolphins,11,Max Plath,2nd row
+Dolphins,12,Kulikefu Finefeuiaki,2nd row
+Dolphins,13,Morgan Knowles,lock
+Dolphins,14,Kurt Donoghoe,interchange
+Dolphins,15,Ray Stone,interchange
+Dolphins,16,Francis Molo,interchange
+Dolphins,17,Connelly Lemuelu,interchange
+Dolphins,18,Felise Kaufusi,interchange
+Dolphins,19,Bradley Schneider,interchange
+Dolphins,20,Jake Averillo,reserve
+Dolphins,21,Brian Pouniu,reserve
+Dolphins,22,Tevita Naufahu,reserve
+Panthers,1,Dylan Edwards,fullback
+Panthers,2,Thomas Jenkins,winger
+Panthers,3,Blaize Talagi,centre
+Panthers,4,Casey McLean,centre
+Panthers,5,Brian To'o,winger
+Panthers,6,Jack Cole,five-eighth
+Panthers,7,Nathan Cleary,halfback
+Panthers,8,Moses Leota,prop
+Panthers,9,Mitch Kenny,hooker
+Panthers,10,Lindsay Smith,prop
+Panthers,11,Isaiah Papali'i,2nd row
+Panthers,12,Liam Martin,2nd row
+Panthers,13,Isaah Yeo,lock
+Panthers,14,Jack Cogger,interchange
+Panthers,15,Scott Sorensen,interchange
+Panthers,16,Liam Henry,interchange
+Panthers,17,Billy Phillips,interchange
+Panthers,18,Luke Garner,interchange
+Panthers,19,Billy Scott,interchange
+Panthers,20,Luron Patea,reserve
+Panthers,21,Freddy Lussick,reserve
+Panthers,22,Izack Tago,reserve
 Roosters,1,James Tedesco,fullback
 Roosters,2,Daniel Tupou,winger
 Roosters,3,Billy Smith,centre
 Roosters,4,Robert Toia,centre
 Roosters,5,Mark Nawaqanitawase,winger
-Roosters,6,Hugo Savala,five-eighth
-Roosters,7,Daly Cherry-Evans,halfback
+Roosters,6,Daly Cherry-Evans,five-eighth
+Roosters,7,Sam Walker,halfback
 Roosters,8,Naufahu Whyte,prop
 Roosters,9,Reece Robson,hooker
 Roosters,10,Lindsay Collins,prop
@@ -13,48 +57,14 @@ Roosters,11,Salesi Foketi,2nd row
 Roosters,12,Siua Wong,2nd row
 Roosters,13,Victor Radley,lock
 Roosters,14,Connor Watson,interchange
-Roosters,15,Spencer Leniu,interchange
+Roosters,15,Angus Crichton,interchange
 Roosters,16,Nat Butcher,interchange
-Roosters,17,Angus Crichton,interchange
-Roosters,22,Toby Rodwell,reserve
-Warriors,1,Taine Tuaupiki,fullback
-Warriors,2,Charnze Nicoll-Klokstad,winger
-Warriors,3,Ali Leiataua,centre
-Warriors,4,Adam Pompey,centre
-Warriors,5,Alofiana Khan-Pereira,winger
-Warriors,6,Chanel Harris-Tavita,five-eighth
-Warriors,7,Te Maire Martin,halfback
-Warriors,8,James Fisher-Harris,prop
-Warriors,9,Wayde Egan,hooker
-Warriors,10,Mitchell Barnett,prop
-Warriors,11,Kurt Capewell,2nd row
-Warriors,12,Jacob Laban,2nd row
-Warriors,13,Erin Clark,lock
-Warriors,14,Sam Healey,interchange
-Warriors,15,Tanner Stowers-Smith,interchange
-Warriors,16,Demitric Vaimauga,interchange
-Warriors,17,Eddie Ieremia-Toeava,interchange
-Warriors,18,Jett Cleary,interchange
-Sharks,1,William Kennedy,fullback
-Sharks,2,Sione Katoa,winger
-Sharks,3,Riley Jones,centre
-Sharks,4,KL Iro,centre
-Sharks,5,Ronaldo Mulitalo,winger
-Sharks,6,Braydon Trindall,five-eighth
-Sharks,7,Nicho Hynes,halfback
-Sharks,8,Addin Fonua-Blake,prop
-Sharks,9,Blayke Brailey,hooker
-Sharks,10,Jesse Colquhoun,prop
-Sharks,11,Briton Nikora,2nd row
-Sharks,12,Teig Wilton,2nd row
-Sharks,13,Cameron McInnes,lock
-Sharks,14,Siosifa Talakai,interchange
-Sharks,15,Billy Burns,interchange
-Sharks,16,Oregon Kaufusi,interchange
-Sharks,17,Thomas Hazelton,interchange
-Sharks,19,Toby Rudolf,interchange
-Sharks,20,Niwhai Puru,interchange
-Sharks,22,Mawene Hiroti,reserve
+Roosters,17,Spencer Leniu,interchange
+Roosters,18,Hugo Savala,interchange
+Roosters,19,Cody Ramsey,interchange
+Roosters,20,Egan Butcher,reserve
+Roosters,21,Tommy Talau,reserve
+Roosters,22,Benaiah Ioelu,reserve
 Knights,1,Kalyn Ponga,fullback
 Knights,2,Dominic Young,winger
 Knights,3,Dane Gagai,centre
@@ -71,9 +81,9 @@ Knights,13,Mat Croker,lock
 Knights,14,Harrison Graham,interchange
 Knights,15,Lachlan Crouch,interchange
 Knights,16,Pasami Saulo,interchange
-Knights,17,Thomas Cant,interchange
+Knights,17,Dylan Lucas,interchange
 Knights,18,Fletcher Hunt,interchange
-Knights,19,Toby Winter,interchange
+Knights,19,Thomas Cant,interchange
 Knights,20,Kyle McCarthy,reserve
 Knights,21,Elijah Salesa-Leaumoana,reserve
-Knights,22,Dylan Lucas,reserve
+Knights,22,Toby Winter,reserve

@@ -39,7 +39,7 @@ Dolphins,Morgan Knowles Interchange,lock,2.5
 Dolphins,Selwyn Cobbo,winger,2.4
 Dolphins,Kulikefu Finefeuiaki,2nd row,2.2
 Dolphins,Jamayne Isaako,winger,2.1
-Dolphins,Bradley Schneider,reserve,1.7
+Dolphins,Bradley Schneider,interchange,1.7
 Dolphins,Felise Kaufusi,interchange,1.7
 Dolphins,Francis Molo,interchange,1.7
 Dolphins,Jack Bostock,centre,1.7
@@ -68,15 +68,15 @@ Knights,Jermaine McEwen,2nd row,1.6
 Knights,Cody Hopwood,prop,1.5
 Knights,Pasami Saulo,interchange,1.2
 Knights,Harrison Graham,interchange,1.1
+Knights,Dylan Lucas,interchange,1.0
 Knights,Fletcher Hunt,interchange,1.0
 Knights,Lachlan Crouch,interchange,1.0
 Knights,Thomas Cant,interchange,1.0
-Knights,Toby Winter,interchange,1.0
 Knights,Toby Winter Reserves,interchange,1.0
 Knights,Kyle McCarthy Rabbitohs,reserve,0.7
-Knights,Dylan Lucas,reserve,0.6
 Knights,Elijah Salesa-Leaumoana,reserve,0.6
 Knights,Kyle McCarthy,reserve,0.6
+Knights,Toby Winter,reserve,0.6
 Panthers,Nathan Cleary,halfback,6.5
 Panthers,Isaah Yeo,lock,5.2
 Panthers,Dylan Edwards,fullback,5.0
@@ -89,13 +89,15 @@ Panthers,Brian To'o,winger,2.5
 Panthers,Lindsay Smith,prop,2.5
 Panthers,Scott Sorensen,interchange,2.0
 Panthers,Casey McLean,centre,1.9
-Panthers,Luke Garner,centre,1.9
-Panthers,Blaize Talagi,interchange,1.8
+Panthers,Luke Garner,interchange,1.9
+Panthers,Blaize Talagi,centre,1.8
 Panthers,Liam Henry,interchange,1.7
 Panthers,Thomas Jenkins,winger,1.2
-Panthers,Freddy Lussick,interchange,1.1
+Panthers,Freddy Lussick,reserve,1.1
 Panthers,Billy Phillips,interchange,1.0
 Panthers,Billy Scott,interchange,1.0
+Panthers,Jack Cogger,interchange,1.0
+Panthers,Izack Tago,reserve,0.6
 Panthers,Jesse McLean,reserve,0.6
 Panthers,Kalani Leuluai-Going,reserve,0.6
 Panthers,Luron Patea,reserve,0.6
@@ -118,15 +120,15 @@ Rabbitohs,Sean Keppie,interchange,1.5
 Rabbitohs,Jamie Humphreys,interchange,1.4
 Rabbitohs,Lachlan Hubner,interchange,1.1
 Rabbitohs,Latrell Siegwalt,reserve,0.6
-Roosters,Daly Cherry-Evans,halfback,5.7
+Roosters,Daly Cherry-Evans,five-eighth,5.7
 Roosters,James Tedesco,fullback,5.3
 Roosters,Daly Cherry-Evans Forwards,halfback,5.0
-Roosters,Sam Walker,halfback,5.0
 Roosters,Reece Robson,hooker,4.0
+Roosters,Sam Walker,halfback,3.8
 Roosters,Victor Radley,lock,3.6
 Roosters,Angus Crichton,interchange,3.4
 Roosters,Lindsay Collins,prop,3.2
-Roosters,Hugo Savala,five-eighth,2.6
+Roosters,Hugo Savala,interchange,2.6
 Roosters,Victor Radley Interchange,lock,2.5
 Roosters,Naufahu Whyte,prop,2.4
 Roosters,Connor Watson,interchange,2.3
@@ -139,13 +141,13 @@ Roosters,Nat Butcher,interchange,1.8
 Roosters,Daniel Tupou,winger,1.7
 Roosters,Salesi Foketi,2nd row,1.5
 Roosters,Cody Ramsey,interchange,1.0
-Roosters,Tommy Talau,interchange,1.0
 Roosters,Tommy Talau Reserves,interchange,1.0
 Roosters,Taylor Losalu Panthers,reserve,0.7
 Roosters,Benaiah Ioelu,reserve,0.6
 Roosters,Egan Butcher,reserve,0.6
 Roosters,Taylor Losalu,reserve,0.6
 Roosters,Toby Rodwell,reserve,0.6
+Roosters,Tommy Talau,reserve,0.6
 Sharks,Nicho Hynes,halfback,4.8
 Sharks,Braydon Trindall,five-eighth,4.1
 Sharks,Addin Fonua-Blake,prop,4.0
