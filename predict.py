@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List, Dict, Tuple, Optional
 from io import StringIO
+from statistics import NormalDist
 import json
 import os
 
@@ -1988,6 +1989,13 @@ def build_predictions() -> pd.DataFrame:
         final_home_prob = clamp_probability(final_home_prob)
         final_away_prob = 1.0 - final_home_prob
 
+        # Keep the published expected margin consistent with the final win
+        # probability after market, rest, availability and upset adjustments.
+        # simulate_match_ad() models each team score with sd=8.2, so the
+        # home-minus-away margin has sd = sqrt(2) * 8.2.
+        margin_sd = math.sqrt(2.0) * 8.2
+        final_exp_margin = NormalDist().inv_cdf(final_home_prob) * margin_sd
+
         if final_home_prob >= final_away_prob:
             predicted_winner = m.home
             pick_prob = final_home_prob
@@ -2015,15 +2023,15 @@ def build_predictions() -> pd.DataFrame:
                 "away": m.away,
                 "venue": m.venue,
                 "predicted_winner": predicted_winner,
-                "winner_confidence_band": confidence_band(pick_prob, conf, abs(exp_margin)),
+                "winner_confidence_band": confidence_band(pick_prob, conf, abs(final_exp_margin)),
                 "home_win_probability_raw": round(raw_home_prob, 3),
                 "away_win_probability_raw": round(1.0 - raw_home_prob, 3),
                 "market_home_win_prob": round(market_home_prob, 3) if not math.isnan(market_home_prob) else np.nan,
                 "final_home_win_prob": round(final_home_prob, 3),
                 "final_away_win_prob": round(final_away_prob, 3),
                 "win_probability": round(pick_prob, 3),
-                "exp_margin_home": round(exp_margin, 1),
-                "predicted_margin": round(exp_margin if predicted_winner == m.home else -exp_margin, 1),
+                "exp_margin_home": round(final_exp_margin, 1),
+                "predicted_margin": round(final_exp_margin if predicted_winner == m.home else -final_exp_margin, 1),
                 "exp_total": round(exp_total, 1),
                 "confidence": round(conf, 2),
                 "home_odds": home_odds,
