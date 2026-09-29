@@ -60,6 +60,11 @@ MANUAL_RESULTS_2026_PATH = "results_2026.csv"
 FIXTURE_FEED_URL = "https://fixturedownload.com/feed/json/nrl-2026"
 SYDNEY_TZ = ZoneInfo("Australia/Sydney")
 
+# Grand Finals are played at a neutral venue. Add each season's Grand Final
+# date here so the nominal home team receives no home-ground/form advantage.
+GRAND_FINAL_DATES = {"2026-10-04"}
+NEUTRAL_GRAND_FINAL_VENUE = "NEUTRAL_GRAND_FINAL"
+
 
 # ----------------------------
 # MODEL SETTINGS
@@ -495,7 +500,7 @@ def fixtures_from_odds_csv(path: str = "odds.csv") -> List[Match]:
                 kickoff_local="",
                 home=home,
                 away=away,
-                venue="",
+                venue=(NEUTRAL_GRAND_FINAL_VENUE if date in GRAND_FINAL_DATES else ""),
             )
         )
 
@@ -1131,12 +1136,17 @@ def expected_points(
     form_stats = model.get("form_stats", {})
     home_away_form = model.get("home_away_form", {})
 
-    home_pts = mu + ha + atk.get(home, 0.0) - dfn.get(away, 0.0)
+    neutral_grand_final = venue == NEUTRAL_GRAND_FINAL_VENUE
+
+    # Grand Finals are neutral: the team listed as "home" receives no general
+    # home advantage, no home-v-away form advantage and no team home-ground edge.
+    effective_ha = 0.0 if neutral_grand_final else ha
+    home_pts = mu + effective_ha + atk.get(home, 0.0) - dfn.get(away, 0.0)
     away_pts = mu + atk.get(away, 0.0) - dfn.get(home, 0.0)
 
     ladder_adj = ladder_strength_adjustment(home, away, ladder_stats)
     form_adj = form_strength_adjustment(home, away, form_stats)
-    ha_form_adj = home_away_form_adjustment(home, away, home_away_form)
+    ha_form_adj = 0.0 if neutral_grand_final else home_away_form_adjustment(home, away, home_away_form)
 
     home_pts += ladder_adj + form_adj + ha_form_adj
     away_pts -= ladder_adj + form_adj + ha_form_adj
@@ -1145,7 +1155,7 @@ def expected_points(
     home_pts += h_adj
     away_pts += a_adj
 
-    hge = float(home_ground_edges.get(home, 0.0))
+    hge = 0.0 if neutral_grand_final else float(home_ground_edges.get(home, 0.0))
     home_pts += hge
     away_pts -= hge * 0.15
 
@@ -1972,12 +1982,8 @@ def build_predictions() -> pd.DataFrame:
 
         final_upset_flag = 1 if final_upset_score >= UPSET_FLAG_THRESHOLD else 0
 
-        # Keep the existing extra upset push, but slightly reduced because team
-        # availability and rest now directly alter the probability beforehand.
-        if final_upset_score >= 2.5:
-            final_home_prob += 0.02 if underdog_team == m.home else -0.02
-        elif final_upset_score >= 2.0:
-            final_home_prob += 0.01 if underdog_team == m.home else -0.01
+        # The scored upset adjustment above is the single probability adjustment.
+        # Do not apply a second underdog push for the same upset signal.
 
         final_home_prob = clamp_probability(final_home_prob)
         final_away_prob = 1.0 - final_home_prob
