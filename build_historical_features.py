@@ -42,7 +42,11 @@ OUTPUT_COLUMNS = [
     "home_players_retained","away_players_retained",
     "home_lineup_changes","away_lineup_changes",
     "home_retention_pct","away_retention_pct",
+    "home_spine_players_retained","away_spine_players_retained",
+    "home_spine_changes","away_spine_changes",
+    "home_spine_retention_pct","away_spine_retention_pct",
     "continuity_retention_edge_home",
+    "continuity_spine_retention_edge_home",
     "home_nrl_games_total","away_nrl_games_total",
     "home_spine_nrl_games","away_spine_nrl_games",
     "home_finals_games_total","away_finals_games_total",
@@ -102,56 +106,127 @@ def recent(history, n):
     return sum(r["won"] for r in s)/len(s), sum(r["margin"] for r in s)/len(s)
 
 def load_team_lists():
+    """Load archived team-list snapshots.
+
+    Current team_changes.py history uses round_start / round_end rather than a
+    generic date column.  We preserve those windows so a historical match can
+    only use the team list archived for the round containing that match.
+    """
     if not os.path.exists(TEAM_LISTS_PATH):
         return pd.DataFrame()
     try:
-        d=pd.read_csv(TEAM_LISTS_PATH)
+        d = pd.read_csv(TEAM_LISTS_PATH)
     except Exception:
         return pd.DataFrame()
-    if "date" in d.columns:
-        d["date"]=pd.to_datetime(d["date"], errors="coerce")
+
+    for c in ["round_start", "round_end", "captured_at", "date"]:
+        if c in d.columns:
+            d[c] = pd.to_datetime(d[c], errors="coerce")
     return d
 
-def selected_17(team_lists, team, before_date):
-    """Return latest known selected 17 strictly before/on target match date.
-    Supports common team-list column variants and fails safely if unavailable.
+def _team_snapshots(team_lists, team):
+    if team_lists.empty or "team" not in team_lists.columns:
+        return pd.DataFrame()
+    d = team_lists[team_lists["team"].map(norm_team) == norm_team(team)].copy()
+    if d.empty:
+        return d
+
+    # Preferred schema produced by team_changes.py.
+    if {"round_start", "round_end"}.issubset(d.columns):
+        d = d.dropna(subset=["round_start", "round_end"])
+        return d
+
+    # Backward-compatible support for any older date-based history.
+    if "date" in d.columns:
+        d = d.dropna(subset=["date"]).copy()
+        d["round_start"] = d["date"]
+        d["round_end"] = d["date"]
+        return d
+    return pd.DataFrame()
+
+def _snapshot_round_for_match(team_lists, team, match_date):
+    """Return the archived round window that actually contains match_date.
+
+    If overlapping windows exist, prefer the most recently starting, then the
+    shortest window.  This is important around finals where archived windows
+    can overlap by a boundary date.
     """
-    if team_lists.empty or "team" not in team_lists.columns or "date" not in team_lists.columns:
+    d = _team_snapshots(team_lists, team)
+    if d.empty:
+        return None
+    rounds = d[["round_start", "round_end"]].drop_duplicates().copy()
+    rounds = rounds[(rounds["round_start"] <= match_date) & (rounds["round_end"] >= match_date)]
+    if rounds.empty:
+        return None
+    rounds["window_days"] = (rounds["round_end"] - rounds["round_start"]).dt.days
+    rounds = rounds.sort_values(["round_start", "window_days"], ascending=[False, True])
+    r = rounds.iloc[0]
+    return r["round_start"], r["round_end"]
+
+def _selected_from_round(team_lists, team, round_key):
+    if round_key is None:
         return []
-    d=team_lists[
-        (team_lists["team"].map(norm_team)==norm_team(team)) &
-        (team_lists["date"] <= before_date)
-    ].copy()
+    d = _team_snapshots(team_lists, team)
     if d.empty:
         return []
-    latest=d["date"].max()
-    d=d[d["date"]==latest]
-    jersey_col = next((c for c in ["jersey","number","position_number"] if c in d.columns), None)
-    player_col = next((c for c in ["player","player_name","name"] if c in d.columns), None)
+    rs, re = round_key
+    d = d[(d["round_start"] == rs) & (d["round_end"] == re)].copy()
+
+    jersey_col = next((c for c in ["jersey", "number", "position_number"] if c in d.columns), None)
+    player_col = next((c for c in ["player", "player_name", "name"] if c in d.columns), None)
     if not jersey_col or not player_col:
         return []
-    d[jersey_col]=pd.to_numeric(d[jersey_col], errors="coerce")
-    d=d[d[jersey_col].between(1,17)]
-    return [(int(r[jersey_col]), str(r[player_col]).strip()) for _,r in d.iterrows()]
 
-def prior_selected_17(team_lists, team, target_date):
-    if team_lists.empty or "team" not in team_lists.columns or "date" not in team_lists.columns:
+    d[jersey_col] = pd.to_numeric(d[jersey_col], errors="coerce")
+    d = d[d[jersey_col].between(1, 17)].copy()
+    d = d.dropna(subset=[jersey_col, player_col])
+    d = d.drop_duplicates(subset=[jersey_col], keep="last")
+
+    # Only trust complete 1-17 snapshots. Missing history stays missing rather
+    # than being silently treated as zero changes.
+    if set(d[jersey_col].astype(int)) != set(range(1, 18)) or len(d) != 17:
         return []
-    d=team_lists[
-        (team_lists["team"].map(norm_team)==norm_team(team)) &
-        (team_lists["date"] < target_date)
-    ]
-    if d.empty: return []
-    return selected_17(team_lists, team, d["date"].max())
+    return [(int(r[jersey_col]), str(r[player_col]).strip()) for _, r in d.iterrows()]
+
+def selected_17(team_lists, team, match_date):
+    return _selected_from_round(
+        team_lists, team, _snapshot_round_for_match(team_lists, team, match_date)
+    )
+
+def prior_selected_17(team_lists, team, match_date):
+    current = _snapshot_round_for_match(team_lists, team, match_date)
+    if current is None:
+        return []
+    d = _team_snapshots(team_lists, team)
+    if d.empty:
+        return []
+    current_start = current[0]
+    rounds = d[["round_start", "round_end"]].drop_duplicates().copy()
+    rounds = rounds[rounds["round_start"] < current_start]
+    if rounds.empty:
+        return []
+    rounds = rounds.sort_values(["round_start", "round_end"], ascending=[False, False])
+    r = rounds.iloc[0]
+    return _selected_from_round(team_lists, team, (r["round_start"], r["round_end"]))
 
 def continuity(current, previous):
-    cur={p for _,p in current if p}
-    prev={p for _,p in previous if p}
-    if not cur or not prev:
-        return None,None,None
-    retained=len(cur & prev)
-    changes=len(cur-prev)
-    return retained,changes,retained/len(cur)
+    cur = {p for _, p in current if p}
+    prev = {p for _, p in previous if p}
+    if len(cur) != 17 or len(prev) != 17:
+        return None, None, None
+    retained = len(cur & prev)
+    changes = len(cur - prev)
+    return retained, changes, retained / 17.0
+
+def spine_continuity(current, previous):
+    """Continuity of the conventional NRL spine jerseys 1, 6, 7 and 9."""
+    cur = {j: p for j, p in current if j in (1, 6, 7, 9) and p}
+    prev = {j: p for j, p in previous if j in (1, 6, 7, 9) and p}
+    if set(cur) != {1, 6, 7, 9} or set(prev) != {1, 6, 7, 9}:
+        return None, None, None
+    retained = sum(cur[j] == prev[j] for j in (1, 6, 7, 9))
+    changes = 4 - retained
+    return retained, changes, retained / 4.0
 
 def load_experience():
     if not os.path.exists(EXPERIENCE_PATH):
@@ -218,6 +293,8 @@ def build():
         ap=prior_selected_17(lists,away,date)
         hr,hchg,hrp=continuity(hc,hp)
         ar,achg,arp=continuity(ac,ap)
+        hsr,hschg,hsrp=spine_continuity(hc,hp)
+        asr,aschg,asrp=spine_continuity(ac,ap)
 
         he=squad_experience(hc,exp)
         ae=squad_experience(ac,exp)
@@ -242,7 +319,11 @@ def build():
             "home_players_retained":hr,"away_players_retained":ar,
             "home_lineup_changes":hchg,"away_lineup_changes":achg,
             "home_retention_pct":hrp,"away_retention_pct":arp,
+            "home_spine_players_retained":hsr,"away_spine_players_retained":asr,
+            "home_spine_changes":hschg,"away_spine_changes":aschg,
+            "home_spine_retention_pct":hsrp,"away_spine_retention_pct":asrp,
             "continuity_retention_edge_home":edge(hrp,arp),
+            "continuity_spine_retention_edge_home":edge(hsrp,asrp),
             "home_nrl_games_total":he["nrl_games"],"away_nrl_games_total":ae["nrl_games"],
             "home_spine_nrl_games":he["spine_nrl_games"],"away_spine_nrl_games":ae["spine_nrl_games"],
             "home_finals_games_total":he["nrl_finals_games"],"away_finals_games_total":ae["nrl_finals_games"],
