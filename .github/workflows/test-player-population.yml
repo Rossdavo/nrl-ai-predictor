@@ -1,0 +1,98 @@
+name: Test Player Population
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-player-population:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4 lxml
+
+      - name: Collect RLP season player population
+        run: python collect_rlp_season_players.py
+
+      - name: Inspect RLP season population
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+
+          p = Path("rlp_season_players.csv")
+          if not p.exists():
+              raise SystemExit("rlp_season_players.csv was not created")
+
+          df = pd.read_csv(p)
+          season = pd.to_numeric(df["season"], errors="coerce")
+          cur = df[season == 2026].copy()
+
+          print("\n=== RLP SEASON POPULATION SUMMARY ===")
+          print(f"All rows: {len(df)}")
+          print(f"2026 player-team rows: {len(cur)}")
+          print(f"2026 unique players: {cur['player_key'].nunique()}")
+          print(f"2026 clubs: {cur['team'].nunique()}")
+
+          print("\n2026 players by club:")
+          print(cur.groupby("team")["player_key"].nunique().sort_index().to_string())
+
+          future = df[season > 2026].copy()
+          if not future.empty:
+              print("\nFuture/seed players:")
+              print(future.groupby(["season", "team"])["player_key"].nunique().to_string())
+
+          failures = Path("rlp_season_players_failures.csv")
+          if failures.exists():
+              try:
+                  f = pd.read_csv(failures)
+              except pd.errors.EmptyDataError:
+                  f = pd.DataFrame()
+              print(f"\nReview/unmapped rows: {len(f)}")
+              if not f.empty:
+                  print(f.head(40).to_string(index=False))
+
+          expected = {
+              "Broncos", "Raiders", "Bulldogs", "Sharks", "Dolphins",
+              "Titans", "Sea Eagles", "Storm", "Knights", "Cowboys",
+              "Warriors", "Eels", "Panthers", "Rabbitohs", "Dragons",
+              "Roosters", "Wests Tigers"
+          }
+          found = set(cur["team"].dropna().astype(str))
+          print("\nExpected-club check:")
+          print(f"Missing 2026 clubs: {sorted(expected-found) if expected-found else 'NONE'}")
+          print(f"Unexpected clubs: {sorted(found-expected) if found-expected else 'NONE'}")
+          PY
+
+      - name: Upload population outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-population-test-output
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            rlp_season_players.csv
+            rlp_season_players_failures.csv
+            rlp_season_players_summary.csv
+
+      - name: Final note
+        if: always()
+        run: |
+          echo "Population-only test complete."
+          echo "No career collection was run."
+          echo "No ratings or predictions were changed."
