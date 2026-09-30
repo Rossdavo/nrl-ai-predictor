@@ -76,6 +76,12 @@ jobs:
           echo "=== RUN: performance.py ==="
           python -u performance.py || true
 
+          echo "=== RUN: build_historical_features.py ==="
+          python -u build_historical_features.py || true
+
+          echo "=== RUN: backtest_experimental_features.py ==="
+          python -u backtest_experimental_features.py || true
+
           echo "=== RUN: report.py ==="
           python -u report.py || true
 
