@@ -44,11 +44,62 @@ jobs:
             fi
           done
 
-      - name: Build player master
+      - name: Collect RLP season player population
+        run: |
+          python collect_rlp_season_players.py
+
+      - name: Inspect RLP season population
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+
+          p = Path("rlp_season_players.csv")
+          if not p.exists():
+              raise SystemExit("rlp_season_players.csv was not created")
+
+          df = pd.read_csv(p)
+
+          print("\n=== RLP SEASON POPULATION SUMMARY ===")
+          print(f"All rows: {len(df)}")
+
+          season = pd.to_numeric(df["season"], errors="coerce")
+          cur = df[season == 2026].copy()
+
+          print(f"2026 player-team rows: {len(cur)}")
+          print(f"2026 unique players: {cur['player_key'].nunique()}")
+          print(f"2026 clubs: {cur['team'].nunique()}")
+
+          print("\n2026 players by club:")
+          print(
+              cur.groupby("team")["player_key"]
+              .nunique()
+              .sort_index()
+              .to_string()
+          )
+
+          future = df[season > 2026].copy()
+          if not future.empty:
+              print("\nFuture/seed players:")
+              print(
+                  future.groupby(["season", "team"])["player_key"]
+                  .nunique()
+                  .to_string()
+              )
+
+          failures = Path("rlp_season_players_failures.csv")
+          if failures.exists():
+              f = pd.read_csv(failures)
+              print(f"\nSeason population review rows: {len(f)}")
+              if not f.empty:
+                  print(f.head(30).to_string(index=False))
+          PY
+
+      - name: Build existing player master
         run: |
           python build_player_master.py
 
-      - name: Inspect player master
+      - name: Inspect existing player master
         run: |
           python - <<'PY'
           import pandas as pd
@@ -59,7 +110,7 @@ jobs:
               raise SystemExit("player_master.csv was not created")
 
           df = pd.read_csv(p)
-          print("\n=== PLAYER MASTER SUMMARY ===")
+          print("\n=== EXISTING PLAYER MASTER SUMMARY ===")
           print(f"Rows: {len(df)}")
 
           if "season" in df.columns and not df.empty:
@@ -77,7 +128,7 @@ jobs:
         run: |
           python collect_rlp_experience.py
 
-      - name: Summarise RLP collection
+      - name: Summarise RLP experience collection
         if: always()
         run: |
           python - <<'PY'
@@ -86,7 +137,7 @@ jobs:
 
           p = Path("rlp_player_experience.csv")
 
-          print("\n=== RLP COLLECTION SUMMARY ===")
+          print("\n=== RLP EXPERIENCE COLLECTION SUMMARY ===")
 
           if not p.exists():
               print("rlp_player_experience.csv was not created.")
@@ -166,6 +217,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
           path: |
+            rlp_season_players.csv
+            rlp_season_players_failures.csv
+            rlp_season_players_summary.csv
             player_master.csv
             rlp_player_experience.csv
             rlp_player_experience_failures.csv
