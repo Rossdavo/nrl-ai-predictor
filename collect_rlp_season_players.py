@@ -2,7 +2,7 @@
 """
 collect_rlp_season_players.py
 
-Experimental all-club player population collector for the NRL AI Predictor.
+Experimental all-club player population collector for the NRL AI Predictor.\nParser revision: v2 direct HTML row parser.
 
 Purpose
 -------
@@ -78,6 +78,7 @@ TEAM_CODE_MAP = {
     "NQ": "Cowboys",
     "NZ": "Warriors",
     "NZW": "Warriors",
+    "WAR": "Warriors",
     "PAR": "Eels",
     "PEN": "Panthers",
     "SOU": "Rabbitohs",
@@ -257,59 +258,85 @@ def fetch_html() -> str:
     return r.text
 
 
-def find_player_table(html_text: str) -> pd.DataFrame:
-    tables = pd.read_html(StringIO(html_text))
-    candidates = []
+def parse_rlp_player_rows(html_text: str) -> list[dict]:
+    """
+    Parse the RLP season player table directly from HTML.
 
-    for df in tables:
-        cols = [clean(c) for c in df.columns]
-        lower = [c.lower() for c in cols]
-        if (
-            any(c == "player" for c in lower)
-            and any("team" in c for c in lower)
-            and any(c == "app" for c in lower)
-        ):
-            tmp = df.copy()
-            tmp.columns = cols
-            candidates.append(tmp)
+    Live RLP season rows are ordered:
+      Player | Age | Team(s) | Position(s) | APP | INT | TOT |
+      W | L | D | W% | T | G | Perc | FG | 2FG | Pts | List
 
-    if not candidates:
-        raise RuntimeError("Could not identify RLP season player table")
+    We identify rows by:
+    - a player link under /players/
+    - at least 17 table cells
+    - a Team(s) cell containing a team-code/appearance token such as PAR-19
 
-    return max(candidates, key=len)
+    This avoids pandas.read_html() assumptions about RLP's markup.
+    """
+    soup = BeautifulSoup(html_text, "html.parser")
+    rows = []
 
+    for tr in soup.find_all("tr"):
+        cells = tr.find_all(["td", "th"])
+        if len(cells) < 17:
+            continue
 
-def col_like(df: pd.DataFrame, exact=None, contains=None) -> str | None:
-    for c in df.columns:
-        ck = clean(c).lower()
-        if exact is not None and ck == exact:
-            return c
-        if contains is not None and contains in ck:
-            return c
-    return None
+        values = [clean(c.get_text(" ", strip=True)) for c in cells]
+        first_link = cells[0].find("a", href=True)
 
+        if not first_link:
+            continue
+
+        href = clean(first_link.get("href", ""))
+        if "/players/" not in href:
+            continue
+
+        raw_player = values[0]
+        raw_team = values[2]
+        raw_pos = values[3]
+
+        if not re.search(r"[A-Za-z]{2,4}\s*-\s*\d+", raw_team):
+            continue
+
+        rows.append({
+            "player": raw_player,
+            "age": values[1],
+            "team": raw_team,
+            "position": raw_pos,
+            "app": values[4],
+            "int": values[5],
+            "tot": values[6],
+            "wins": values[7],
+            "losses": values[8],
+            "draws": values[9],
+            "win_pct": values[10],
+            "tries": values[11],
+            "goals": values[12],
+            "goal_pct": values[13],
+            "field_goals": values[14],
+            "two_point_field_goals": values[15],
+            "points": values[16],
+            "player_href": href,
+        })
+
+    if not rows:
+        raise RuntimeError(
+            "Could not identify any RLP season player rows from HTML"
+        )
+
+    return rows
 
 def collect_rlp() -> tuple[pd.DataFrame, pd.DataFrame]:
     html_text = fetch_html()
-    table = find_player_table(html_text)
-
-    player_col = col_like(table, exact="player")
-    team_col = col_like(table, contains="team")
-    pos_col = col_like(table, contains="position")
-    app_col = col_like(table, exact="app")
-    int_col = col_like(table, exact="int")
-    tot_col = col_like(table, exact="tot")
-
-    if not player_col or not team_col:
-        raise RuntimeError("Required Player/Team columns missing")
+    source_rows = parse_rlp_player_rows(html_text)
 
     rows = []
     failures = []
 
-    for _, r in table.iterrows():
-        raw_player = clean(r.get(player_col, ""))
-        raw_team = clean(r.get(team_col, ""))
-        raw_pos = clean(r.get(pos_col, "")) if pos_col else ""
+    for r in source_rows:
+        raw_player = clean(r.get("player", ""))
+        raw_team = clean(r.get("team", ""))
+        raw_pos = clean(r.get("position", ""))
 
         if not raw_player or raw_player.lower() == "player":
             continue
@@ -346,14 +373,14 @@ def collect_rlp() -> tuple[pd.DataFrame, pd.DataFrame]:
                 "primary_position": primary_position(raw_pos),
                 "season_team_appearances": team_apps,
                 "season_starts": pd.to_numeric(
-                    pd.Series([r.get(app_col)]), errors="coerce"
-                ).iloc[0] if app_col else pd.NA,
+                    pd.Series([r.get("app")]), errors="coerce"
+                ).iloc[0],
                 "season_interchange": pd.to_numeric(
-                    pd.Series([r.get(int_col)]), errors="coerce"
-                ).iloc[0] if int_col else pd.NA,
+                    pd.Series([r.get("int")]), errors="coerce"
+                ).iloc[0],
                 "season_total_appearances": pd.to_numeric(
-                    pd.Series([r.get(tot_col)]), errors="coerce"
-                ).iloc[0] if tot_col else pd.NA,
+                    pd.Series([r.get("tot")]), errors="coerce"
+                ).iloc[0],
                 "raw_rlp_team": raw_team,
                 "raw_rlp_position": raw_pos,
                 "roster_status": "appeared_in_nrl_season",
