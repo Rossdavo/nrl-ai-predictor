@@ -2,7 +2,7 @@
 """
 collect_rlp_experience.py
 
-Experimental Rugby League Project (RLP) career-experience collector.
+Experimental Rugby League Project (RLP) career-experience collector.\nParser revision: v2 direct HTML career-row parser.
 
 Purpose
 -------
@@ -322,9 +322,35 @@ def find_competition_column(df: pd.DataFrame) -> str | None:
     return df.columns[0] if len(df.columns) else None
 
 
-def competition_appearances(
-    tables: list[pd.DataFrame],
+def _cell_text(cell) -> str:
+    return clean(cell.get_text(" ", strip=True))
+
+
+def _to_int(value: str) -> int | None:
+    value = clean(value).replace(",", "")
+    if value in {"", "-", "–", "—"}:
+        return None
+    m = re.search(r"\d+", value)
+    return int(m.group(0)) if m else None
+
+
+def competition_appearances_from_html(
+    html_text: str,
 ) -> dict[str, int | None]:
+    """
+    Parse RLP's Playing Career Statistics directly from HTML.
+
+    RLP repeats a section-heading row followed by a header row. The important
+    career rows use this stable order:
+
+      competition | blank | Comp Wins | Starts | Int | APP | ...
+
+    Therefore APP is cell index 5 for the career-summary rows.
+
+    We identify the competition by the first cell and only accept rows with
+    enough cells. This avoids pandas.read_html() being confused by RLP's
+    repeated headers and mixed tables.
+    """
     result = {
         "nrl_games": None,
         "nrl_finals_games": None,
@@ -333,57 +359,51 @@ def competition_appearances(
         "super_league_games": None,
     }
 
-    for raw in tables:
-        df = flatten_columns(raw)
-        if df.empty:
+    soup = BeautifulSoup(html_text, "html.parser")
+
+    targets = {
+        "nrl premiership": "nrl_games",
+        "nrl finals": "nrl_finals_games",
+        "state of origin": "state_of_origin_games",
+        "senior international matches tests": "test_international_games",
+        "super league": "super_league_games",
+    }
+
+    for tr in soup.find_all("tr"):
+        cells = tr.find_all(["th", "td"])
+        if len(cells) < 6:
             continue
 
-        app_col = find_app_column(df)
-        comp_col = find_competition_column(df)
-        if not app_col or not comp_col:
+        values = [_cell_text(c) for c in cells]
+        first = player_key(values[0])
+
+        # Ignore "By Year", team rows and header rows. Exact/near-exact
+        # competition labels from the Playing Career Statistics summary only.
+        field = None
+
+        if first == "nrl premiership":
+            field = "nrl_games"
+        elif first == "nrl finals":
+            field = "nrl_finals_games"
+        elif first == "state of origin":
+            field = "state_of_origin_games"
+        elif (
+            first == "senior international matches tests"
+            or first == "senior international matches"
+        ):
+            field = "test_international_games"
+        elif first == "super league":
+            field = "super_league_games"
+
+        if field is None:
             continue
 
-        for _, row in df.iterrows():
-            comp = clean(row.get(comp_col, ""))
-            comp_key = player_key(comp)
-            app = pd.to_numeric(
-                pd.Series([row.get(app_col)]), errors="coerce"
-            ).iloc[0]
-            if pd.isna(app):
-                continue
-            app = int(app)
+        app = _to_int(values[5])
+        if app is None:
+            continue
 
-            if (
-                "nrl premiership" in comp_key
-                or "arl nrl premiership" in comp_key
-                or "nswrl nrl premiership" in comp_key
-                or "nswrfl nswrl nrl premiership" in comp_key
-            ):
-                result["nrl_games"] = max(result["nrl_games"] or 0, app)
-
-            elif "nrl finals" in comp_key or "arl nrl finals" in comp_key:
-                result["nrl_finals_games"] = max(
-                    result["nrl_finals_games"] or 0, app
-                )
-
-            elif "state of origin" in comp_key:
-                result["state_of_origin_games"] = max(
-                    result["state_of_origin_games"] or 0, app
-                )
-
-            elif (
-                "tests senior international matches" in comp_key
-                or comp_key == "tests"
-                or "senior international matches" in comp_key
-            ):
-                result["test_international_games"] = max(
-                    result["test_international_games"] or 0, app
-                )
-
-            elif comp_key == "super league" or "super league" in comp_key:
-                result["super_league_games"] = max(
-                    result["super_league_games"] or 0, app
-                )
+        # If duplicate summary-like rows exist, keep the largest career total.
+        result[field] = max(result[field] or 0, app)
 
     return result
 
@@ -453,7 +473,7 @@ def collect_one(
         return base
 
     rlp_name, positions = parse_name_and_positions(text)
-    stats = competition_appearances(parse_html_tables(text))
+    stats = competition_appearances_from_html(text)
 
     base["rlp_name"] = rlp_name
     base["rlp_positions"] = positions
@@ -513,7 +533,7 @@ def cache_lookup(df: pd.DataFrame) -> dict:
     for _, row in df.iterrows():
         pkey = clean(row.get("player_key", ""))
         status = clean(row.get("collection_status", ""))
-        if pkey and status in {"ok", "partial"}:
+        if pkey and status in {"ok"}:
             lookup[pkey] = row.to_dict()
     return lookup
 
@@ -588,7 +608,7 @@ def main() -> int:
             [
                 old_cache,
                 result[result["collection_status"].isin(
-                    ["ok", "cached_ok", "partial"]
+                    ["ok", "cached_ok"]
                 )]
             ],
             ignore_index=True,
