@@ -1393,3 +1393,5 @@ date,home,away,predicted_winner,actual_winner,_signal_value,_signal_side,_baseli
 2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,16.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
 2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,16.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
 2026-09-12,Sharks,Cowboys,Sharks,Sharks,20.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.0588235294117647,HOME,HOME,AWAY,continuity_retention_edge_home,0.05,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,-0.0588235294117647,AWAY,HOME,AWAY,continuity_retention_edge_home,0.05,True,False,True,False
