@@ -1,0 +1,1395 @@
+date,home,away,predicted_winner,actual_winner,_signal_value,_signal_side,_baseline_side,_actual_side,feature,threshold_abs,signal_correct,baseline_correct,corrected_baseline_error,broke_baseline_winner
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,2.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,2.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,5.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-09,Rabbitohs,Sharks,Sharks,Rabbitohs,-1.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-15,Rabbitohs,Dolphins,Dolphins,Dolphins,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,6.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-1.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,4.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-17,Warriors,Broncos,Warriors,Warriors,1.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-2.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,2.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-24,Cowboys,Rabbitohs,Rabbitohs,Cowboys,1.0,HOME,AWAY,HOME,momentum_streak_edge_home,1.0,True,False,True,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-2.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,4.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-05-30,Wests Tigers,Bulldogs,Wests Tigers,Wests Tigers,-1.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-06-05,Storm,Knights,Knights,Storm,-4.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,2.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,5.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,-1.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-5.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-6.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-4.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,2.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-1.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-06-26,Titans,Bulldogs,Titans,Bulldogs,-1.0,AWAY,HOME,AWAY,momentum_streak_edge_home,1.0,True,False,True,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,7.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-06-27,Sea Eagles,Storm,Sea Eagles,Sea Eagles,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-06-28,Knights,Wests Tigers,Knights,Knights,1.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-03,Panthers,Rabbitohs,Panthers,Panthers,-2.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-1.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-7.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,2.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-07-11,Dolphins,Sharks,Dolphins,Sharks,-1.0,AWAY,HOME,AWAY,momentum_streak_edge_home,1.0,True,False,True,False
+2026-07-11,Roosters,Eels,Roosters,Roosters,1.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-07-12,Sea Eagles,Cowboys,Sea Eagles,Cowboys,-1.0,AWAY,HOME,AWAY,momentum_streak_edge_home,1.0,True,False,True,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,1.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-07-17,Roosters,Storm,Roosters,Roosters,2.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-17,Sharks,Knights,Sharks,Sharks,2.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-18,Bulldogs,Wests Tigers,Bulldogs,Bulldogs,-1.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-07-18,Raiders,Rabbitohs,Rabbitohs,Raiders,1.0,HOME,AWAY,HOME,momentum_streak_edge_home,1.0,True,False,True,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,-1.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-07-19,Dolphins,Cowboys,Dolphins,Dolphins,-2.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-07-24,Knights,Roosters,Roosters,Roosters,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-25,Cowboys,Broncos,Cowboys,Cowboys,-2.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,3.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-26,Dragons,Titans,Titans,Titans,-1.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-1.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-2.0,AWAY,HOME,AWAY,momentum_streak_edge_home,1.0,True,False,True,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-08-01,Titans,Warriors,Warriors,Warriors,2.0,HOME,AWAY,AWAY,momentum_streak_edge_home,1.0,False,True,False,True
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,3.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,3.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-07,Warriors,Panthers,Panthers,Warriors,-1.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,2.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-08,Rabbitohs,Eels,Rabbitohs,Rabbitohs,-1.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-7.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-14,Bulldogs,Rabbitohs,Bulldogs,Rabbitohs,-1.0,AWAY,HOME,AWAY,momentum_streak_edge_home,1.0,True,False,True,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-15,Eels,Cowboys,Cowboys,Eels,-1.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,5.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-08-16,Knights,Titans,Knights,Knights,1.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-20,Storm,Panthers,Panthers,Panthers,1.0,HOME,AWAY,AWAY,momentum_streak_edge_home,1.0,False,True,False,True
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,3.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,1.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,1.0,HOME,AWAY,AWAY,momentum_streak_edge_home,1.0,False,True,False,True
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,2.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-1.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,8.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-08-27,Broncos,Storm,Storm,Storm,1.0,HOME,AWAY,AWAY,momentum_streak_edge_home,1.0,False,True,False,True
+2026-08-28,Sea Eagles,Dragons,Sea Eagles,Sea Eagles,1.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-29,Cowboys,Wests Tigers,Cowboys,Cowboys,-1.0,AWAY,HOME,HOME,momentum_streak_edge_home,1.0,False,True,False,True
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,-5.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-1.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,4.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-09-04,Rabbitohs,Roosters,Rabbitohs,Rabbitohs,1.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-6.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-09-05,Cowboys,Raiders,Raiders,Raiders,1.0,HOME,AWAY,AWAY,momentum_streak_edge_home,1.0,False,True,False,True
+2026-09-05,Sharks,Storm,Storm,Storm,-1.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,1.0,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,3.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-1.0,AWAY,AWAY,HOME,momentum_streak_edge_home,1.0,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,2.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,2.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-09-12,Warriors,Dolphins,Warriors,Dolphins,-1.0,AWAY,HOME,AWAY,momentum_streak_edge_home,1.0,True,False,True,False
+2026-09-13,Panthers,Roosters,Panthers,Panthers,3.0,HOME,HOME,HOME,momentum_streak_edge_home,1.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,8.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,3.0,HOME,HOME,AWAY,momentum_streak_edge_home,1.0,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,2.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,2.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,5.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-15,Rabbitohs,Dolphins,Dolphins,Dolphins,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,6.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,4.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-2.0,AWAY,AWAY,HOME,momentum_streak_edge_home,2.0,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,2.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-2.0,AWAY,AWAY,HOME,momentum_streak_edge_home,2.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,4.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-4.0,AWAY,AWAY,HOME,momentum_streak_edge_home,2.0,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,2.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,5.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-5.0,AWAY,AWAY,HOME,momentum_streak_edge_home,2.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-6.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-4.0,AWAY,AWAY,HOME,momentum_streak_edge_home,2.0,False,False,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,2.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,7.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-06-27,Sea Eagles,Storm,Sea Eagles,Sea Eagles,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,2.0,False,True,False,True
+2026-07-03,Panthers,Rabbitohs,Panthers,Panthers,-2.0,AWAY,HOME,HOME,momentum_streak_edge_home,2.0,False,True,False,True
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-7.0,AWAY,AWAY,HOME,momentum_streak_edge_home,2.0,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,2.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,2.0,False,True,False,True
+2026-07-17,Roosters,Storm,Roosters,Roosters,2.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-07-17,Sharks,Knights,Sharks,Sharks,2.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-07-19,Dolphins,Cowboys,Dolphins,Dolphins,-2.0,AWAY,HOME,HOME,momentum_streak_edge_home,2.0,False,True,False,True
+2026-07-24,Knights,Roosters,Roosters,Roosters,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-07-25,Cowboys,Broncos,Cowboys,Cowboys,-2.0,AWAY,HOME,HOME,momentum_streak_edge_home,2.0,False,True,False,True
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,3.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-2.0,AWAY,HOME,AWAY,momentum_streak_edge_home,2.0,True,False,True,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,2.0,False,True,False,True
+2026-08-01,Titans,Warriors,Warriors,Warriors,2.0,HOME,AWAY,AWAY,momentum_streak_edge_home,2.0,False,True,False,True
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,3.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,3.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,2.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-7.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-2.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,5.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,3.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,2.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,8.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,-5.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,4.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-6.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,2.0,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,3.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,2.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,2.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-09-13,Panthers,Roosters,Panthers,Panthers,3.0,HOME,HOME,HOME,momentum_streak_edge_home,2.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,8.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,3.0,HOME,HOME,AWAY,momentum_streak_edge_home,2.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,5.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,6.0,HOME,HOME,AWAY,momentum_streak_edge_home,3.0,False,False,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,4.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-05-30,Knights,Eels,Knights,Knights,4.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-4.0,AWAY,AWAY,HOME,momentum_streak_edge_home,3.0,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,5.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-5.0,AWAY,AWAY,HOME,momentum_streak_edge_home,3.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-6.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-4.0,AWAY,AWAY,HOME,momentum_streak_edge_home,3.0,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,7.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-06-27,Sea Eagles,Storm,Sea Eagles,Sea Eagles,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,3.0,False,True,False,True
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-7.0,AWAY,AWAY,HOME,momentum_streak_edge_home,3.0,False,False,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,3.0,False,True,False,True
+2026-07-24,Knights,Roosters,Roosters,Roosters,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,3.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-3.0,AWAY,HOME,HOME,momentum_streak_edge_home,3.0,False,True,False,True
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,3.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,3.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-7.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-3.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,5.0,HOME,HOME,AWAY,momentum_streak_edge_home,3.0,False,False,False,False
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,3.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,8.0,HOME,HOME,AWAY,momentum_streak_edge_home,3.0,False,False,False,False
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,-5.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,4.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-6.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,3.0,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,3.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-09-13,Panthers,Roosters,Panthers,Panthers,3.0,HOME,HOME,HOME,momentum_streak_edge_home,3.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,8.0,HOME,HOME,AWAY,momentum_streak_edge_home,3.0,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,3.0,HOME,HOME,AWAY,momentum_streak_edge_home,3.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,5.0,HOME,HOME,HOME,momentum_streak_edge_home,4.0,True,True,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,6.0,HOME,HOME,AWAY,momentum_streak_edge_home,4.0,False,False,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,4.0,HOME,HOME,HOME,momentum_streak_edge_home,4.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,4.0,True,True,False,False
+2026-05-30,Knights,Eels,Knights,Knights,4.0,HOME,HOME,HOME,momentum_streak_edge_home,4.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-4.0,AWAY,AWAY,HOME,momentum_streak_edge_home,4.0,False,False,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,5.0,HOME,HOME,HOME,momentum_streak_edge_home,4.0,True,True,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-5.0,AWAY,AWAY,HOME,momentum_streak_edge_home,4.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-6.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,4.0,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-4.0,AWAY,AWAY,HOME,momentum_streak_edge_home,4.0,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,7.0,HOME,HOME,HOME,momentum_streak_edge_home,4.0,True,True,False,False
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-7.0,AWAY,AWAY,HOME,momentum_streak_edge_home,4.0,False,False,False,False
+2026-07-24,Knights,Roosters,Roosters,Roosters,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,4.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-4.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,4.0,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-7.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,4.0,True,True,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,5.0,HOME,HOME,AWAY,momentum_streak_edge_home,4.0,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,8.0,HOME,HOME,AWAY,momentum_streak_edge_home,4.0,False,False,False,False
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,-5.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,4.0,True,True,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,4.0,HOME,HOME,HOME,momentum_streak_edge_home,4.0,True,True,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-6.0,AWAY,AWAY,AWAY,momentum_streak_edge_home,4.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,8.0,HOME,HOME,AWAY,momentum_streak_edge_home,4.0,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-09,Sea Eagles,Broncos,Sea Eagles,Sea Eagles,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-0.6,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-16,Eels,Storm,Storm,Storm,0.2,HOME,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,False,True,False,True
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,0.8,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-17,Warriors,Broncos,Warriors,Warriors,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-0.8,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,0.6000000000000001,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-06-04,Sea Eagles,Rabbitohs,Sea Eagles,Sea Eagles,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-0.1999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-06-06,Broncos,Titans,Broncos,Titans,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-0.1999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,0.8,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-0.8,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-0.6,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,0.6000000000000001,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-26,Titans,Bulldogs,Titans,Bulldogs,-0.1999999999999999,AWAY,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,True,False,True,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-06-27,Sea Eagles,Storm,Sea Eagles,Sea Eagles,-0.2,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,False,True,False,True
+2026-06-28,Knights,Wests Tigers,Knights,Knights,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-03,Panthers,Rabbitohs,Panthers,Panthers,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-0.8,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-04,Dragons,Wests Tigers,Wests Tigers,Dragons,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-0.1999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-07-11,Roosters,Eels,Roosters,Roosters,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-0.4,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,False,True,False,True
+2026-07-12,Sea Eagles,Cowboys,Sea Eagles,Cowboys,-0.1999999999999999,AWAY,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,True,False,True,False
+2026-07-12,Storm,Titans,Storm,Storm,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,0.6,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-07-17,Sharks,Knights,Sharks,Sharks,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-18,Bulldogs,Wests Tigers,Bulldogs,Bulldogs,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-18,Raiders,Rabbitohs,Rabbitohs,Raiders,-0.1999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-24,Knights,Roosters,Roosters,Roosters,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-25,Bulldogs,Warriors,Bulldogs,Bulldogs,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,0.3999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-26,Dragons,Titans,Titans,Titans,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-0.6000000000000001,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-0.4,AWAY,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,True,False,True,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-0.4,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,False,True,False,True
+2026-08-01,Titans,Warriors,Warriors,Warriors,0.1999999999999999,HOME,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,False,True,False,True
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-02,Wests Tigers,Eels,Eels,Eels,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-06,Titans,Cowboys,Cowboys,Cowboys,-0.1999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-07,Warriors,Panthers,Panthers,Warriors,-0.1999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-0.6,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-0.1999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-15,Eels,Cowboys,Cowboys,Eels,-0.1999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,0.1999999999999999,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-0.1999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,0.8,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-29,Cowboys,Wests Tigers,Cowboys,Cowboys,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,-0.1999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-29,Titans,Rabbitohs,Rabbitohs,Rabbitohs,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,0.2,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-1.0,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-09-05,Sharks,Storm,Storm,Storm,0.1999999999999999,HOME,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.1,False,True,False,True
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,0.3999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-09-13,Panthers,Roosters,Panthers,Panthers,0.1999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.1,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.8,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,0.2,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.1,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-09,Sea Eagles,Broncos,Sea Eagles,Sea Eagles,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-0.6,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-16,Eels,Storm,Storm,Storm,0.2,HOME,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,False,True,False,True
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,0.8,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-0.8,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,0.6000000000000001,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-06-06,Broncos,Titans,Broncos,Titans,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,0.8,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-0.8,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-0.6,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,0.6000000000000001,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-06-27,Sea Eagles,Storm,Sea Eagles,Sea Eagles,-0.2,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,False,True,False,True
+2026-06-28,Knights,Wests Tigers,Knights,Knights,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-0.8,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-04,Dragons,Wests Tigers,Wests Tigers,Dragons,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-0.4,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,False,True,False,True
+2026-07-16,Panthers,Broncos,Panthers,Broncos,0.6,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-07-17,Sharks,Knights,Sharks,Sharks,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-24,Knights,Roosters,Roosters,Roosters,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-25,Bulldogs,Warriors,Bulldogs,Bulldogs,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,0.3999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-26,Dragons,Titans,Titans,Titans,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-0.6000000000000001,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-0.4,AWAY,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,True,False,True,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-0.4,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,False,True,False,True
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-02,Wests Tigers,Eels,Eels,Eels,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-0.6,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-0.2,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,0.8,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-29,Cowboys,Wests Tigers,Cowboys,Cowboys,0.2,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-29,Titans,Rabbitohs,Rabbitohs,Rabbitohs,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,0.2,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-1.0,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,0.3999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.2,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.8,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,0.2,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.2,False,False,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-0.6,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,0.8,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-0.8,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,0.6000000000000001,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-06-06,Broncos,Titans,Broncos,Titans,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,0.8,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-0.8,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-0.6,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,0.6000000000000001,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-0.8,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-07-04,Dragons,Wests Tigers,Wests Tigers,Dragons,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-0.4,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,False,True,False,True
+2026-07-16,Panthers,Broncos,Panthers,Broncos,0.6,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-07-25,Bulldogs,Warriors,Bulldogs,Bulldogs,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,0.3999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-0.6000000000000001,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-0.4,AWAY,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,True,False,True,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-0.4,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,False,True,False,True
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-0.6,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,0.8,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-08-29,Titans,Rabbitohs,Rabbitohs,Rabbitohs,-0.3999999999999999,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-1.0,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-0.3999999999999999,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,0.3999999999999999,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.3,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.8,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.3,False,False,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-0.6,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,0.8,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-0.8,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,0.6000000000000001,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-06-06,Broncos,Titans,Broncos,Titans,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,0.8,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-0.8,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-0.6,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,0.6000000000000001,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-0.8,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-07-04,Dragons,Wests Tigers,Wests Tigers,Dragons,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-0.4,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,False,True,False,True
+2026-07-16,Panthers,Broncos,Panthers,Broncos,0.6,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-07-25,Bulldogs,Warriors,Bulldogs,Bulldogs,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-0.6000000000000001,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-0.4,AWAY,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,True,False,True,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-0.4,AWAY,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,False,True,False,True
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-0.6,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,0.6000000000000001,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,0.8,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-0.4,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-0.4,AWAY,AWAY,HOME,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,0.4,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-1.0,AWAY,AWAY,AWAY,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,0.6,HOME,HOME,HOME,momentum_last5_win_pct_edge_home,0.4,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,0.4,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.8,HOME,HOME,AWAY,momentum_last5_win_pct_edge_home,0.4,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-09,Rabbitohs,Sharks,Sharks,Rabbitohs,0.125,HOME,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,True,False,True,False
+2026-05-09,Sea Eagles,Broncos,Sea Eagles,Sea Eagles,-0.125,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-16,Eels,Storm,Storm,Storm,0.25,HOME,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,0.125,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-0.125,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,0.875,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-0.125,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-0.625,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-24,Cowboys,Rabbitohs,Rabbitohs,Cowboys,0.125,HOME,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,True,False,True,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-05-30,Wests Tigers,Bulldogs,Wests Tigers,Wests Tigers,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-04,Sea Eagles,Rabbitohs,Sea Eagles,Sea Eagles,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-06-06,Broncos,Titans,Broncos,Titans,0.25,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,0.125,HOME,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-06-07,Sharks,Dragons,Sharks,Sharks,0.625,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-13,Eels,Raiders,Raiders,Eels,-0.125,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,0.125,HOME,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,True,False,True,False
+2026-06-19,Knights,Dragons,Knights,Knights,0.625,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-0.625,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-25,Eels,Rabbitohs,Rabbitohs,Rabbitohs,-0.125,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-26,Titans,Bulldogs,Titans,Bulldogs,-0.125,AWAY,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,True,False,True,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-06-28,Raiders,Dragons,Raiders,Raiders,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-03,Panthers,Rabbitohs,Panthers,Panthers,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-04,Dragons,Wests Tigers,Wests Tigers,Dragons,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-0.125,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,0.25,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-11,Dolphins,Sharks,Dolphins,Sharks,0.125,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-11,Roosters,Eels,Roosters,Roosters,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-0.5,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-07-12,Storm,Titans,Storm,Storm,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,0.625,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-17,Roosters,Storm,Roosters,Roosters,-0.125,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-07-18,Bulldogs,Wests Tigers,Bulldogs,Bulldogs,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-18,Raiders,Rabbitohs,Rabbitohs,Raiders,-0.125,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-19,Dolphins,Cowboys,Dolphins,Dolphins,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-24,Rabbitohs,Storm,Rabbitohs,Rabbitohs,-0.25,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-07-25,Cowboys,Broncos,Cowboys,Cowboys,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-26,Dragons,Titans,Titans,Titans,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-0.125,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-0.625,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-0.25,AWAY,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,True,False,True,False
+2026-08-01,Broncos,Knights,Knights,Knights,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-07,Warriors,Panthers,Panthers,Warriors,-0.125,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-08,Rabbitohs,Eels,Rabbitohs,Rabbitohs,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-08,Storm,Sea Eagles,Storm,Storm,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-14,Bulldogs,Rabbitohs,Bulldogs,Rabbitohs,0.125,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-15,Eels,Cowboys,Cowboys,Eels,-0.125,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-16,Knights,Titans,Knights,Knights,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-16,Wests Tigers,Dragons,Wests Tigers,Dragons,0.125,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-20,Storm,Panthers,Panthers,Panthers,0.125,HOME,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,0.5,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,0.875,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-28,Panthers,Bulldogs,Panthers,Panthers,-0.125,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-08-29,Cowboys,Wests Tigers,Cowboys,Cowboys,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,0.125,HOME,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-08-29,Titans,Rabbitohs,Rabbitohs,Rabbitohs,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,0.125,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-09-04,Rabbitohs,Roosters,Rabbitohs,Rabbitohs,-0.125,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-09-05,Sharks,Storm,Storm,Storm,0.375,HOME,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.1,False,True,False,True
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,0.25,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-09-12,Sharks,Cowboys,Sharks,Sharks,0.125,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.1,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.5,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.1,False,False,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-05-16,Eels,Storm,Storm,Storm,0.25,HOME,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,False,True,False,True
+2026-05-17,Panthers,Dragons,Panthers,Panthers,0.875,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-0.625,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-05-30,Wests Tigers,Bulldogs,Wests Tigers,Wests Tigers,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-04,Sea Eagles,Rabbitohs,Sea Eagles,Sea Eagles,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-06-06,Broncos,Titans,Broncos,Titans,0.25,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,0.625,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,0.625,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-0.625,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-06-28,Raiders,Dragons,Raiders,Raiders,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-04,Dragons,Wests Tigers,Wests Tigers,Dragons,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,0.25,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-07-11,Roosters,Eels,Roosters,Roosters,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-0.5,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,False,True,False,True
+2026-07-12,Storm,Titans,Storm,Storm,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,0.625,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-24,Rabbitohs,Storm,Rabbitohs,Rabbitohs,-0.25,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,False,True,False,True
+2026-07-25,Cowboys,Broncos,Cowboys,Cowboys,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-26,Dragons,Titans,Titans,Titans,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-0.625,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-0.25,AWAY,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,True,False,True,False
+2026-08-01,Broncos,Knights,Knights,Knights,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-08,Storm,Sea Eagles,Storm,Storm,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,0.5,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,0.875,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-29,Cowboys,Wests Tigers,Cowboys,Cowboys,0.25,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-29,Titans,Rabbitohs,Rabbitohs,Rabbitohs,-0.25,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-09-05,Sharks,Storm,Storm,Storm,0.375,HOME,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.2,False,True,False,True
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-0.25,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.2,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,0.25,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.5,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.2,False,False,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,0.875,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-0.625,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,0.625,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,0.625,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-0.625,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-0.5,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,False,True,False,True
+2026-07-12,Storm,Titans,Storm,Storm,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,0.625,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-0.625,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,0.5,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,0.875,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-0.375,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-0.375,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-09-05,Sharks,Storm,Storm,Storm,0.375,HOME,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.3,False,True,False,True
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,0.375,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.3,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.5,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,0.375,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.3,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.4,False,False,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,0.875,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-0.625,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.4,False,False,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,0.625,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,0.625,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-0.5,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.4,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-0.625,AWAY,AWAY,HOME,momentum_last8_win_pct_edge_home,0.4,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-0.5,AWAY,HOME,HOME,momentum_last8_win_pct_edge_home,0.4,False,True,False,True
+2026-07-16,Panthers,Broncos,Panthers,Broncos,0.625,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.4,False,False,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-0.625,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,0.5,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.4,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,0.875,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.4,False,False,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-0.5,AWAY,AWAY,AWAY,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,0.5,HOME,HOME,HOME,momentum_last8_win_pct_edge_home,0.4,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,0.5,HOME,HOME,AWAY,momentum_last8_win_pct_edge_home,0.4,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,12.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,19.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,18.200000000000003,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-19.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-09,Sea Eagles,Broncos,Sea Eagles,Sea Eagles,14.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-15.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-25.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,15.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,21.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-23.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,34.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-9.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-17,Warriors,Broncos,Warriors,Warriors,3.8,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-25.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-19.6,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-33.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,24.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-24,Cowboys,Rabbitohs,Rabbitohs,Cowboys,-7.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-11.0,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,23.200000000000003,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-20.0,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-06-04,Sea Eagles,Rabbitohs,Sea Eagles,Sea Eagles,8.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-15.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-14.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-06-06,Broncos,Titans,Broncos,Titans,3.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-16.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,34.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,14.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-13,Warriors,Sharks,Warriors,Sharks,-7.199999999999999,AWAY,HOME,AWAY,momentum_last5_margin_edge_home,3.0,True,False,True,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,-21.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,45.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-22.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-22.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-47.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-8.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,18.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-21,Warriors,Cowboys,Warriors,Warriors,3.4000000000000004,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-25,Eels,Rabbitohs,Rabbitohs,Rabbitohs,-9.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-21.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-19.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,4.400000000000002,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-27,Sea Eagles,Storm,Sea Eagles,Sea Eagles,-3.4000000000000004,AWAY,HOME,HOME,momentum_last5_margin_edge_home,3.0,False,True,False,True
+2026-06-28,Knights,Wests Tigers,Knights,Knights,32.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-06-28,Raiders,Dragons,Raiders,Raiders,5.400000000000002,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-28.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-17.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-10.400000000000002,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-31.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,15.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-11,Dolphins,Sharks,Dolphins,Sharks,11.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-11,Roosters,Eels,Roosters,Roosters,3.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-12,Sea Eagles,Cowboys,Sea Eagles,Cowboys,7.199999999999999,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-12,Storm,Titans,Storm,Storm,4.800000000000001,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,27.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-17,Sharks,Knights,Sharks,Sharks,15.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-18,Raiders,Rabbitohs,Rabbitohs,Raiders,-9.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,8.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-10.6,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-10.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-24,Rabbitohs,Storm,Rabbitohs,Rabbitohs,7.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-25,Bulldogs,Warriors,Bulldogs,Bulldogs,6.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,11.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-10.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-13.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-9.8,AWAY,HOME,AWAY,momentum_last5_margin_edge_home,3.0,True,False,True,False
+2026-08-01,Broncos,Knights,Knights,Knights,-4.800000000000001,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-11.0,AWAY,HOME,HOME,momentum_last5_margin_edge_home,3.0,False,True,False,True
+2026-08-01,Titans,Warriors,Warriors,Warriors,3.8,HOME,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,False,True,False,True
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,21.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-02,Wests Tigers,Eels,Eels,Eels,-8.4,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-06,Titans,Cowboys,Cowboys,Cowboys,7.0,HOME,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,False,True,False,True
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,9.8,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-07,Warriors,Panthers,Panthers,Warriors,-6.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-08-08,Storm,Sea Eagles,Storm,Storm,-3.999999999999999,AWAY,HOME,HOME,momentum_last5_margin_edge_home,3.0,False,True,False,True
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-12.599999999999998,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-14,Bulldogs,Rabbitohs,Bulldogs,Rabbitohs,10.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-8.200000000000001,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-11.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-15,Eels,Cowboys,Cowboys,Eels,9.0,HOME,AWAY,HOME,momentum_last5_margin_edge_home,3.0,True,False,True,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,13.599999999999998,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-08-16,Knights,Titans,Knights,Knights,11.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-16,Wests Tigers,Dragons,Wests Tigers,Dragons,-8.200000000000001,AWAY,HOME,AWAY,momentum_last5_margin_edge_home,3.0,True,False,True,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,26.4,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-11.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,23.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-17.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,28.8,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-31.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-27,Broncos,Storm,Storm,Storm,-12.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-28,Panthers,Bulldogs,Panthers,Panthers,-4.4,AWAY,HOME,HOME,momentum_last5_margin_edge_home,3.0,False,True,False,True
+2026-08-29,Cowboys,Wests Tigers,Cowboys,Cowboys,3.9999999999999982,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-29,Titans,Rabbitohs,Rabbitohs,Rabbitohs,-8.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-16.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,16.400000000000002,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,20.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-09-04,Rabbitohs,Roosters,Rabbitohs,Rabbitohs,-11.6,AWAY,HOME,HOME,momentum_last5_margin_edge_home,3.0,False,True,False,True
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-32.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-09-05,Cowboys,Raiders,Raiders,Raiders,-12.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,29.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-18.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,17.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,10.4,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-09-12,Sharks,Cowboys,Sharks,Sharks,10.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-09-12,Warriors,Dolphins,Warriors,Dolphins,3.6000000000000014,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-09-13,Panthers,Roosters,Panthers,Panthers,13.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,3.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,22.8,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,8.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,3.0,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,12.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,19.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,18.200000000000003,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-19.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-09,Sea Eagles,Broncos,Sea Eagles,Sea Eagles,14.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-15.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-25.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,15.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,21.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-23.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,34.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-9.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-25.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-19.6,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-33.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,24.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-24,Cowboys,Rabbitohs,Rabbitohs,Cowboys,-7.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-11.0,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,23.200000000000003,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-20.0,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-06-04,Sea Eagles,Rabbitohs,Sea Eagles,Sea Eagles,8.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-15.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-14.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-16.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,34.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,14.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-13,Warriors,Sharks,Warriors,Sharks,-7.199999999999999,AWAY,HOME,AWAY,momentum_last5_margin_edge_home,6.0,True,False,True,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,-21.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,45.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-22.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-22.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-47.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-21,Roosters,Sharks,Sharks,Roosters,-8.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,18.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-25,Eels,Rabbitohs,Rabbitohs,Rabbitohs,-9.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-21.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-19.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,32.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-28.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-17.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-10.400000000000002,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-31.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,15.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-11,Dolphins,Sharks,Dolphins,Sharks,11.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-12,Sea Eagles,Cowboys,Sea Eagles,Cowboys,7.199999999999999,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,27.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-17,Sharks,Knights,Sharks,Sharks,15.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-18,Raiders,Rabbitohs,Rabbitohs,Raiders,-9.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,8.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-10.6,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-10.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-24,Rabbitohs,Storm,Rabbitohs,Rabbitohs,7.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-25,Bulldogs,Warriors,Bulldogs,Bulldogs,6.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,11.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-10.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-13.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-9.8,AWAY,HOME,AWAY,momentum_last5_margin_edge_home,6.0,True,False,True,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-11.0,AWAY,HOME,HOME,momentum_last5_margin_edge_home,6.0,False,True,False,True
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,21.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-02,Wests Tigers,Eels,Eels,Eels,-8.4,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-06,Titans,Cowboys,Cowboys,Cowboys,7.0,HOME,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,False,True,False,True
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,9.8,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-07,Warriors,Panthers,Panthers,Warriors,-6.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-12.599999999999998,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-14,Bulldogs,Rabbitohs,Bulldogs,Rabbitohs,10.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-8.200000000000001,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-11.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-15,Eels,Cowboys,Cowboys,Eels,9.0,HOME,AWAY,HOME,momentum_last5_margin_edge_home,6.0,True,False,True,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,13.599999999999998,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-08-16,Knights,Titans,Knights,Knights,11.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-16,Wests Tigers,Dragons,Wests Tigers,Dragons,-8.200000000000001,AWAY,HOME,AWAY,momentum_last5_margin_edge_home,6.0,True,False,True,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,26.4,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-11.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,23.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-17.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,28.8,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-31.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-27,Broncos,Storm,Storm,Storm,-12.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-29,Titans,Rabbitohs,Rabbitohs,Rabbitohs,-8.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-16.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,16.400000000000002,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,20.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-09-04,Rabbitohs,Roosters,Rabbitohs,Rabbitohs,-11.6,AWAY,HOME,HOME,momentum_last5_margin_edge_home,6.0,False,True,False,True
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-32.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-09-05,Cowboys,Raiders,Raiders,Raiders,-12.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,29.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-18.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,17.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,10.4,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-09-12,Sharks,Cowboys,Sharks,Sharks,10.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-09-13,Panthers,Roosters,Panthers,Panthers,13.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,6.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,22.8,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,8.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,6.0,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,12.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,19.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,18.200000000000003,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-19.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-09,Sea Eagles,Broncos,Sea Eagles,Sea Eagles,14.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-15.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-25.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,15.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,21.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-23.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,34.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-9.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-25.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-19.6,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-33.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,24.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-11.0,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,23.200000000000003,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-20.0,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-15.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-14.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-16.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,34.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,14.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,-21.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,45.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-22.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-22.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-47.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,18.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-25,Eels,Rabbitohs,Rabbitohs,Rabbitohs,-9.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-21.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-19.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,32.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-28.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-17.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-10.400000000000002,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-31.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,15.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-07-11,Dolphins,Sharks,Dolphins,Sharks,11.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,27.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-07-17,Sharks,Knights,Sharks,Sharks,15.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-07-18,Raiders,Rabbitohs,Rabbitohs,Raiders,-9.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-10.6,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-10.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,11.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-10.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-13.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-9.8,AWAY,HOME,AWAY,momentum_last5_margin_edge_home,9.0,True,False,True,False
+2026-08-01,Panthers,Raiders,Panthers,Panthers,-11.0,AWAY,HOME,HOME,momentum_last5_margin_edge_home,9.0,False,True,False,True
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,21.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,9.8,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-12.599999999999998,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-14,Bulldogs,Rabbitohs,Bulldogs,Rabbitohs,10.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-11.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-15,Eels,Cowboys,Cowboys,Eels,9.0,HOME,AWAY,HOME,momentum_last5_margin_edge_home,9.0,True,False,True,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,13.599999999999998,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-08-16,Knights,Titans,Knights,Knights,11.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,26.4,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-11.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,23.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-17.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,28.8,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-31.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-27,Broncos,Storm,Storm,Storm,-12.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-16.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,16.400000000000002,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,20.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-09-04,Rabbitohs,Roosters,Rabbitohs,Rabbitohs,-11.6,AWAY,HOME,HOME,momentum_last5_margin_edge_home,9.0,False,True,False,True
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-32.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-09-05,Cowboys,Raiders,Raiders,Raiders,-12.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,29.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-18.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,17.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,10.4,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-09-12,Sharks,Cowboys,Sharks,Sharks,10.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-09-13,Panthers,Roosters,Panthers,Panthers,13.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,9.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,22.8,HOME,HOME,AWAY,momentum_last5_margin_edge_home,9.0,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,12.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,19.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,18.200000000000003,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-19.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-09,Sea Eagles,Broncos,Sea Eagles,Sea Eagles,14.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-15.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-25.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,15.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,21.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-23.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,34.2,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-25.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-19.6,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-33.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,24.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-30,Knights,Eels,Knights,Knights,23.200000000000003,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-20.0,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-15.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-14.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-16.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,34.4,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-06-12,Dolphins,Roosters,Dolphins,Dolphins,14.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,-21.4,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,45.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-22.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-22.8,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-47.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,18.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-21.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-19.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,32.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-28.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-17.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-31.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-07-11,Bulldogs,Raiders,Bulldogs,Raiders,15.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,27.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-07-17,Sharks,Knights,Sharks,Sharks,15.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-13.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,21.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-12.599999999999998,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,13.599999999999998,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,26.4,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,23.2,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-17.2,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,28.8,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-31.6,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-08-27,Broncos,Storm,Storm,Storm,-12.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-16.2,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,16.400000000000002,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,20.0,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-32.8,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-09-05,Cowboys,Raiders,Raiders,Raiders,-12.0,AWAY,AWAY,AWAY,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,29.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-18.200000000000003,AWAY,AWAY,HOME,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,17.6,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-09-13,Panthers,Roosters,Panthers,Panthers,13.0,HOME,HOME,HOME,momentum_last5_margin_edge_home,12.0,True,True,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,22.8,HOME,HOME,AWAY,momentum_last5_margin_edge_home,12.0,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,10.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,11.875,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,12.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-16.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-09,Sea Eagles,Broncos,Sea Eagles,Sea Eagles,3.0,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-26.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-18.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,6.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-16,Eels,Storm,Storm,Storm,3.75,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-05-16,Roosters,Cowboys,Roosters,Cowboys,5.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-12.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,39.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-8.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-17,Warriors,Broncos,Warriors,Warriors,3.625,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-17.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-22,Bulldogs,Storm,Storm,Bulldogs,-3.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-26.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,21.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-16.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,21.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-20.125,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-05-30,Wests Tigers,Bulldogs,Wests Tigers,Wests Tigers,6.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-04,Sea Eagles,Rabbitohs,Sea Eagles,Sea Eagles,9.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-18.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-9.5,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-06-06,Cowboys,Dolphins,Dolphins,Dolphins,-3.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,29.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-11,Rabbitohs,Broncos,Rabbitohs,Rabbitohs,7.0,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-13,Eels,Raiders,Raiders,Eels,-3.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-06-13,Warriors,Sharks,Warriors,Sharks,-4.25,AWAY,HOME,AWAY,momentum_last8_margin_edge_home,3.0,True,False,True,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,-11.125,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,33.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-26.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-18.5,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-40.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-21,Storm,Raiders,Storm,Storm,5.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-21,Warriors,Cowboys,Warriors,Warriors,6.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-25,Eels,Rabbitohs,Rabbitohs,Rabbitohs,-12.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-20.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-15.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,16.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-27,Sea Eagles,Storm,Sea Eagles,Sea Eagles,7.0,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,28.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-06-28,Raiders,Dragons,Raiders,Raiders,12.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-17.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-21.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-07-05,Knights,Dolphins,Dolphins,Knights,-5.25,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-23.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-07-11,Dolphins,Sharks,Dolphins,Sharks,9.75,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-07-11,Roosters,Eels,Roosters,Roosters,10.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-12.875,AWAY,HOME,HOME,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-07-12,Sea Eagles,Cowboys,Sea Eagles,Cowboys,8.625,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-07-12,Storm,Titans,Storm,Storm,14.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,24.125,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-07-17,Roosters,Storm,Roosters,Roosters,-4.375,AWAY,HOME,HOME,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-07-18,Bulldogs,Wests Tigers,Bulldogs,Bulldogs,4.625,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-18,Raiders,Rabbitohs,Rabbitohs,Raiders,-5.125,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,18.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-19,Dolphins,Cowboys,Dolphins,Dolphins,5.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-14.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-16.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-24,Rabbitohs,Storm,Rabbitohs,Rabbitohs,-5.0,AWAY,HOME,HOME,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-07-25,Bulldogs,Warriors,Bulldogs,Bulldogs,-6.875,AWAY,HOME,HOME,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-07-25,Cowboys,Broncos,Cowboys,Cowboys,10.625,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,8.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-26,Dragons,Titans,Titans,Titans,-7.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-11.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-30,Cowboys,Roosters,Roosters,Roosters,-5.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-15.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-6.125,AWAY,HOME,AWAY,momentum_last8_margin_edge_home,3.0,True,False,True,False
+2026-08-01,Broncos,Knights,Knights,Knights,-13.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-01,Titans,Warriors,Warriors,Warriors,-4.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,14.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-02,Wests Tigers,Eels,Eels,Eels,-10.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-06,Titans,Cowboys,Cowboys,Cowboys,8.125,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,7.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-07,Warriors,Panthers,Panthers,Warriors,-3.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,16.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-08,Rabbitohs,Eels,Rabbitohs,Rabbitohs,4.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-13,Panthers,Roosters,Roosters,Roosters,-5.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-14,Bulldogs,Rabbitohs,Bulldogs,Rabbitohs,3.875,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-7.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-16.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-15,Eels,Cowboys,Cowboys,Eels,7.0,HOME,AWAY,HOME,momentum_last8_margin_edge_home,3.0,True,False,True,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,15.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-08-16,Knights,Titans,Knights,Knights,10.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-21,Dolphins,Eels,Dolphins,Dolphins,4.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,16.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-10.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,13.625,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-9.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,27.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-21.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-27,Broncos,Storm,Storm,Storm,-8.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-28,Panthers,Bulldogs,Panthers,Panthers,-5.25,AWAY,HOME,HOME,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,12.375,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-08-29,Titans,Rabbitohs,Rabbitohs,Rabbitohs,-3.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-08-30,Eels,Sharks,Sharks,Eels,-20.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,7.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,15.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-09-04,Rabbitohs,Roosters,Rabbitohs,Rabbitohs,-11.125,AWAY,HOME,HOME,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-11.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-09-05,Cowboys,Raiders,Raiders,Raiders,-9.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-09-05,Sharks,Storm,Storm,Storm,15.25,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,3.0,False,True,False,True
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,16.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-10.0,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,16.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-09-11,Rabbitohs,Knights,Rabbitohs,Knights,3.875,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-09-12,Sharks,Cowboys,Sharks,Sharks,20.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,3.0,True,True,False,False
+2026-09-12,Warriors,Dolphins,Warriors,Dolphins,11.25,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,9.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,7.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,3.0,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,10.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,11.875,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,12.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-16.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-26.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-18.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-05-15,Sharks,Bulldogs,Sharks,Sharks,6.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-12.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,39.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-17,Titans,Knights,Knights,Knights,-8.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-17.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-26.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,21.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-16.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,21.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-20.125,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-05-30,Wests Tigers,Bulldogs,Wests Tigers,Wests Tigers,6.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-04,Sea Eagles,Rabbitohs,Sea Eagles,Sea Eagles,9.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-18.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-9.5,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,29.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-11,Rabbitohs,Broncos,Rabbitohs,Rabbitohs,7.0,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,-11.125,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,33.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-26.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-18.5,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-40.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-21,Warriors,Cowboys,Warriors,Warriors,6.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-25,Eels,Rabbitohs,Rabbitohs,Rabbitohs,-12.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-20.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-15.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,16.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-27,Sea Eagles,Storm,Sea Eagles,Sea Eagles,7.0,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,28.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-06-28,Raiders,Dragons,Raiders,Raiders,12.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-17.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-21.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-23.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-07-11,Dolphins,Sharks,Dolphins,Sharks,9.75,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-07-11,Roosters,Eels,Roosters,Roosters,10.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-12.875,AWAY,HOME,HOME,momentum_last8_margin_edge_home,6.0,False,True,False,True
+2026-07-12,Sea Eagles,Cowboys,Sea Eagles,Cowboys,8.625,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-07-12,Storm,Titans,Storm,Storm,14.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,24.125,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,18.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-14.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-16.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-25,Bulldogs,Warriors,Bulldogs,Bulldogs,-6.875,AWAY,HOME,HOME,momentum_last8_margin_edge_home,6.0,False,True,False,True
+2026-07-25,Cowboys,Broncos,Cowboys,Cowboys,10.625,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-25,Raiders,Wests Tigers,Raiders,Raiders,8.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-26,Dragons,Titans,Titans,Titans,-7.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-11.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-15.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-07-31,Storm,Bulldogs,Storm,Bulldogs,-6.125,AWAY,HOME,AWAY,momentum_last8_margin_edge_home,6.0,True,False,True,False
+2026-08-01,Broncos,Knights,Knights,Knights,-13.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,14.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-02,Wests Tigers,Eels,Eels,Eels,-10.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-06,Titans,Cowboys,Cowboys,Cowboys,8.125,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,False,True,False,True
+2026-08-07,Roosters,Bulldogs,Roosters,Roosters,7.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,16.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-14,Sea Eagles,Dolphins,Dolphins,Dolphins,-7.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-16.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-15,Eels,Cowboys,Cowboys,Eels,7.0,HOME,AWAY,HOME,momentum_last8_margin_edge_home,6.0,True,False,True,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,15.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-08-16,Knights,Titans,Knights,Knights,10.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,16.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-10.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,13.625,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-9.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,27.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-21.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-27,Broncos,Storm,Storm,Storm,-8.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,12.375,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,False,True,False,True
+2026-08-30,Eels,Sharks,Sharks,Eels,-20.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-08-30,Warriors,Knights,Warriors,Warriors,7.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,15.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-09-04,Rabbitohs,Roosters,Rabbitohs,Rabbitohs,-11.125,AWAY,HOME,HOME,momentum_last8_margin_edge_home,6.0,False,True,False,True
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-11.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-09-05,Cowboys,Raiders,Raiders,Raiders,-9.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-09-05,Sharks,Storm,Storm,Storm,15.25,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,6.0,False,True,False,True
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,16.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-10.0,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,16.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-09-12,Sharks,Cowboys,Sharks,Sharks,20.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,6.0,True,True,False,False
+2026-09-12,Warriors,Dolphins,Warriors,Dolphins,11.25,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,9.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-09-27,Panthers,Knights,Panthers,Knights,7.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,6.0,False,False,False,False
+2026-05-07,Dolphins,Bulldogs,Dolphins,Dolphins,10.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-08,Cowboys,Eels,Cowboys,Eels,11.875,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,12.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-16.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-26.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-18.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-12.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,39.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-17.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-26.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,21.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-16.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,21.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-20.125,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-06-04,Sea Eagles,Rabbitohs,Sea Eagles,Sea Eagles,9.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-18.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-05,Storm,Knights,Knights,Storm,-9.5,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,29.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-14,Wests Tigers,Titans,Titans,Wests Tigers,-11.125,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,33.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-26.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-18.5,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-40.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-25,Eels,Rabbitohs,Rabbitohs,Rabbitohs,-12.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-20.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-15.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,16.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,28.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-06-28,Raiders,Dragons,Raiders,Raiders,12.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-17.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-21.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-23.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-07-11,Dolphins,Sharks,Dolphins,Sharks,9.75,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-07-11,Roosters,Eels,Roosters,Roosters,10.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-12.875,AWAY,HOME,HOME,momentum_last8_margin_edge_home,9.0,False,True,False,True
+2026-07-12,Storm,Titans,Storm,Storm,14.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,24.125,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,18.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-14.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-16.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-07-25,Cowboys,Broncos,Cowboys,Cowboys,10.625,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-07-26,Sea Eagles,Sharks,Sharks,Sharks,-11.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-15.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-01,Broncos,Knights,Knights,Knights,-13.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,14.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-02,Wests Tigers,Eels,Eels,Eels,-10.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,16.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-16.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,15.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-08-16,Knights,Titans,Knights,Knights,10.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,16.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-08-22,Dragons,Bulldogs,Bulldogs,Bulldogs,-10.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,13.625,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-08-22,Rabbitohs,Warriors,Warriors,Warriors,-9.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,27.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-21.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,12.375,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,False,True,False,True
+2026-08-30,Eels,Sharks,Sharks,Eels,-20.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,15.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-09-04,Rabbitohs,Roosters,Rabbitohs,Rabbitohs,-11.125,AWAY,HOME,HOME,momentum_last8_margin_edge_home,9.0,False,True,False,True
+2026-09-04,Titans,Dolphins,Dolphins,Dolphins,-11.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-09-05,Cowboys,Raiders,Raiders,Raiders,-9.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-09-05,Sharks,Storm,Storm,Storm,15.25,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,9.0,False,True,False,True
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,16.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-09-06,Dragons,Eels,Eels,Dragons,-10.0,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,16.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-09-12,Sharks,Cowboys,Sharks,Sharks,20.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,9.0,True,True,False,False
+2026-09-12,Warriors,Dolphins,Warriors,Dolphins,11.25,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-09-25,Dolphins,Roosters,Dolphins,Roosters,9.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,9.0,False,False,False,False
+2026-05-08,Roosters,Titans,Roosters,Roosters,12.125,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-09,Dragons,Knights,Knights,Knights,-16.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-10,Raiders,Panthers,Panthers,Panthers,-26.25,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-10,Storm,Wests Tigers,Wests Tigers,Storm,-18.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-05-16,Wests Tigers,Sea Eagles,Sea Eagles,Sea Eagles,-12.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-17,Panthers,Dragons,Panthers,Panthers,39.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-21,Raiders,Dolphins,Dolphins,Dolphins,-17.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-23,Dragons,Warriors,Warriors,Warriors,-26.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-23,Sea Eagles,Titans,Sea Eagles,Sea Eagles,21.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-29,Sharks,Sea Eagles,Sea Eagles,Sharks,-16.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-05-30,Knights,Eels,Knights,Knights,21.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-05-30,Storm,Roosters,Roosters,Storm,-20.125,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-06-05,Raiders,Roosters,Roosters,Roosters,-18.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-06-07,Sharks,Dragons,Sharks,Sharks,29.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-06-19,Knights,Dragons,Knights,Knights,33.25,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-06-20,Bulldogs,Sea Eagles,Sea Eagles,Bulldogs,-26.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-06-20,Titans,Panthers,Panthers,Titans,-18.5,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-06-20,Wests Tigers,Dolphins,Dolphins,Dolphins,-40.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-06-25,Eels,Rabbitohs,Rabbitohs,Rabbitohs,-12.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-06-26,Broncos,Roosters,Roosters,Roosters,-20.625,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-06-27,Cowboys,Panthers,Panthers,Cowboys,-15.625,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-06-27,Dolphins,Warriors,Dolphins,Dolphins,16.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-06-28,Knights,Wests Tigers,Knights,Knights,28.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-06-28,Raiders,Dragons,Raiders,Raiders,12.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-07-04,Broncos,Sharks,Sharks,Sharks,-17.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-07-05,Eels,Sea Eagles,Sea Eagles,Eels,-21.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-07-10,Wests Tigers,Warriors,Warriors,Wests Tigers,-23.75,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-07-12,Rabbitohs,Knights,Rabbitohs,Rabbitohs,-12.875,AWAY,HOME,HOME,momentum_last8_margin_edge_home,12.0,False,True,False,True
+2026-07-12,Storm,Titans,Storm,Storm,14.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-07-16,Panthers,Broncos,Panthers,Broncos,24.125,HOME,HOME,AWAY,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-07-18,Warriors,Dragons,Warriors,Warriors,18.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-07-19,Titans,Sea Eagles,Sea Eagles,Titans,-14.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-07-23,Eels,Panthers,Panthers,Panthers,-16.0,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-07-31,Dragons,Dolphins,Dolphins,Dolphins,-15.875,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-08-01,Broncos,Knights,Knights,Knights,-13.375,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-08-02,Sharks,Rabbitohs,Sharks,Sharks,14.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-08-08,Dolphins,Broncos,Dolphins,Dolphins,16.5,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-08-15,Broncos,Warriors,Warriors,Warriors,-16.5,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-08-15,Sharks,Raiders,Sharks,Raiders,15.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-08-21,Raiders,Broncos,Raiders,Broncos,16.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-08-22,Knights,Sea Eagles,Knights,Sea Eagles,13.625,HOME,HOME,AWAY,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-08-23,Roosters,Wests Tigers,Roosters,Wests Tigers,27.375,HOME,HOME,AWAY,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-08-23,Titans,Sharks,Sharks,Sharks,-21.75,AWAY,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-08-29,Roosters,Dolphins,Dolphins,Dolphins,12.375,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,False,True,False,True
+2026-08-30,Eels,Sharks,Sharks,Eels,-20.875,AWAY,AWAY,HOME,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-09-03,Bulldogs,Broncos,Bulldogs,Broncos,15.5,HOME,HOME,AWAY,momentum_last8_margin_edge_home,12.0,False,False,False,False
+2026-09-05,Sharks,Storm,Storm,Storm,15.25,HOME,AWAY,AWAY,momentum_last8_margin_edge_home,12.0,False,True,False,True
+2026-09-05,Warriors,Sea Eagles,Warriors,Warriors,16.375,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-09-06,Panthers,Wests Tigers,Panthers,Panthers,16.75,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
+2026-09-12,Sharks,Cowboys,Sharks,Sharks,20.875,HOME,HOME,HOME,momentum_last8_margin_edge_home,12.0,True,True,False,False
