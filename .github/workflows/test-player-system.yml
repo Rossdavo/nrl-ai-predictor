@@ -1,0 +1,186 @@
+name: Test Player System
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-player-system:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4 lxml
+
+      - name: Show available player-system inputs
+        shell: bash
+        run: |
+          echo "=== PLAYER SYSTEM INPUT CHECK ==="
+          for f in \
+            team_lists_history.csv \
+            nrl_roster_seed_2026_2027.csv \
+            player_experience.csv \
+            player_ratings.csv \
+            player_ratings_template.csv
+          do
+            if [ -f "$f" ]; then
+              echo "FOUND: $f"
+            else
+              echo "MISSING/OPTIONAL: $f"
+            fi
+          done
+
+      - name: Build player master
+        run: |
+          python build_player_master.py
+
+      - name: Inspect player master
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+
+          p = Path("player_master.csv")
+          if not p.exists():
+              raise SystemExit("player_master.csv was not created")
+
+          df = pd.read_csv(p)
+          print("\n=== PLAYER MASTER SUMMARY ===")
+          print(f"Rows: {len(df)}")
+
+          if "season" in df.columns and not df.empty:
+              seasons = pd.to_numeric(df["season"], errors="coerce")
+              latest = int(seasons.max())
+              cur = df[seasons == latest]
+              print(f"Latest season: {latest}")
+              print(f"Clubs: {cur['team'].nunique()}")
+              print("\nPlayers by club:")
+              print(cur.groupby("team")["player"].nunique().sort_index().to_string())
+          PY
+
+      - name: Collect Rugby League Project experience
+        continue-on-error: true
+        run: |
+          python collect_rlp_experience.py
+
+      - name: Summarise RLP collection
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+
+          p = Path("rlp_player_experience.csv")
+
+          print("\n=== RLP COLLECTION SUMMARY ===")
+
+          if not p.exists():
+              print("rlp_player_experience.csv was not created.")
+              raise SystemExit(0)
+
+          df = pd.read_csv(p)
+          print(f"Rows: {len(df)}")
+
+          if df.empty:
+              print("No player records returned.")
+              raise SystemExit(0)
+
+          if "collection_status" in df.columns:
+              print("\nCollection status:")
+              print(
+                  df["collection_status"]
+                  .fillna("blank")
+                  .value_counts(dropna=False)
+                  .to_string()
+              )
+
+          good_statuses = {"ok", "cached_ok"}
+          if "collection_status" in df.columns:
+              good = df["collection_status"].isin(good_statuses).sum()
+              print(f"\nCleanly resolved: {good}/{len(df)} ({good/len(df):.1%})")
+
+          if {"team", "collection_status"}.issubset(df.columns):
+              tmp = df.copy()
+              tmp["resolved"] = tmp["collection_status"].isin(good_statuses)
+              club = tmp.groupby("team").agg(
+                  players=("player", "count"),
+                  resolved=("resolved", "sum")
+              )
+              club["coverage"] = club["resolved"] / club["players"]
+              print("\nCoverage by club:")
+              print(club.to_string(formatters={"coverage": "{:.1%}".format}))
+
+          failures = Path("rlp_player_experience_failures.csv")
+          if failures.exists():
+              f = pd.read_csv(failures)
+              print(f"\nFailures/review rows: {len(f)}")
+              if not f.empty:
+                  cols = [
+                      c for c in
+                      ["team", "player", "collection_status", "verification_note"]
+                      if c in f.columns
+                  ]
+                  print("\nFirst 25 failures/review rows:")
+                  print(f[cols].head(25).to_string(index=False))
+          PY
+
+      - name: Build ratings V2 diagnostic
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -f player_master.csv ]; then
+            python build_player_ratings_v2.py
+          else
+            echo "Skipping ratings V2 because player_master.csv is missing."
+          fi
+
+      - name: Build selected-17 strength diagnostic
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -f team_lists_history.csv ]; then
+            python build_selected17_strength.py
+          else
+            echo "Skipping selected-17 diagnostic because team_lists_history.csv is missing."
+          fi
+
+      - name: Upload test outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-system-test-output
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            player_master.csv
+            rlp_player_experience.csv
+            rlp_player_experience_failures.csv
+            rlp_player_experience_cache.csv
+            player_ratings_v2.csv
+            player_ratings_coverage.csv
+            selected17_strength.csv
+            selected17_strength_latest.csv
+
+      - name: Final note
+        if: always()
+        run: |
+          echo "============================================================"
+          echo "PLAYER SYSTEM TEST COMPLETE"
+          echo "This workflow does NOT run predict.py."
+          echo "This workflow does NOT modify the live model."
+          echo "This workflow does NOT commit generated files to the repo."
+          echo "============================================================"
