@@ -1,0 +1,111 @@
+name: Test RLP Experience Small
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-rlp-experience-small:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4
+
+      - name: Build season population
+        run: python collect_rlp_season_players.py
+
+      - name: Build full player master
+        run: python build_player_master.py
+
+      - name: Save full master and create 10-player test master
+        run: |
+          cp player_master.csv player_master_full.csv
+
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("player_master.csv")
+
+          test = (
+              df[df["season"] == 2026]
+              .drop_duplicates("player_key")
+              .head(10)
+              .copy()
+          )
+
+          test.to_csv("player_master.csv", index=False)
+
+          print("\n=== SMALL EXPERIENCE TEST ===")
+          print("Players:", len(test))
+          print(
+              test[
+                  ["team", "player", "player_key"]
+              ].to_string(index=False)
+          )
+          PY
+
+      - name: Run RLP experience collector
+        run: python collect_rlp_experience.py
+
+      - name: Inspect results
+        run: |
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("rlp_player_experience.csv")
+
+          print("\n=== EXPERIENCE RESULTS ===")
+          print("Rows:", len(df))
+
+          print("\nStatus counts:")
+          print(
+              df["collection_status"]
+              .value_counts(dropna=False)
+              .to_string()
+          )
+
+          cols = [
+              "player",
+              "team",
+              "nrl_games",
+              "nrl_finals_games",
+              "state_of_origin_games",
+              "test_international_games",
+              "super_league_games",
+              "collection_status",
+          ]
+
+          print("\nResults:")
+          print(
+              df[cols]
+              .to_string(index=False)
+          )
+          PY
+
+      - name: Restore full player master
+        if: always()
+        run: |
+          if [ -f player_master_full.csv ]; then
+            mv player_master_full.csv player_master.csv
+          fi
+
+      - name: Upload test outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rlp-experience-small-test
+          path: |
+            rlp_player_experience.csv
+            rlp_player_experience_failures.csv
+            rlp_player_experience_cache.csv
