@@ -1,0 +1,145 @@
+name: Run Full RLP Experience
+
+on:
+  workflow_dispatch:
+
+jobs:
+  full-rlp-experience:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4
+
+      - name: Build season population
+        run: python collect_rlp_season_players.py
+
+      - name: Build full player master
+        run: python build_player_master.py
+
+      - name: Show master population
+        run: |
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("player_master.csv")
+
+          print("\n=== PLAYER MASTER BEFORE EXPERIENCE COLLECTION ===")
+          print("Rows:", len(df))
+          print("Unique players:", df["player_key"].nunique())
+
+          print("\nPlayers by season:")
+          print(
+              df.groupby("season")["player_key"]
+              .nunique()
+              .to_string()
+          )
+
+          print("\nPlayers by club:")
+          print(
+              df.groupby(["season", "team"])["player_key"]
+              .nunique()
+              .to_string()
+          )
+          PY
+
+      - name: Run full RLP experience collector
+        run: python collect_rlp_experience.py
+
+      - name: Inspect full experience results
+        run: |
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("rlp_player_experience.csv")
+
+          print("\n=== FULL RLP EXPERIENCE RESULTS ===")
+          print("Rows:", len(df))
+          print("Unique players:", df["player_key"].nunique())
+
+          print("\n=== STATUS COUNTS ===")
+          print(
+              df["collection_status"]
+              .value_counts(dropna=False)
+              .to_string()
+          )
+
+          good = df["collection_status"].isin(
+              ["ok", "cached_ok"]
+          ).sum()
+
+          total = len(df)
+
+          coverage = (
+              good / total * 100
+              if total
+              else 0
+          )
+
+          print("\nResolved cleanly:", good)
+          print("Total:", total)
+          print(f"Coverage: {coverage:.1f}%")
+
+          print("\n=== EXPERIENCE FIELD COVERAGE ===")
+
+          fields = [
+              "nrl_games",
+              "nrl_finals_games",
+              "state_of_origin_games",
+              "test_international_games",
+              "super_league_games",
+          ]
+
+          for field in fields:
+              populated = df[field].notna().sum()
+              print(
+                  f"{field}: "
+                  f"{populated}/{total}"
+              )
+
+          failures = df[
+              ~df["collection_status"].isin(
+                  ["ok", "cached_ok"]
+              )
+          ]
+
+          print("\n=== PLAYERS REQUIRING REVIEW ===")
+
+          if failures.empty:
+              print("NONE")
+          else:
+              print(
+                  failures[
+                      [
+                          "player",
+                          "team",
+                          "collection_status",
+                          "verification_note",
+                      ]
+                  ].to_string(index=False)
+              )
+          PY
+
+      - name: Upload full RLP experience outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-rlp-experience
+          path: |
+            player_master.csv
+            rlp_season_players.csv
+            rlp_season_players_summary.csv
+            rlp_player_experience.csv
+            rlp_player_experience_failures.csv
+            rlp_player_experience_cache.csv
