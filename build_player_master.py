@@ -1,477 +1,1924 @@
 #!/usr/bin/env python3
+
 """
 build_player_master.py
 
-Experimental player-system foundation for the NRL predictor.
+League-wide player master builder for the NRL AI Predictor.
 
-Purpose
--------
-Create and maintain one canonical player master for all clubs without using
-the separate Fox Sports player-stat experiment.
+Population sources:
+1. rlp_season_players.csv
+   Primary 2026 NRL population.
 
-Inputs (when available)
------------------------
-1. team_lists_history.csv
-   - Primary automatic source of players actually selected in NRL team lists.
 2. nrl_roster_seed_2026_2027.csv
-   - Optional seed for preseason/off-season rosters, including Perth Bears.
-3. player_experience.csv
-   - Optional enrichment only. Does not create ratings.
+   Future/offseason roster seed including Perth Bears.
 
-Output
-------
-player_master.csv
+3. team_lists_history.csv
+   Adds jersey, position and selection-history information where available.
 
-Important
----------
-- This file does NOT assign player impact ratings.
-- It does NOT change predict.py.
-- It does NOT use fox_player_stats.csv.
-- New players appearing in archived team lists are added automatically.
-- Existing manual/verified information is preserved where possible.
+4. Existing player_master.csv
+   Preserves useful information already collected.
+
+5. player_experience.csv
+   Optional enrichment flag only.
+
+This script does NOT:
+- create player ratings
+- use Fox Sports data
+- alter predict.py
+- alter live predictions
 """
 
 from __future__ import annotations
 
-from pathlib import Path
 import re
-import sys
+import unicodedata
+from pathlib import Path
+
 import pandas as pd
 
-TEAM_LISTS = Path("team_lists_history.csv")
-ROSTER_SEED = Path("nrl_roster_seed_2026_2027.csv")
-EXPERIENCE = Path("player_experience.csv")
-EXISTING_MASTER = Path("player_master.csv")
-OUTPUT = Path("player_master.csv")
 
-CURRENT_SEASON = 2027
+RLP_POPULATION = Path(
+    "rlp_season_players.csv"
+)
 
-TEAM_ALIASES = {
-    "brisbane broncos": "Broncos",
-    "broncos": "Broncos",
-    "canberra raiders": "Raiders",
-    "raiders": "Raiders",
-    "canterbury bankstown bulldogs": "Bulldogs",
-    "canterbury-bankstown bulldogs": "Bulldogs",
-    "bulldogs": "Bulldogs",
-    "cronulla sharks": "Sharks",
-    "cronulla-sutherland sharks": "Sharks",
-    "sharks": "Sharks",
-    "dolphins": "Dolphins",
-    "the dolphins": "Dolphins",
-    "gold coast titans": "Titans",
-    "titans": "Titans",
-    "manly sea eagles": "Sea Eagles",
-    "manly warringah sea eagles": "Sea Eagles",
-    "sea eagles": "Sea Eagles",
-    "melbourne storm": "Storm",
-    "storm": "Storm",
-    "newcastle knights": "Knights",
-    "knights": "Knights",
-    "new zealand warriors": "Warriors",
-    "nz warriors": "Warriors",
-    "warriors": "Warriors",
-    "north queensland cowboys": "Cowboys",
-    "cowboys": "Cowboys",
-    "parramatta eels": "Eels",
-    "eels": "Eels",
-    "penrith panthers": "Panthers",
-    "panthers": "Panthers",
-    "south sydney rabbitohs": "Rabbitohs",
-    "rabbitohs": "Rabbitohs",
-    "st george illawarra dragons": "Dragons",
-    "dragons": "Dragons",
-    "sydney roosters": "Roosters",
-    "roosters": "Roosters",
-    "wests tigers": "Wests Tigers",
-    "tigers": "Wests Tigers",
-    "perth bears": "Perth Bears",
-    "bears": "Perth Bears",
+ROSTER_SEED = Path(
+    "nrl_roster_seed_2026_2027.csv"
+)
+
+TEAM_LISTS = Path(
+    "team_lists_history.csv"
+)
+
+EXISTING_MASTER = Path(
+    "player_master.csv"
+)
+
+EXPERIENCE = Path(
+    "player_experience.csv"
+)
+
+OUTPUT = Path(
+    "player_master.csv"
+)
+
+
+EXPECTED_2026_TEAMS = {
+    "Broncos",
+    "Raiders",
+    "Bulldogs",
+    "Sharks",
+    "Dolphins",
+    "Titans",
+    "Sea Eagles",
+    "Storm",
+    "Knights",
+    "Cowboys",
+    "Warriors",
+    "Eels",
+    "Panthers",
+    "Rabbitohs",
+    "Dragons",
+    "Roosters",
+    "Wests Tigers",
 }
 
-EXPECTED_2027_TEAMS = [
-    "Broncos", "Raiders", "Bulldogs", "Sharks", "Dolphins", "Titans",
-    "Sea Eagles", "Storm", "Knights", "Warriors", "Cowboys", "Eels",
-    "Panthers", "Rabbitohs", "Dragons", "Roosters", "Wests Tigers",
-    "Perth Bears",
-]
 
-MASTER_COLUMNS = [
+EXPECTED_2027_TEAMS = (
+    EXPECTED_2026_TEAMS
+    | {"Perth Bears"}
+)
+
+
+TEAM_ALIASES = {
+
+    "brisbane broncos":
+        "Broncos",
+
+    "broncos":
+        "Broncos",
+
+    "canberra raiders":
+        "Raiders",
+
+    "raiders":
+        "Raiders",
+
+    "canterbury bankstown bulldogs":
+        "Bulldogs",
+
+    "canterbury-bankstown bulldogs":
+        "Bulldogs",
+
+    "bulldogs":
+        "Bulldogs",
+
+    "cronulla sharks":
+        "Sharks",
+
+    "cronulla-sutherland sharks":
+        "Sharks",
+
+    "sharks":
+        "Sharks",
+
+    "dolphins":
+        "Dolphins",
+
+    "the dolphins":
+        "Dolphins",
+
+    "gold coast titans":
+        "Titans",
+
+    "titans":
+        "Titans",
+
+    "manly sea eagles":
+        "Sea Eagles",
+
+    "manly warringah sea eagles":
+        "Sea Eagles",
+
+    "sea eagles":
+        "Sea Eagles",
+
+    "melbourne storm":
+        "Storm",
+
+    "storm":
+        "Storm",
+
+    "newcastle knights":
+        "Knights",
+
+    "knights":
+        "Knights",
+
+    "north queensland cowboys":
+        "Cowboys",
+
+    "cowboys":
+        "Cowboys",
+
+    "new zealand warriors":
+        "Warriors",
+
+    "nz warriors":
+        "Warriors",
+
+    "warriors":
+        "Warriors",
+
+    "parramatta eels":
+        "Eels",
+
+    "eels":
+        "Eels",
+
+    "penrith panthers":
+        "Panthers",
+
+    "panthers":
+        "Panthers",
+
+    "south sydney rabbitohs":
+        "Rabbitohs",
+
+    "rabbitohs":
+        "Rabbitohs",
+
+    "st george illawarra dragons":
+        "Dragons",
+
+    "dragons":
+        "Dragons",
+
+    "sydney roosters":
+        "Roosters",
+
+    "roosters":
+        "Roosters",
+
+    "wests tigers":
+        "Wests Tigers",
+
+    "tigers":
+        "Wests Tigers",
+
+    "perth bears":
+        "Perth Bears",
+}
+
+
+OUTPUT_COLUMNS = [
+
     "season",
     "team",
     "player",
     "player_key",
+
     "primary_position",
+
     "last_selected_position",
     "last_selected_jersey",
+
     "first_seen",
     "last_seen",
+
     "times_selected",
+
     "spine_player",
+
     "roster_status",
+
+    "source_rlp_season",
     "source_team_lists",
     "source_roster_seed",
     "source_experience",
+
     "data_status",
+
     "notes",
 ]
 
 
-def clean(value) -> str:
-    if pd.isna(value):
+def clean(value):
+
+    if value is None:
         return ""
-    return re.sub(r"\s+", " ", str(value)).strip()
 
-
-def key(value) -> str:
-    text = clean(value).lower().replace("’", "'")
-    text = re.sub(r"[^a-z0-9' -]", "", text)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def norm_team(value) -> str:
-    raw = clean(value)
-    return TEAM_ALIASES.get(key(raw), raw)
-
-
-def read_csv_safe(path: Path) -> pd.DataFrame:
-    if not path.exists():
-        return pd.DataFrame()
     try:
-        return pd.read_csv(path)
+
+        if pd.isna(value):
+            return ""
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        pass
+
+    return re.sub(
+        r"\s+",
+        " ",
+        str(value),
+    ).strip()
+
+
+def ascii_text(value):
+
+    text = unicodedata.normalize(
+        "NFKD",
+        clean(value),
+    )
+
+    return "".join(
+        character
+        for character in text
+        if not unicodedata.combining(
+            character
+        )
+    )
+
+
+def norm_key(value):
+
+    text = (
+        ascii_text(value)
+        .lower()
+        .replace(
+            "’",
+            "'",
+        )
+    )
+
+    text = re.sub(
+        r"[^a-z0-9' -]",
+        "",
+        text,
+    )
+
+    return re.sub(
+        r"\s+",
+        " ",
+        text,
+    ).strip()
+
+
+def make_player_key(name):
+
+    return norm_key(
+        name
+    )
+
+
+def normalise_team(team):
+
+    raw = clean(
+        team
+    )
+
+    return TEAM_ALIASES.get(
+        norm_key(raw),
+        raw,
+    )
+
+
+def as_int(
+    value,
+    default=0,
+):
+
+    try:
+
+        if pd.isna(value):
+            return default
+
+        return int(
+            float(value)
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        return default
+
+
+def read_optional(path):
+
+    if not path.exists():
+
+        return pd.DataFrame()
+
+    try:
+
+        return pd.read_csv(
+            path
+        )
+
     except pd.errors.EmptyDataError:
+
         return pd.DataFrame()
 
 
-def first_existing_column(df: pd.DataFrame, names: list[str]) -> str | None:
-    lowered = {str(c).lower(): c for c in df.columns}
-    for name in names:
-        if name.lower() in lowered:
-            return lowered[name.lower()]
-    return None
+def safe_date(value):
 
-
-def infer_season(round_start) -> int:
-    dt = pd.to_datetime(round_start, errors="coerce")
-    if pd.isna(dt):
-        return CURRENT_SEASON
-    return int(dt.year)
-
-
-def build_from_team_lists(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return pd.DataFrame(columns=MASTER_COLUMNS)
-
-    needed = {"team", "player"}
-    if not needed.issubset(df.columns):
-        raise ValueError(
-            f"{TEAM_LISTS} must contain at least: team, player"
-        )
-
-    work = df.copy()
-    work["team"] = work["team"].map(norm_team)
-    work["player"] = work["player"].map(clean)
-    work["player_key"] = work["player"].map(key)
-
-    if "round_start" in work.columns:
-        work["season"] = work["round_start"].map(infer_season)
-        work["_date"] = pd.to_datetime(work["round_start"], errors="coerce")
-    else:
-        work["season"] = CURRENT_SEASON
-        work["_date"] = pd.NaT
-
-    if "position" not in work.columns:
-        work["position"] = ""
-    if "jersey" not in work.columns:
-        work["jersey"] = pd.NA
-
-    work["position"] = work["position"].map(clean)
-    work["jersey"] = pd.to_numeric(work["jersey"], errors="coerce")
-    work = work[(work["team"] != "") & (work["player_key"] != "")].copy()
-
-    rows = []
-    for (season, team, pkey), grp in work.groupby(
-        ["season", "team", "player_key"], sort=False
-    ):
-        grp = grp.sort_values("_date", na_position="first")
-        latest = grp.iloc[-1]
-
-        positions = grp.loc[grp["position"] != "", "position"]
-        primary_position = (
-            positions.mode().iloc[0] if not positions.empty else ""
-        )
-
-        last_jersey = latest["jersey"]
-        if pd.isna(last_jersey):
-            last_jersey_out = ""
-            spine = 0
-        else:
-            last_jersey_out = int(last_jersey)
-            spine = int(int(last_jersey) in {1, 6, 7, 9})
-
-        valid_dates = grp["_date"].dropna()
-        first_seen = (
-            valid_dates.min().date().isoformat() if not valid_dates.empty else ""
-        )
-        last_seen = (
-            valid_dates.max().date().isoformat() if not valid_dates.empty else ""
-        )
-
-        rows.append({
-            "season": int(season),
-            "team": team,
-            "player": latest["player"],
-            "player_key": pkey,
-            "primary_position": primary_position,
-            "last_selected_position": latest["position"],
-            "last_selected_jersey": last_jersey_out,
-            "first_seen": first_seen,
-            "last_seen": last_seen,
-            "times_selected": int(len(grp)),
-            "spine_player": spine,
-            "roster_status": "selected",
-            "source_team_lists": 1,
-            "source_roster_seed": 0,
-            "source_experience": 0,
-            "data_status": "observed",
-            "notes": "",
-        })
-
-    return pd.DataFrame(rows, columns=MASTER_COLUMNS)
-
-
-def build_from_seed(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return pd.DataFrame(columns=MASTER_COLUMNS)
-
-    team_col = first_existing_column(df, ["team", "club"])
-    player_col = first_existing_column(df, ["player", "player_name", "name"])
-    season_col = first_existing_column(df, ["season", "year"])
-    pos_col = first_existing_column(
-        df, ["primary_position", "position", "pos"]
-    )
-    status_col = first_existing_column(
-        df, ["roster_status", "status"]
+    value = clean(
+        value
     )
 
-    if not team_col or not player_col:
-        return pd.DataFrame(columns=MASTER_COLUMNS)
+    if not value:
+        return ""
 
-    rows = []
-    for _, r in df.iterrows():
-        team = norm_team(r.get(team_col, ""))
-        player = clean(r.get(player_col, ""))
-        if not team or not player:
+    parsed = pd.to_datetime(
+        value,
+        errors="coerce",
+    )
+
+    if pd.isna(parsed):
+
+        return value
+
+    return parsed.strftime(
+        "%Y-%m-%d"
+    )
+
+
+def blank_record(
+    season,
+    team,
+    player,
+):
+
+    return {
+
+        "season":
+            int(season),
+
+        "team":
+            normalise_team(team),
+
+        "player":
+            clean(player),
+
+        "player_key":
+            make_player_key(
+                player
+            ),
+
+        "primary_position":
+            "",
+
+        "last_selected_position":
+            "",
+
+        "last_selected_jersey":
+            "",
+
+        "first_seen":
+            "",
+
+        "last_seen":
+            "",
+
+        "times_selected":
+            0,
+
+        "spine_player":
+            False,
+
+        "roster_status":
+            "",
+
+        "source_rlp_season":
+            False,
+
+        "source_team_lists":
+            False,
+
+        "source_roster_seed":
+            False,
+
+        "source_experience":
+            False,
+
+        "data_status":
+            "",
+
+        "notes":
+            "",
+    }
+
+
+def record_id(
+    season,
+    team,
+    player_key,
+):
+
+    return (
+        int(season),
+        normalise_team(team),
+        clean(player_key),
+    )
+
+
+def load_existing_master():
+
+    records = {}
+
+    old = read_optional(
+        EXISTING_MASTER
+    )
+
+    if old.empty:
+
+        return records
+
+
+    for _, row in old.iterrows():
+
+        season = as_int(
+            row.get(
+                "season"
+            ),
+            2026,
+        )
+
+        team = normalise_team(
+            row.get(
+                "team",
+                "",
+            )
+        )
+
+        player = clean(
+            row.get(
+                "player",
+                "",
+            )
+        )
+
+        key = (
+            clean(
+                row.get(
+                    "player_key",
+                    "",
+                )
+            )
+            or make_player_key(
+                player
+            )
+        )
+
+
+        if (
+            not team
+            or not player
+            or not key
+        ):
+
             continue
 
-        season_raw = r.get(season_col, CURRENT_SEASON) if season_col else CURRENT_SEASON
-        try:
-            season = int(float(season_raw))
-        except (TypeError, ValueError):
-            season = CURRENT_SEASON
 
-        position = clean(r.get(pos_col, "")) if pos_col else ""
-        status = clean(r.get(status_col, "")) if status_col else ""
-        if not status:
-            status = "roster"
+        rec = blank_record(
+            season,
+            team,
+            player,
+        )
 
-        rows.append({
-            "season": season,
-            "team": team,
-            "player": player,
-            "player_key": key(player),
-            "primary_position": position,
-            "last_selected_position": "",
-            "last_selected_jersey": "",
-            "first_seen": "",
-            "last_seen": "",
-            "times_selected": 0,
-            "spine_player": 0,
-            "roster_status": status,
-            "source_team_lists": 0,
-            "source_roster_seed": 1,
-            "source_experience": 0,
-            "data_status": "seeded",
-            "notes": "",
-        })
-
-    return pd.DataFrame(rows, columns=MASTER_COLUMNS)
+        rec["player_key"] = key
 
 
-def experience_keys(df: pd.DataFrame) -> set[tuple[int, str, str]]:
-    if df.empty:
-        return set()
+        for col in OUTPUT_COLUMNS:
 
-    team_col = first_existing_column(df, ["team", "club"])
-    player_col = first_existing_column(df, ["player", "player_name", "name"])
-    season_col = first_existing_column(df, ["season", "year"])
-
-    if not team_col or not player_col:
-        return set()
-
-    found = set()
-    for _, r in df.iterrows():
-        team = norm_team(r.get(team_col, ""))
-        player = clean(r.get(player_col, ""))
-        if not team or not player:
-            continue
-        try:
-            season = int(float(r.get(season_col, CURRENT_SEASON))) if season_col else CURRENT_SEASON
-        except (TypeError, ValueError):
-            season = CURRENT_SEASON
-        found.add((season, team, key(player)))
-    return found
-
-
-def combine_sources(
-    observed: pd.DataFrame,
-    seeded: pd.DataFrame,
-    existing: pd.DataFrame,
-    exp_keys: set[tuple[int, str, str]],
-) -> pd.DataFrame:
-    records: dict[tuple[int, str, str], dict] = {}
-
-    # Existing first, so verified/manual notes survive rebuilds.
-    if not existing.empty:
-        for _, r in existing.iterrows():
-            try:
-                season = int(float(r.get("season", CURRENT_SEASON)))
-            except (TypeError, ValueError):
-                season = CURRENT_SEASON
-            team = norm_team(r.get("team", ""))
-            player = clean(r.get("player", ""))
-            pkey = clean(r.get("player_key", "")) or key(player)
-            if not team or not pkey:
+            if col not in old.columns:
                 continue
-            rec = {c: r.get(c, "") for c in MASTER_COLUMNS}
-            rec["season"] = season
-            rec["team"] = team
-            rec["player"] = player
-            rec["player_key"] = pkey
-            records[(season, team, pkey)] = rec
 
-    # Seed provides preseason roster population.
-    for _, r in seeded.iterrows():
-        k = (int(r["season"]), r["team"], r["player_key"])
-        if k not in records:
-            records[k] = r.to_dict()
-        else:
-            rec = records[k]
-            rec["source_roster_seed"] = 1
-            if not clean(rec.get("primary_position", "")):
-                rec["primary_position"] = r["primary_position"]
-            if not clean(rec.get("roster_status", "")):
-                rec["roster_status"] = r["roster_status"]
-
-    # Actual team-list observations take precedence for dynamic fields.
-    for _, r in observed.iterrows():
-        k = (int(r["season"]), r["team"], r["player_key"])
-        if k not in records:
-            records[k] = r.to_dict()
-        else:
-            rec = records[k]
-            rec["player"] = r["player"]
-            rec["source_team_lists"] = 1
-            rec["last_selected_position"] = r["last_selected_position"]
-            rec["last_selected_jersey"] = r["last_selected_jersey"]
-            rec["first_seen"] = r["first_seen"] or rec.get("first_seen", "")
-            rec["last_seen"] = r["last_seen"]
-            rec["times_selected"] = r["times_selected"]
-            rec["spine_player"] = r["spine_player"]
-            rec["roster_status"] = "selected"
-            rec["data_status"] = "observed"
-            if not clean(rec.get("primary_position", "")):
-                rec["primary_position"] = r["primary_position"]
-
-    for k, rec in records.items():
-        if k in exp_keys:
-            rec["source_experience"] = 1
-
-        # Normalise integer-ish fields.
-        for col in ["source_team_lists", "source_roster_seed",
-                    "source_experience", "spine_player", "times_selected"]:
-            try:
-                rec[col] = int(float(rec.get(col, 0) or 0))
-            except (TypeError, ValueError):
-                rec[col] = 0
-
-        if not clean(rec.get("data_status", "")):
-            rec["data_status"] = (
-                "observed" if rec["source_team_lists"] else "seeded"
+            value = row.get(
+                col
             )
 
-    out = pd.DataFrame(list(records.values()))
-    for c in MASTER_COLUMNS:
-        if c not in out.columns:
-            out[c] = ""
 
-    out = out[MASTER_COLUMNS].copy()
-    out = out.sort_values(
-        ["season", "team", "player_key"]
-    ).reset_index(drop=True)
+            if col in {
+
+                "source_rlp_season",
+                "source_team_lists",
+                "source_roster_seed",
+                "source_experience",
+                "spine_player",
+
+            }:
+
+                if isinstance(
+                    value,
+                    str,
+                ):
+
+                    rec[col] = (
+                        value
+                        .strip()
+                        .lower()
+                        in {
+                            "1",
+                            "true",
+                            "yes",
+                            "y",
+                        }
+                    )
+
+                else:
+
+                    rec[col] = (
+                        bool(value)
+                        if pd.notna(value)
+                        else False
+                    )
+
+
+            elif col == "times_selected":
+
+                rec[col] = as_int(
+                    value,
+                    0,
+                )
+
+
+            elif col not in {
+
+                "season",
+                "team",
+                "player",
+                "player_key",
+
+            }:
+
+                rec[col] = clean(
+                    value
+                )
+
+
+        records[
+            record_id(
+                season,
+                team,
+                key,
+            )
+        ] = rec
+
+
+    return records
+
+
+def apply_rlp_population(
+    records,
+):
+
+    if not RLP_POPULATION.exists():
+
+        raise FileNotFoundError(
+
+            "Required population file "
+            f"not found: "
+            f"{RLP_POPULATION}. "
+            "Run "
+            "collect_rlp_season_players.py "
+            "first."
+        )
+
+
+    df = pd.read_csv(
+        RLP_POPULATION
+    )
+
+
+    required = {
+        "season",
+        "team",
+        "player",
+    }
+
+
+    missing = (
+        required
+        - set(df.columns)
+    )
+
+
+    if missing:
+
+        raise RuntimeError(
+
+            f"{RLP_POPULATION} "
+            "missing required "
+            f"columns: "
+            f"{sorted(missing)}"
+        )
+
+
+    for _, row in df.iterrows():
+
+        season = as_int(
+            row.get(
+                "season"
+            ),
+            2026,
+        )
+
+
+        team = normalise_team(
+            row.get(
+                "team",
+                "",
+            )
+        )
+
+
+        player = clean(
+            row.get(
+                "player",
+                "",
+            )
+        )
+
+
+        key = (
+            clean(
+                row.get(
+                    "player_key",
+                    "",
+                )
+            )
+            or make_player_key(
+                player
+            )
+        )
+
+
+        if (
+            not team
+            or not player
+            or not key
+        ):
+
+            continue
+
+
+        rid = record_id(
+            season,
+            team,
+            key,
+        )
+
+
+        rec = records.get(
+
+            rid,
+
+            blank_record(
+                season,
+                team,
+                player,
+            ),
+        )
+
+
+        rec["player"] = (
+            player
+        )
+
+
+        rec["player_key"] = (
+            key
+        )
+
+
+        source = clean(
+            row.get(
+                "source",
+                "",
+            )
+        )
+
+
+        if (
+            source
+            == "rlp_season_players"
+        ):
+
+            rec[
+                "source_rlp_season"
+            ] = True
+
+
+        position = clean(
+            row.get(
+                "primary_position",
+                "",
+            )
+        )
+
+
+        if position:
+
+            rec[
+                "primary_position"
+            ] = position
+
+
+        status = clean(
+            row.get(
+                "roster_status",
+                "",
+            )
+        )
+
+
+        if status:
+
+            rec[
+                "roster_status"
+            ] = status
+
+
+        row_status = clean(
+            row.get(
+                "data_status",
+                "",
+            )
+        )
+
+
+        if season == 2026:
+
+            rec[
+                "data_status"
+            ] = (
+                "rlp_2026_population"
+            )
+
+
+        elif (
+            row_status
+            == "seed_only"
+        ):
+
+            rec[
+                "source_roster_seed"
+            ] = True
+
+            rec[
+                "data_status"
+            ] = "future_seed"
+
+
+        records[rid] = rec
+
+
+def apply_roster_seed(
+    records,
+):
+
+    seed = read_optional(
+        ROSTER_SEED
+    )
+
+
+    if seed.empty:
+
+        return
+
+
+    if not {
+        "team",
+        "player",
+    }.issubset(
+        seed.columns
+    ):
+
+        return
+
+
+    for _, row in seed.iterrows():
+
+        season = as_int(
+            row.get(
+                "season"
+            ),
+            2027,
+        )
+
+
+        team = normalise_team(
+            row.get(
+                "team",
+                "",
+            )
+        )
+
+
+        player = clean(
+            row.get(
+                "player",
+                "",
+            )
+        )
+
+
+        key = make_player_key(
+            player
+        )
+
+
+        if (
+            not team
+            or not player
+            or not key
+        ):
+
+            continue
+
+
+        rid = record_id(
+            season,
+            team,
+            key,
+        )
+
+
+        rec = records.get(
+
+            rid,
+
+            blank_record(
+                season,
+                team,
+                player,
+            ),
+        )
+
+
+        rec[
+            "source_roster_seed"
+        ] = True
+
+
+        position = clean(
+            row.get(
+                "primary_position",
+                "",
+            )
+        )
+
+
+        if (
+            position
+            and not clean(
+                rec.get(
+                    "primary_position"
+                )
+            )
+        ):
+
+            rec[
+                "primary_position"
+            ] = position
+
+
+        status = clean(
+            row.get(
+                "roster_status",
+                "",
+            )
+        )
+
+
+        if status:
+
+            rec[
+                "roster_status"
+            ] = status
+
+
+        if season > 2026:
+
+            rec[
+                "data_status"
+            ] = "future_seed"
+
+
+        records[rid] = rec
+
+
+def infer_snapshot_date(
+    row,
+):
+
+    for col in (
+        "captured_at",
+        "round_end",
+        "round_start",
+    ):
+
+        value = safe_date(
+            row.get(
+                col,
+                "",
+            )
+        )
+
+        if value:
+
+            return value
+
+
+    return ""
+
+
+def team_list_enrichment():
+
+    df = read_optional(
+        TEAM_LISTS
+    )
+
+
+    if (
+        df.empty
+        or not {
+            "team",
+            "player",
+        }.issubset(
+            df.columns
+        )
+    ):
+
+        return {}
+
+
+    work = df.copy()
+
+
+    work[
+        "team_norm"
+    ] = work[
+        "team"
+    ].map(
+        normalise_team
+    )
+
+
+    work[
+        "player_clean"
+    ] = work[
+        "player"
+    ].map(
+        clean
+    )
+
+
+    work[
+        "player_key_calc"
+    ] = work[
+        "player_clean"
+    ].map(
+        make_player_key
+    )
+
+
+    work[
+        "seen_date"
+    ] = work.apply(
+        infer_snapshot_date,
+        axis=1,
+    )
+
+
+    if (
+        "jersey"
+        not in work.columns
+    ):
+
+        work[
+            "jersey"
+        ] = pd.NA
+
+
+    if (
+        "position"
+        not in work.columns
+    ):
+
+        work[
+            "position"
+        ] = ""
+
+
+    enrich = {}
+
+
+    grouped = work.groupby(
+
+        [
+            "team_norm",
+            "player_key_calc",
+        ],
+
+        dropna=False,
+    )
+
+
+    for (
+        team,
+        key,
+    ), group in grouped:
+
+        if (
+            not team
+            or not key
+        ):
+
+            continue
+
+
+        g = group.copy()
+
+
+        g[
+            "_seen_sort"
+        ] = pd.to_datetime(
+
+            g[
+                "seen_date"
+            ],
+
+            errors="coerce",
+        )
+
+
+        g = g.sort_values(
+
+            [
+                "_seen_sort"
+            ],
+
+            na_position="first",
+        )
+
+
+        latest = g.iloc[-1]
+
+
+        dates = [
+
+            d
+
+            for d in g[
+                "seen_date"
+            ].tolist()
+
+            if clean(d)
+        ]
+
+
+        jersey = as_int(
+            latest.get(
+                "jersey"
+            ),
+            0,
+        )
+
+
+        last_position = clean(
+            latest.get(
+                "position",
+                "",
+            )
+        )
+
+
+        enrich[
+            (
+                team,
+                key,
+            )
+        ] = {
+
+            "last_selected_position":
+                last_position,
+
+            "last_selected_jersey":
+                (
+                    jersey
+                    if jersey
+                    else ""
+                ),
+
+            "first_seen":
+                (
+                    min(dates)
+                    if dates
+                    else ""
+                ),
+
+            "last_seen":
+                (
+                    max(dates)
+                    if dates
+                    else ""
+                ),
+
+            "times_selected":
+                len(g),
+
+            "spine_player":
+                jersey
+                in {
+                    1,
+                    6,
+                    7,
+                    9,
+                },
+        }
+
+
+    return enrich
+
+
+def apply_team_lists(
+    records,
+):
+
+    enrich = (
+        team_list_enrichment()
+    )
+
+
+    for rec in records.values():
+
+        key = (
+            rec["team"],
+            rec["player_key"],
+        )
+
+
+        info = enrich.get(
+            key
+        )
+
+
+        if not info:
+
+            continue
+
+
+        rec[
+            "source_team_lists"
+        ] = True
+
+
+        rec[
+            "last_selected_position"
+        ] = info[
+            "last_selected_position"
+        ]
+
+
+        rec[
+            "last_selected_jersey"
+        ] = info[
+            "last_selected_jersey"
+        ]
+
+
+        rec[
+            "first_seen"
+        ] = info[
+            "first_seen"
+        ]
+
+
+        rec[
+            "last_seen"
+        ] = info[
+            "last_seen"
+        ]
+
+
+        rec[
+            "times_selected"
+        ] = info[
+            "times_selected"
+        ]
+
+
+        rec[
+            "spine_player"
+        ] = bool(
+            info[
+                "spine_player"
+            ]
+        )
+
+
+        if (
+            not clean(
+                rec.get(
+                    "primary_position"
+                )
+            )
+            and info[
+                "last_selected_position"
+            ]
+        ):
+
+            rec[
+                "primary_position"
+            ] = info[
+                "last_selected_position"
+            ]
+
+
+def apply_experience_flag(
+    records,
+):
+
+    exp = read_optional(
+        EXPERIENCE
+    )
+
+
+    if (
+        exp.empty
+        or "player"
+        not in exp.columns
+    ):
+
+        return
+
+
+    generic_keys = set()
+
+    exact_keys = set()
+
+
+    for _, row in exp.iterrows():
+
+        player = clean(
+            row.get(
+                "player",
+                "",
+            )
+        )
+
+
+        if not player:
+
+            continue
+
+
+        key = make_player_key(
+            player
+        )
+
+
+        generic_keys.add(
+            key
+        )
+
+
+        if (
+            "team"
+            in exp.columns
+        ):
+
+            team = normalise_team(
+                row.get(
+                    "team",
+                    "",
+                )
+            )
+
+        else:
+
+            team = ""
+
+
+        if (
+            "season"
+            in exp.columns
+        ):
+
+            season = as_int(
+                row.get(
+                    "season"
+                ),
+                0,
+            )
+
+        else:
+
+            season = 0
+
+
+        if (
+            season
+            and team
+        ):
+
+            exact_keys.add(
+                (
+                    season,
+                    team,
+                    key,
+                )
+            )
+
+
+    for rec in records.values():
+
+        exact = (
+            rec["season"],
+            rec["team"],
+            rec["player_key"],
+        )
+
+
+        if (
+            exact
+            in exact_keys
+            or rec[
+                "player_key"
+            ]
+            in generic_keys
+        ):
+
+            rec[
+                "source_experience"
+            ] = True
+
+
+def remove_stale_population(
+    records,
+):
+
+    cleaned = {}
+
+
+    for rid, rec in records.items():
+
+        season = rec[
+            "season"
+        ]
+
+
+        if (
+            season == 2026
+            and not rec[
+                "source_rlp_season"
+            ]
+        ):
+
+            continue
+
+
+        if (
+            season > 2026
+            and not rec[
+                "source_roster_seed"
+            ]
+        ):
+
+            continue
+
+
+        cleaned[rid] = rec
+
+
+    return cleaned
+
+
+def finalise(
+    records,
+):
+
+    records = (
+        remove_stale_population(
+            records
+        )
+    )
+
+
+    rows = []
+
+
+    for rec in records.values():
+
+        if not rec[
+            "roster_status"
+        ]:
+
+            if (
+                rec["season"]
+                == 2026
+            ):
+
+                rec[
+                    "roster_status"
+                ] = (
+                    "appeared_in_nrl_season"
+                )
+
+            else:
+
+                rec[
+                    "roster_status"
+                ] = "roster_seed"
+
+
+        if not rec[
+            "data_status"
+        ]:
+
+            if (
+                rec["season"]
+                == 2026
+            ):
+
+                rec[
+                    "data_status"
+                ] = (
+                    "rlp_2026_population"
+                )
+
+            else:
+
+                rec[
+                    "data_status"
+                ] = "future_seed"
+
+
+        rows.append(
+            {
+                col:
+                    rec.get(
+                        col,
+                        "",
+                    )
+
+                for col
+                in OUTPUT_COLUMNS
+            }
+        )
+
+
+    if not rows:
+
+        raise RuntimeError(
+            "Player master "
+            "would be empty"
+        )
+
+
+    out = pd.DataFrame(
+
+        rows,
+
+        columns=OUTPUT_COLUMNS,
+    )
+
+
+    out[
+        "season"
+    ] = pd.to_numeric(
+
+        out[
+            "season"
+        ],
+
+        errors="coerce",
+
+    ).astype(
+        "Int64"
+    )
+
+
+    out[
+        "times_selected"
+    ] = pd.to_numeric(
+
+        out[
+            "times_selected"
+        ],
+
+        errors="coerce",
+
+    ).fillna(
+        0
+    ).astype(
+        int
+    )
+
+
+    out = (
+
+        out
+
+        .drop_duplicates(
+
+            [
+                "season",
+                "team",
+                "player_key",
+            ],
+
+            keep="last",
+        )
+
+        .sort_values(
+
+            [
+                "season",
+                "team",
+                "player_key",
+            ]
+        )
+
+        .reset_index(
+            drop=True
+        )
+    )
+
+
     return out
 
 
-def print_report(master: pd.DataFrame) -> None:
-    print("\nPLAYER MASTER BUILD")
-    print("=" * 64)
-    print("Fox Sports player stats used: NO")
-    print(f"Rows: {len(master)}")
+def print_summary(
+    df,
+):
 
-    if master.empty:
-        print("No players found.")
-        return
-
-    latest_season = int(pd.to_numeric(master["season"], errors="coerce").max())
-    latest = master[pd.to_numeric(master["season"], errors="coerce") == latest_season]
-
-    print(f"Latest season represented: {latest_season}")
-    print(f"Clubs represented: {latest['team'].nunique()}")
-
-    print("\nPlayers by club:")
-    counts = latest.groupby("team")["player_key"].nunique().sort_index()
-    for team, count in counts.items():
-        print(f"  {team}: {count}")
-
-    if latest_season >= 2027:
-        missing = [t for t in EXPECTED_2027_TEAMS if t not in set(latest["team"])]
-        if missing:
-            print("\n2027 clubs not yet populated:")
-            for team in missing:
-                print(f"  {team}")
-        else:
-            print("\nAll 18 expected 2027 clubs are represented.")
-
-    observed = int((latest["source_team_lists"] == 1).sum())
-    seeded = int((latest["source_roster_seed"] == 1).sum())
-    print(f"\nPlayers observed in team lists: {observed}")
-    print(f"Players supplied by roster seed: {seeded}")
-    print(f"Saved: {OUTPUT}")
-    print("\nNOTE: This creates player identity/roster infrastructure only.")
-    print("      It does not create ratings or alter predictions.")
+    print(
+        "\n=== PLAYER MASTER SUMMARY ==="
+    )
 
 
-def main() -> int:
-    try:
-        team_lists = read_csv_safe(TEAM_LISTS)
-        seed = read_csv_safe(ROSTER_SEED)
-        experience = read_csv_safe(EXPERIENCE)
-        existing = read_csv_safe(EXISTING_MASTER)
+    print(
+        f"Rows: {len(df)}"
+    )
 
-        observed = build_from_team_lists(team_lists)
-        seeded = build_from_seed(seed)
-        exp_keys = experience_keys(experience)
 
-        master = combine_sources(observed, seeded, existing, exp_keys)
-        master.to_csv(OUTPUT, index=False)
+    print(
+        "Unique player identities: "
+        f"{df['player_key'].nunique()}"
+    )
 
-        print_report(master)
-        return 0
 
-    except Exception as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 1
+    seasons = sorted(
+
+        df[
+            "season"
+        ]
+
+        .dropna()
+
+        .astype(int)
+
+        .unique()
+    )
+
+
+    for season in seasons:
+
+        part = df[
+            df["season"]
+            == season
+        ]
+
+
+        teams = sorted(
+
+            part[
+                "team"
+            ]
+
+            .dropna()
+
+            .astype(str)
+
+            .unique()
+        )
+
+
+        print(
+            f"\n=== {season} "
+            "PLAYERS BY CLUB ==="
+        )
+
+
+        print(
+
+            part
+
+            .groupby(
+                "team"
+            )[
+                "player_key"
+            ]
+
+            .nunique()
+
+            .sort_index()
+
+            .to_string()
+        )
+
+
+        print(
+            f"\n{season} clubs: "
+            f"{len(teams)}"
+        )
+
+
+        if season == 2026:
+
+            missing = sorted(
+
+                EXPECTED_2026_TEAMS
+                - set(teams)
+            )
+
+
+            print(
+
+                "Missing 2026 clubs: "
+
+                + (
+
+                    "NONE"
+
+                    if not missing
+
+                    else ", ".join(
+                        missing
+                    )
+                )
+            )
+
+
+        if season == 2027:
+
+            print(
+
+                "2027 seeded clubs "
+                "currently represented: "
+
+                + (
+
+                    ", ".join(
+                        teams
+                    )
+
+                    if teams
+
+                    else "NONE"
+                )
+            )
+
+
+    print(
+        "\n=== SOURCE COVERAGE ==="
+    )
+
+
+    for col in (
+
+        "source_rlp_season",
+        "source_team_lists",
+        "source_roster_seed",
+        "source_experience",
+
+    ):
+
+        count = int(
+
+            df[
+                col
+            ]
+
+            .astype(bool)
+
+            .sum()
+        )
+
+
+        print(
+            f"{col}: {count}"
+        )
+
+
+    selected = int(
+
+        (
+            df[
+                "times_selected"
+            ]
+            > 0
+        ).sum()
+    )
+
+
+    print(
+
+        "Rows enriched by "
+        "archived team selections: "
+        f"{selected}"
+    )
+
+
+def main():
+
+    print(
+        "PLAYER MASTER v2 - "
+        "LEAGUE-WIDE RLP POPULATION"
+    )
+
+
+    print(
+        "Fox Sports data: NOT USED"
+    )
+
+
+    print(
+        "Primary population: "
+        f"{RLP_POPULATION}"
+    )
+
+
+    records = (
+        load_existing_master()
+    )
+
+
+    print(
+        "Existing master rows "
+        "loaded for preservation: "
+        f"{len(records)}"
+    )
+
+
+    apply_rlp_population(
+        records
+    )
+
+
+    apply_roster_seed(
+        records
+    )
+
+
+    apply_team_lists(
+        records
+    )
+
+
+    apply_experience_flag(
+        records
+    )
+
+
+    output = finalise(
+        records
+    )
+
+
+    current = output[
+        output[
+            "season"
+        ]
+        == 2026
+    ]
+
+
+    found_2026 = set(
+
+        current[
+            "team"
+        ]
+
+        .dropna()
+
+        .astype(str)
+    )
+
+
+    missing_2026 = (
+
+        EXPECTED_2026_TEAMS
+        - found_2026
+    )
+
+
+    if missing_2026:
+
+        raise RuntimeError(
+
+            "Refusing to write "
+            "player_master.csv because "
+            "2026 population is incomplete. "
+            "Missing: "
+            f"{sorted(missing_2026)}"
+        )
+
+
+    unique_2026 = (
+
+        current[
+            "player_key"
+        ]
+
+        .nunique()
+    )
+
+
+    if unique_2026 < 450:
+
+        raise RuntimeError(
+
+            "Refusing to write "
+            "player_master.csv because "
+            "fewer than 450 unique "
+            "2026 players were found."
+        )
+
+
+    output.to_csv(
+        OUTPUT,
+        index=False,
+    )
+
+
+    print_summary(
+        output
+    )
+
+
+    print(
+        f"\nSaved: {OUTPUT}"
+    )
+
+
+    print(
+        "COMPLETE"
+    )
+
+
+    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+
+    raise SystemExit(
+        main()
+    )
