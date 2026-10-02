@@ -1,0 +1,150 @@
+name: Test RLP Experience Failures
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-failures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4
+
+      - name: Build season population
+        run: python collect_rlp_season_players.py
+
+      - name: Build full player master
+        run: python build_player_master.py
+
+      - name: Create targeted test master
+        run: |
+          cp player_master.csv player_master_full.csv
+
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("player_master.csv")
+
+          players = [
+              "Brian To'O",
+              "Joseph Tapine",
+              "Haumole Olakau'Atu",
+              "Nicho Hynes",
+              "Nick Meaney",
+              "Stefano Utoikamanu",
+              "Tino Fa'Asuamaleaui",
+              "Jarome Luai",
+              "J'Maine Hopgood",
+              "Scott Sorensen",
+              "Billy Smith",
+              "Nathan Brown",
+              "Jack Williams",
+              "William Kennedy",
+          ]
+
+          test = df[
+              df["player"].str.casefold().isin(
+                  [p.casefold() for p in players]
+              )
+          ].drop_duplicates("player_key").copy()
+
+          test.to_csv("player_master.csv", index=False)
+
+          print("\n=== TARGETED FAILURE TEST ===")
+          print("Players requested:", len(players))
+          print("Players found in master:", len(test))
+
+          print(
+              test[
+                  ["team", "player", "player_key"]
+              ].to_string(index=False)
+          )
+
+          missing = [
+              p for p in players
+              if p.casefold() not in
+              set(test["player"].str.casefold())
+          ]
+
+          if missing:
+              print("\nMissing from test master:")
+              for p in missing:
+                  print(" -", p)
+          PY
+
+      - name: Remove old experience cache for clean test
+        run: |
+          rm -f rlp_player_experience_cache.csv
+          rm -f rlp_player_experience.csv
+          rm -f rlp_player_experience_failures.csv
+
+      - name: Run targeted RLP experience collector
+        run: python collect_rlp_experience.py
+
+      - name: Inspect targeted results
+        run: |
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("rlp_player_experience.csv")
+
+          print("\n=== TARGETED RESULTS ===")
+          print("Rows:", len(df))
+
+          print("\nStatus counts:")
+          print(
+              df["collection_status"]
+              .value_counts(dropna=False)
+              .to_string()
+          )
+
+          cols = [
+              "player",
+              "team",
+              "nrl_games",
+              "nrl_finals_games",
+              "state_of_origin_games",
+              "test_international_games",
+              "super_league_games",
+              "primary_positions",
+              "collection_status",
+              "rlp_url",
+          ]
+
+          existing = [c for c in cols if c in df.columns]
+
+          print("\nPlayer results:")
+          print(
+              df[existing]
+              .to_string(index=False)
+          )
+          PY
+
+      - name: Restore full player master
+        if: always()
+        run: |
+          if [ -f player_master_full.csv ]; then
+            mv player_master_full.csv player_master.csv
+          fi
+
+      - name: Upload targeted test outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rlp-experience-failure-test
+          path: |
+            rlp_player_experience.csv
+            rlp_player_experience_failures.csv
+            rlp_player_experience_cache.csv
