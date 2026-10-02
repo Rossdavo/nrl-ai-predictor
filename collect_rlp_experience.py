@@ -561,9 +561,30 @@ def main() -> int:
         season_index = build_2026_player_index(s)
         print(f"2026 RLP player links indexed: {len(season_index)}")
 
-        unique_players = master.sort_values(
-            ["season", "team", "player_key"]
-        ).drop_duplicates("player_key", keep="last")
+        # Resolve each real player only once. Prefer a season row confirmed by the
+        # RLP season population over a future roster-seed row. This matters for
+        # players moving to Perth in 2027: their established 2026 NRL identity
+        # should drive career collection, while Perth-only/overseas recruits can
+        # still fall through to the normal slug/search discovery path.
+        if "source_rlp_season" in master.columns:
+            master["_rlp_confirmed"] = (
+                master["source_rlp_season"]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+                .isin({"1", "1.0", "true", "yes", "y"})
+                .astype(int)
+            )
+        else:
+            master["_rlp_confirmed"] = 0
+
+        unique_players = (
+            master.sort_values(
+                ["player_key", "_rlp_confirmed", "season", "team"]
+            )
+            .drop_duplicates("player_key", keep="last")
+            .drop(columns=["_rlp_confirmed"], errors="ignore")
+        )
 
         total = len(unique_players)
         print("\nRLP EXPERIENCE COLLECTOR")
