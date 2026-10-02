@@ -1,0 +1,117 @@
+name: Test Perth RLP Experience
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-perth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4 lxml
+
+      - name: Build 2026 season population
+        run: python collect_rlp_season_players.py
+
+      - name: Build player master
+        run: python build_player_master.py
+
+      - name: Keep Perth Bears players only
+        run: |
+          cp player_master.csv player_master_full.csv
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("player_master.csv")
+          perth = df[(df["season"] == 2027) & (df["team"] == "Perth Bears")].copy()
+
+          print(f"Perth rows selected: {len(perth)}")
+          print(perth[["season", "team", "player"]].to_string(index=False))
+
+          if len(perth) != 26:
+              raise SystemExit(f"Expected 26 Perth Bears rows, found {len(perth)}")
+
+          # Add the established 2026 rows for any Perth player who already
+          # appears in the RLP-confirmed NRL population. This deliberately
+          # tests the collector's preference for the established NRL identity.
+          keys = set(perth["player_key"].astype(str))
+          prior = df[
+              (df["season"] == 2026)
+              & (df["player_key"].astype(str).isin(keys))
+          ].copy()
+
+          test_master = pd.concat([perth, prior], ignore_index=True)
+          test_master.to_csv("player_master.csv", index=False)
+
+          print(f"\n2026 matching rows added: {len(prior)}")
+          if not prior.empty:
+              print(prior[["season", "team", "player", "source_rlp_season"]].to_string(index=False))
+          print(f"\nRows supplied to collector: {len(test_master)}")
+          PY
+
+      - name: Remove old experience cache
+        run: |
+          rm -f rlp_player_experience_cache.csv
+          rm -f rlp_player_experience.csv
+          rm -f rlp_player_experience_failures.csv
+
+      - name: Run Perth RLP experience collector
+        run: python collect_rlp_experience.py
+
+      - name: Inspect Perth results
+        run: |
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("rlp_player_experience.csv")
+
+          print("\n=== PERTH RLP EXPERIENCE RESULTS ===")
+          print(f"Rows: {len(df)}")
+
+          print("\n=== STATUS COUNTS ===")
+          print(df["collection_status"].value_counts(dropna=False).to_string())
+
+          cols = [
+              "player", "team", "season", "nrl_games", "nrl_finals_games",
+              "state_of_origin_games", "test_international_games",
+              "super_league_games", "collection_status", "rlp_url"
+          ]
+          cols = [c for c in cols if c in df.columns]
+
+          print("\n=== ALL PERTH PLAYERS ===")
+          print(df[cols].sort_values("player").to_string(index=False))
+
+          check = df[df["player"].isin(["Jack Cole", "Nick Meaney", "Scott Sorensen"])]
+          print("\n=== KEY CHECK: COLE / MEANEY / SORENSEN ===")
+          print(check[cols].sort_values("player").to_string(index=False))
+
+          review = df[df["collection_status"].isin(["partial", "not_found"])]
+          print("\n=== STILL REQUIRING REVIEW ===")
+          if review.empty:
+              print("NONE")
+          else:
+              extra = [c for c in ["verification_note"] if c in review.columns]
+              print(review[["player", "team", "collection_status"] + extra].to_string(index=False))
+          PY
+
+      - name: Upload Perth test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: perth-rlp-experience-test
+          path: |
+            rlp_player_experience.csv
+            rlp_player_experience_failures.csv
+            rlp_player_experience_cache.csv
+          if-no-files-found: warn
