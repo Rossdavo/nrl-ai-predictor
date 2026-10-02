@@ -1,0 +1,77 @@
+name: Test Player Master
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-player-master:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests
+
+      - name: Build season population
+        run: python collect_rlp_season_players.py
+
+      - name: Build player master
+        run: python build_player_master.py
+
+      - name: Inspect player master
+        run: |
+          python - <<'PY'
+          import pandas as pd
+
+          df = pd.read_csv("player_master.csv")
+
+          print("\n=== MASTER CHECK ===")
+          print("Rows:", len(df))
+          print("Unique players:", df["player_key"].nunique())
+
+          current = df[df["season"] == 2026]
+          future = df[df["season"] == 2027]
+
+          print("\n2026 unique players:", current["player_key"].nunique())
+          print("2026 clubs:", current["team"].nunique())
+
+          print("\n2027 rows:", len(future))
+          print("2027 clubs:", future["team"].nunique())
+
+          if not future.empty:
+              print("\n=== 2027 PLAYERS BY CLUB ===")
+              print(
+                  future.groupby("team")["player_key"]
+                  .nunique()
+                  .to_string()
+              )
+
+          print("\n=== SOURCE COVERAGE ===")
+          for col in [
+              "source_rlp_season",
+              "source_team_lists",
+              "source_roster_seed",
+              "source_experience",
+          ]:
+              if col in df.columns:
+                  print(col, df[col].sum())
+          PY
+
+      - name: Upload player master test
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-master-test
+          path: |
+            player_master.csv
+            rlp_season_players.csv
+            rlp_season_players_summary.csv
